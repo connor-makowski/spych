@@ -2,4 +2,4 @@
 Test all functions in spych
 """
 
-from src.core import spych
+from spych.core import spych
