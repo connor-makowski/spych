@@ -2,10 +2,9 @@ from spych.core import spych
 import time, threading
 
 class wake_listener:
-    def __init__(self, spych_wake_obj, spych_object, file):
+    def __init__(self, spych_wake_obj, spych_object):
         self.spych_wake_obj=spych_wake_obj
         self.spych_object=spych_object
-        self.file=file
         self.locked=False
 
     def __call__(self):
@@ -15,11 +14,11 @@ class wake_listener:
         if self.spych_wake_obj.locked:
             self.locked=False
             return
-        wake=self.spych_object.record(output_audio_file=self.file, duration=self.spych_wake_obj.listen_time)
+        audio=self.spych_object.stream_record(duration=self.spych_wake_obj.listen_time)
         if self.spych_wake_obj.locked:
             self.locked=False
             return
-        transcriptions=self.spych_object.stt_expanded(audio_file=wake, num_candidates=self.spych_wake_obj.candidates_per_listener)
+        transcriptions=self.spych_object.stream_stt_expanded(audio=audio, num_candidates=self.spych_wake_obj.candidates_per_listener)
         word_data=[i['words'] for i in transcriptions]
         words=[i for sub_list in word_data for i in sub_list]
         if self.spych_wake_obj.wake_word in words:
@@ -47,7 +46,7 @@ class spych_wake:
         thunks=[]
         for i in range(self.listeners):
             spych_object=spych(model_file=self.model_file, scorer_file=self.scorer_file)
-            thunks.append(wake_listener(spych_wake_obj=self, spych_object=spych_object, file=f'test_{i}.wav'))
+            thunks.append(wake_listener(spych_wake_obj=self, spych_object=spych_object))
         while True:
             for thunk in thunks:
                 thread=threading.Thread(target=thunk)

@@ -37,7 +37,7 @@ class spych(error):
             self.model.enableExternalScorer(self.scorer_file)
         self.desired_sample_rate=self.model.sampleRate()
 
-    def execute_cmd(self, cmd, capture_output=True):
+    def execute_cmd(self, cmd, capture_output=True, check=True):
         """
         Execute a subprocess cmd on the terminal / command line
 
@@ -48,7 +48,7 @@ class spych(error):
                 - What: The command to execute
         """
         try:
-            output = subprocess.run(shlex.split(cmd), capture_output=capture_output)
+            output = subprocess.run(shlex.split(cmd), check=check, capture_output=capture_output)
         except subprocess.CalledProcessError as e:
             raise RuntimeError(f'Execution of {cmd} returned non-zero status: {e.stderr}')
         except OSError as e:
@@ -262,7 +262,22 @@ class spych(error):
         output_meta=self.model.sttWithMetadata(audio, num_candidates)
         return [self.get_transcript_dict(transcript, **kwargs) for transcript in output_meta.transcripts]
 
-    def audio_stt_expanded(self, audio, num_candidates=1, **kwargs):
+    def stream_record(self, duration=5):
+        """
+        Internal helper function to record a data stream for a set duration using SoX
+
+        Optional:
+
+            - `duration`:
+                - Type: int
+                - What: The duration of time to record in seconds
+                - Default: 5
+        """
+        sox_cmd = f'sox -d --type raw --bits 16 --channels 1 --rate {self.desired_sample_rate} --encoding signed-integer --endian little --compression 0.0 --no-dither - trim 0 {duration}'
+        output=self.execute_cmd(sox_cmd)
+        return np.frombuffer(output.stdout, np.int16)
+
+    def stream_stt_expanded(self, audio, num_candidates=1, **kwargs):
         """
         Internal helper function for more efficient conversion processes (no need to save data)
 
