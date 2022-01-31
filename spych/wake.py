@@ -1,5 +1,4 @@
 from spych.core import spych
-from pamda import pamda
 import time, threading
 
 class wake_listener:
@@ -44,10 +43,6 @@ class spych_wake:
 
         self.locked=False
 
-    def asyncify(self, fn):
-        thread=threading.Thread(target=fn)
-        thread.start()
-
     def start(self):
         thunks=[]
         for i in range(self.listeners):
@@ -55,5 +50,6 @@ class spych_wake:
             thunks.append(wake_listener(spych_wake_obj=self, spych_object=spych_object, file=f'test_{i}.wav'))
         while True:
             for thunk in thunks:
-                self.asyncify(thunk)
+                thread=threading.Thread(target=thunk)
+                thread.start()
                 time.sleep((self.listen_time+1)/self.listeners)

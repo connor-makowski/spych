@@ -261,3 +261,44 @@ class spych(error):
         audio = self.parse_audio(audio_file)
         output_meta=self.model.sttWithMetadata(audio, num_candidates)
         return [self.get_transcript_dict(transcript, **kwargs) for transcript in output_meta.transcripts]
+
+    def audio_stt_expanded(self, audio, num_candidates=1, **kwargs):
+        """
+        Internal helper function for more efficient conversion processes (no need to save data)
+
+        Required:
+
+            - `audio`:
+                - Type: Audio stream data
+                - What: Formatted audio data to match DeepSpeech Model
+
+        Optional:
+
+            - `num_candidates`:
+                - Type: int
+                - What: The number of potential transcript candidates to return
+                - Default: 1
+                - Note: The most confident/likely result appears first
+            - `return_text`:
+                - Type: bool
+                - What: Flag to indicate if the predicted text should be returned
+                - Default: True
+            - `return_confidence`:
+                - Type: bool
+                - What: Flag to indicate if the confidence level for this text should be returned
+                - Default: True
+            - `return_words`:
+                - Type: bool
+                - What: Flag to indicate if a words list (from the predicted text) should be returned
+                - Default: True
+            - `return_word_timings`:
+                - Type: bool
+                - What: Flag to indicate if the predicted timings (start, end and duration) for each word should be returned
+                - Default: True
+            - `return_meta`:
+                - Type: bool
+                - What: Flag to indicate if the transcript metadata object from DeepSpeech should be returned
+                - Default: False
+        """
+        output_meta=self.model.sttWithMetadata(audio, num_candidates)
+        return [self.get_transcript_dict(transcript, **kwargs) for transcript in output_meta.transcripts]
