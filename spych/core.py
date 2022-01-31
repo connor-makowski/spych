@@ -277,6 +277,18 @@ class spych(error):
         output=self.execute_cmd(sox_cmd)
         return np.frombuffer(output.stdout, np.int16)
 
+    def stream_stt(self, audio):
+        """
+        Compute speech-to-text transcription for a provided audio stream
+
+        Required:
+
+            - `audio`:
+                - Type: Audio stream data
+                - What: Formatted audio data to match DeepSpeech Model
+        """
+        return self.model.stt(audio)
+
     def stream_stt_expanded(self, audio, num_candidates=1, **kwargs):
         """
         Internal helper function for more efficient conversion processes (no need to save data)
