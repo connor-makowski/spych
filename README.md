@@ -6,6 +6,7 @@ Python wrapper for easily accessing the [DeepSpeech](https://github.com/mozilla/
 Documentation for Spych Functions
 --------
 https://connor-makowski.github.io/spych/core.html
+https://connor-makowski.github.io/spych/wake.html
 
 Key Features
 --------
@@ -20,28 +21,67 @@ Make sure you have Python 3.6.x (or higher) installed on your system. You can do
 
 ### Installation
 
+1. Install SoX
+```
+
+```
+
+2. Install Spych
 ```
 pip install spych
 ```
 
-# Getting Started
-
-## Getting DeepSpeech Models
-```sh
+3. Get DeepSpeech Model and Score files:
+```
 curl -LO https://github.com/mozilla/DeepSpeech/releases/download/v0.9.3/deepspeech-0.9.3-models.pbmm
 curl -LO https://github.com/mozilla/DeepSpeech/releases/download/v0.9.3/deepspeech-0.9.3-models.scorer
 ```
 
-## Basic Usage
+# Examples
+
+## Transcribe Existing Audio File
+- Note: A `.wav` file at the same sample rate as your selected DeepSpeech models is processed the fastest
 ```py
 from spych import spych
 
-model=spych(model_file='model/deepspeech-0.9.3-models.pbmm', scorer_file='model/deepspeech-0.9.3-models.scorer')
+spych_obj=spych(model_file='deepspeech-0.9.3-models.pbmm', scorer_file='deepspeech-0.9.3-models.scorer')
 
-print(model.compute(audio_file='test.wav'))
+# Convert the audio file to text
+print('Transcription:')
+print(spych_obj.stt(audio_file='test.wav'))
 ```
 
-## Recording on Ubuntu
-```sh
-arecord test.wav -r 16000
+## Record and Transcribe
+```py
+from spych import spych
+
+spych_obj=spych(model_file='deepspeech-0.9.3-models.pbmm', scorer_file='deepspeech-0.9.3-models.scorer')
+
+# Record using your default microphone for 3 seconds
+print('Recording...')
+my_audio_buffer=spych_obj.record(duration=3)
+print('Recording Finished')
+
+# Convert the audio buffer to text
+print('You said:')
+print(spych_obj.stt(my_audio_buffer))
+```
+
+## Process a Function After Hearing a Wake Word (computer)
+```py
+from spych import spych, spych_wake
+
+model_file='deepspeech-0.9.3-models.pbmm'
+scorer_file='deepspeech-0.9.3-models.scorer'
+
+spych_object=spych(model_file=model_file, scorer_file=scorer_file)
+
+def my_function():
+    print("Listening...")
+    audio_buffer=spych_object.record(duration=3)
+    print("You said:",spych_object.stt(audio_buffer=audio_buffer))
+
+listener=spych_wake(model_file=model_file, scorer_file=scorer_file, on_wake_fn=my_function, wake_word="computer")
+
+listener.start()
 ```

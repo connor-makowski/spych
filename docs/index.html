@@ -28,9 +28,11 @@
 </summary>
 <pre><code class="python">import sys
 if sys.version_info[0] == 3:
-    from spych.core import *
+    from spych.core import spych
+    from spych.wake import spych_wake
 elif sys.version_info[0] &lt; 3:
-    from core import *</code></pre>
+    from core import spych
+    from wake import spych_wake</code></pre>
 </details>
 </section>
 <section>
@@ -41,6 +43,10 @@ elif sys.version_info[0] &lt; 3:
 <div class="desc"></div>
 </dd>
 <dt><code class="name"><a title="spych.utils" href="utils.html">spych.utils</a></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt><code class="name"><a title="spych.wake" href="wake.html">spych.wake</a></code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
@@ -63,6 +69,7 @@ elif sys.version_info[0] &lt; 3:
 <ul>
 <li><code><a title="spych.core" href="core.html">spych.core</a></code></li>
 <li><code><a title="spych.utils" href="utils.html">spych.utils</a></code></li>
+<li><code><a title="spych.wake" href="wake.html">spych.wake</a></code></li>
 </ul>
 </li>
 </ul>

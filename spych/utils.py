@@ -1,4 +1,4 @@
-import sys, json, csv
+import sys, json, csv, traceback
 
 class error:
     def warn(self, message, depth=0):
@@ -24,7 +24,7 @@ class error:
 
         Notes:
 
-        - If `self.show_warning_stack=True`, also prints the stack trace up to 10 layers deep
+        - If `self.show_warning_stack=False`, does not print the stack trace
         - If `self.show_warnings=False`, supresses all warnings
 
         """
@@ -34,12 +34,13 @@ class error:
                 'method_name':sys._getframe(depth).f_back.f_code.co_name
             }
             pre_message="(Warning for `{class_name}.{method_name}`): ".format(**kwargs)
+            # post_message="\nYou can show the warning stack trace by setting: `{class_name}.show_warning_stack=True`\nYou can silence this message by setting:`{class_name}.show_warnings=False`".format(**kwargs)
             # Attempt to format in kwargs where possible
             try:
                 message=pre_message+message.format(**kwargs)
             except:
                 message=pre_message+message
-            if self.__dict__.get('show_warning_stack',False):
+            if self.__dict__.get('show_warning_stack',True):
                 traceback.print_stack(limit=10)
             print(message)
 

@@ -14,13 +14,12 @@ class wake_listener:
         if self.spych_wake_obj.locked:
             self.locked=False
             return
-        audio=self.spych_object.stream_record(duration=self.spych_wake_obj.listen_time)
+        audio_buffer=self.spych_object.record(duration=self.spych_wake_obj.listen_time)
         if self.spych_wake_obj.locked:
             self.locked=False
             return
-        transcriptions=self.spych_object.stream_stt_expanded(audio=audio, num_candidates=self.spych_wake_obj.candidates_per_listener)
-        word_data=[i['words'] for i in transcriptions]
-        words=[i for sub_list in word_data for i in sub_list]
+        transcriptions=self.spych_object.stt_list(audio_buffer=audio_buffer, num_candidates=self.spych_wake_obj.candidates_per_listener)
+        words=" ".join(transcriptions).split(" ")
         if self.spych_wake_obj.wake_word in words:
             if self.spych_wake_obj.locked:
                 self.locked=False

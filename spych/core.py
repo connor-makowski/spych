@@ -7,11 +7,6 @@ from deepspeech import Model, version
 import numpy as np
 import shlex, subprocess, sys, wave, json
 
-try:
-    from shhlex import quote
-except ImportError:
-    from pipes import quote
-
 class spych(error):
     def __init__(self, model_file, scorer_file=None):
         """
@@ -55,7 +50,7 @@ class spych(error):
             raise OSError(e.errno, f'Execution of {cmd} returned OS Error: {e.strerror}')
         return output
 
-    def format_audio(self, audio_file):
+    def parse_audio_sox(self, audio_file):
         """
         Attempt auto formatting your audio file using SoX to match that of the DeepSpeech Model
 
@@ -64,11 +59,17 @@ class spych(error):
             - `audio_file`:
                 - Type: str
                 - What: The location of your target audio file to transcribe
+
+        Returns:
+
+            - `audio_buffer`:
+                - Type: np.array
+                - What: A 16-bit, mono raw audio signal at the appropriate sample rate serialized as a numpy array
+                - Note: Exactly matches the DeepSpeech Model
         """
-        converted_audio_file=audio_file+'.spych_converted.wav'
-        sox_cmd = f'sox {quote(audio_file)} --rate {self.desired_sample_rate} --no-dither {quote(converted_audio_file)}'
-        self.execute_cmd(sox_cmd)
-        return converted_audio_file
+        sox_cmd = f'sox {shlex.quote(audio_file)} --type raw --bits 16 --channels 1 --rate {self.desired_sample_rate} --encoding signed-integer --endian little --compression 0.0 --no-dither - '
+        output = self.execute_cmd(sox_cmd)
+        return np.frombuffer(output.stdout, np.int16)
 
     def parse_audio(self, audio_file):
         """
@@ -79,39 +80,69 @@ class spych(error):
             - `audio_file`:
                 - Type: str
                 - What: The location of your target audio file to transcribe
+                - Note: `.wav` files with the model specified sample rate are handled without external packages. Everything else gets converted using SoX (if possible)
+
+        Returns:
+
+            - `audio_buffer`:
+                - Type: np.array
+                - What: A 16-bit, mono raw audio signal at the appropriate sample rate serialized as a numpy array
+                - Note: Exactly matches the DeepSpeech Model
         """
         if ".wav" not in audio_file:
             self.warn(f"Selected audio file is not in `.wav` format. Attempting SoX conversion.")
-            audio_file = self.format_audio(audio_file)
+            return self.parse_audio_sox(audio_file=audio_file)
         with wave.open(audio_file, 'rb') as audio_raw:
             audio_sample_rate = audio_raw.getframerate()
             if audio_sample_rate != self.desired_sample_rate:
                 self.warn(f"Selected audio sample rate ({audio_sample_rate}) is different from the desired rate ({self.desired_sample_rate}). Attempting SoX conversion.")
-                audio = self.parse_audio(self.format_audio(audio_file))
+                return self.parse_audio_sox(audio_file=audio_file)
             else:
-                audio = np.frombuffer(audio_raw.readframes(audio_raw.getnframes()), np.int16)
-        return audio
+                return np.frombuffer(audio_raw.readframes(audio_raw.getnframes()), np.int16)
 
-    def record(self, output_audio_file, duration=5):
+    def record(self, output_audio_file=None, duration=3):
         """
         Record an audio file for a set duration using SoX
 
-        Required:
+        Optional:
 
             - `output_audio_file`:
                 - Type: str
                 - What: The location to output the collected recording
-
-        Optional:
+                - Default: None
+                - Note: Must be a `.wav` file
+                - Note: If specified, the audio file location is returned
+                - Note: If not specified or None, an audio buffer is returned
 
             - `duration`:
                 - Type: int
                 - What: The duration of time to record in seconds
-                - Default: 5
+                - Default: 3
+
+        Returns:
+
+            - `audio_file`:
+                - Type: str
+                - What: The provided `output_audio_file` given at the invokation of this function
+                - Note: Returned only if `output_audio_file` is specified
+
+            - OR
+
+            - `audio_buffer`:
+                - Type: np.array
+                - What: A 16-bit, mono raw audio signal at the appropriate sample rate serialized as a numpy array
+                - Note: Exactly matches the DeepSpeech Model
+                - Note: Returned only if `output_audio_file` is not specified
+
         """
-        sox_cmd = f'sox -d --channels 1 --rate {self.desired_sample_rate} --no-dither {quote(output_audio_file)} trim 0 {duration}'
-        self.execute_cmd(sox_cmd)
-        return output_audio_file
+        if output_audio_file:
+            sox_cmd = f'sox -d --channels 1 --rate {self.desired_sample_rate} --no-dither {shlex.quote(output_audio_file)} trim 0 {duration}'
+            output=self.execute_cmd(sox_cmd)
+            return output_audio_file
+        else:
+            sox_cmd = f'sox -d --type raw --bits 16 --channels 1 --rate {self.desired_sample_rate} --encoding signed-integer --endian little --compression 0.0 --no-dither - trim 0 {duration}'
+            output = self.execute_cmd(sox_cmd)
+            return np.frombuffer(output.stdout, np.int16)
 
     def play(self, audio_file):
         """
@@ -123,7 +154,7 @@ class spych(error):
                 - Type: str
                 - What: The location of your target audio file to transcribe
         """
-        sox_cmd = f'sox {quote(audio_file)} -d'
+        sox_cmd = f'sox {shlex.quote(audio_file)} -d'
         self.execute_cmd(sox_cmd)
 
     def get_word_timings(self, transcript):
@@ -135,6 +166,12 @@ class spych(error):
             - `transcript`:
                 - Type: CandidateTranscript (from deepspeech)
                 - What: The candidate transcript to parse
+
+        Returns:
+
+            - `timings`:
+                - Type: dict
+                - What: A dictionary of the `start_time`, `end_time` and `duration` for each word in this transcript where those values are provided in seconds
         """
         if len(transcript.tokens)==0:
             return []
@@ -160,7 +197,7 @@ class spych(error):
                 pass
         return output
 
-    def get_transcript_dict(self, transcript, return_text=True, return_confidence=True, return_words=True, return_word_timings=True, return_meta=False):
+    def get_transcript_dict(self, transcript, return_text=True, return_confidence=False, return_words=False, return_word_timings=False, return_meta=False):
         """
         Helper function to parse a clean dictionary from a transcription metadata object
 
@@ -179,19 +216,25 @@ class spych(error):
             - `return_confidence`:
                 - Type: bool
                 - What: Flag to indicate if the confidence level for this text should be returned
-                - Default: True
+                - Default: False
             - `return_words`:
                 - Type: bool
                 - What: Flag to indicate if a words list (from the predicted text) should be returned
-                - Default: True
+                - Default: False
             - `return_word_timings`:
                 - Type: bool
                 - What: Flag to indicate if the predicted timings (start, end and duration) for each word should be returned
-                - Default: True
+                - Default: False
             - `return_meta`:
                 - Type: bool
                 - What: Flag to indicate if the transcript metadata object from DeepSpeech should be returned
                 - Default: False
+
+        Returns:
+
+            - `transcript_dictionary`:
+                - Type: dict
+                - What: Dictionary of serialized transcription items specified by optional inputs
         """
         string=''.join(i.text for i in transcript.tokens)
         output={}
@@ -207,25 +250,48 @@ class spych(error):
             output['meta']=transcript
         return output
 
-    def stt(self, audio_file):
+    def stt(self, audio_buffer=None, audio_file=None, ):
         """
         Compute speech-to-text transcription for a provided audio file
 
         Required:
 
+            - `audio_buffer`:
+                - Type: np.array
+                - What: A 16-bit, mono raw audio signal at the appropriate sample rate serialized as a numpy array
+                - Note: Exactly matches the DeepSpeech Model
+
+            - OR
+
             - `audio_file`:
                 - Type: str
                 - What: The location of your target audio file to transcribe
-        """
-        audio = self.parse_audio(audio_file)
-        return self.model.stt(audio)
 
-    def stt_expanded(self, audio_file, num_candidates=1, **kwargs):
+        Returns:
+
+            - `text`:
+                - Type: str
+                - What: The transcribed text
+        """
+        if audio_file:
+            audio_buffer = self.parse_audio(audio_file)
+        if audio_buffer is None:
+            self.exception("You must specify a valid audio_file or audio_buffer")
+        return self.model.stt(audio_buffer)
+
+    def stt_expanded(self, audio_file=None, audio_buffer=None, num_candidates=1, **kwargs):
         """
         Compute speech-to-text with extra data for N predicted candidates given an audio file
 
         Required:
 
+            - `audio_buffer`:
+                - Type: np.array
+                - What: A 16-bit, mono raw audio signal at the appropriate sample rate serialized as a numpy array
+                - Note: Exactly matches the DeepSpeech Model
+
+            - OR
+
             - `audio_file`:
                 - Type: str
                 - What: The location of your target audio file to transcribe
@@ -244,60 +310,49 @@ class spych(error):
             - `return_confidence`:
                 - Type: bool
                 - What: Flag to indicate if the confidence level for this text should be returned
-                - Default: True
+                - Default: False
             - `return_words`:
                 - Type: bool
                 - What: Flag to indicate if a words list (from the predicted text) should be returned
-                - Default: True
+                - Default: False
             - `return_word_timings`:
                 - Type: bool
                 - What: Flag to indicate if the predicted timings (start, end and duration) for each word should be returned
-                - Default: True
+                - Default: False
             - `return_meta`:
                 - Type: bool
                 - What: Flag to indicate if the transcript metadata object from DeepSpeech should be returned
                 - Default: False
+
+        Returns:
+
+            - `transcriptions`:
+                - Type: list of dictionaries
+                - What: A list of dictionaries with various transcription output data
         """
-        audio = self.parse_audio(audio_file)
-        output_meta=self.model.sttWithMetadata(audio, num_candidates)
+        if audio_file:
+            audio_buffer = self.parse_audio(audio_file)
+        if audio_buffer is None:
+            self.exception("You must specify a valid audio_file or audio_buffer")
+        output_meta=self.model.sttWithMetadata(audio_buffer, num_candidates)
         return [self.get_transcript_dict(transcript, **kwargs) for transcript in output_meta.transcripts]
 
-    def stream_record(self, duration=5):
+    def stt_list(self, audio_file=None, audio_buffer=None, num_candidates=3):
         """
-        Internal helper function to record a data stream for a set duration using SoX
-
-        Optional:
-
-            - `duration`:
-                - Type: int
-                - What: The duration of time to record in seconds
-                - Default: 5
-        """
-        sox_cmd = f'sox -d --type raw --bits 16 --channels 1 --rate {self.desired_sample_rate} --encoding signed-integer --endian little --compression 0.0 --no-dither - trim 0 {duration}'
-        output=self.execute_cmd(sox_cmd)
-        return np.frombuffer(output.stdout, np.int16)
-
-    def stream_stt(self, audio):
-        """
-        Compute speech-to-text transcription for a provided audio stream
+        Compute speech-to-text with extra data for N predicted candidates given an audio file
 
         Required:
 
-            - `audio`:
-                - Type: Audio stream data
-                - What: Formatted audio data to match DeepSpeech Model
-        """
-        return self.model.stt(audio)
+            - `audio_buffer`:
+                - Type: np.array
+                - What: A 16-bit, mono raw audio signal at the appropriate sample rate serialized as a numpy array
+                - Note: Exactly matches the DeepSpeech Model
 
-    def stream_stt_expanded(self, audio, num_candidates=1, **kwargs):
-        """
-        Internal helper function for more efficient conversion processes (no need to save data)
+            - OR
 
-        Required:
-
-            - `audio`:
-                - Type: Audio stream data
-                - What: Formatted audio data to match DeepSpeech Model
+            - `audio_file`:
+                - Type: str
+                - What: The location of your target audio file to transcribe
 
         Optional:
 
@@ -306,26 +361,12 @@ class spych(error):
                 - What: The number of potential transcript candidates to return
                 - Default: 1
                 - Note: The most confident/likely result appears first
-            - `return_text`:
-                - Type: bool
-                - What: Flag to indicate if the predicted text should be returned
-                - Default: True
-            - `return_confidence`:
-                - Type: bool
-                - What: Flag to indicate if the confidence level for this text should be returned
-                - Default: True
-            - `return_words`:
-                - Type: bool
-                - What: Flag to indicate if a words list (from the predicted text) should be returned
-                - Default: True
-            - `return_word_timings`:
-                - Type: bool
-                - What: Flag to indicate if the predicted timings (start, end and duration) for each word should be returned
-                - Default: True
-            - `return_meta`:
-                - Type: bool
-                - What: Flag to indicate if the transcript metadata object from DeepSpeech should be returned
-                - Default: False
+
+        Returns:
+
+            - `transcriptions`:
+                - Type: list of strs
+                - What: A list of potential transcriptions in decending order of confidence
         """
-        output_meta=self.model.sttWithMetadata(audio, num_candidates)
-        return [self.get_transcript_dict(transcript, **kwargs) for transcript in output_meta.transcripts]
+        expanded_list=self.stt_expanded(audio_file=audio_file, audio_buffer=audio_buffer, num_candidates=num_candidates, return_text=True)
+        return [i['text'] for i in expanded_list]
