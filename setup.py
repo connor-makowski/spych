@@ -4,7 +4,7 @@ setup(
   packages = ['spych'],
   version = '0.0.2',
   license='MIT',
-  description = 'Python function based wrapper for deepspeech package',
+  description = 'Python wrapper for the deepspeech library',
   author = 'Connor Makowski',
   author_email = 'connor.m.makowski@gmail.com',
   url = 'https://github.com/connor-makowski/spych',

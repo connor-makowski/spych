@@ -1,11 +1,14 @@
 Spych
 ==========
+Pronounced: Speech
+
 Python wrapper for easily accessing the [DeepSpeech](https://github.com/mozilla/DeepSpeech/) python package via python (without the DeepSpeech CLI)
 
 
 Documentation for Spych Functions
 --------
 https://connor-makowski.github.io/spych/core.html
+
 https://connor-makowski.github.io/spych/wake.html
 
 Key Features
@@ -22,9 +25,15 @@ Make sure you have Python 3.6.x (or higher) installed on your system. You can do
 ### Installation
 
 1. Install SoX
-```
-
-```
+- On Debian/Ubuntu
+  ```
+  sudo apt install sox
+  ```
+- On Mac (via homebrew)
+  ```
+  brew install sox
+  ```
+- On windows (Recommend WSL)
 
 2. Install Spych
 ```
@@ -67,7 +76,7 @@ print('You said:')
 print(spych_obj.stt(my_audio_buffer))
 ```
 
-## Process a Function After Hearing a Wake Word (computer)
+## Process a Function After Hearing a Wake Word (Example Wake Word: `computer`)
 ```py
 from spych import spych, spych_wake
 
