@@ -129,14 +129,14 @@ sudo apt install sox git python3-pip python3-scipy python3-numpy python3-pyaudio
 
 2. Install python requirements
 ```
-pip3 install deepspeech
-pip3 install spych --no-deps
+pip3 install spych
 ```
 
-3. Get the DeepSpeech model and score files (note Pi must user .tflite model file)
+3. Get the DeepSpeech model and score files (note Pi must use .tflite model file)
 ```sh
 curl -LO https://github.com/mozilla/DeepSpeech/releases/download/v0.9.3/deepspeech-0.9.3-models.tflite
 curl -LO https://github.com/mozilla/DeepSpeech/releases/download/v0.9.3/deepspeech-0.9.3-models.scorer
 ```
 
 4. Use the examples above substituting the original model file name for the `.tflite` one
+  - Depending on the memory available on you Pi, you may need to omit the scorer file.
