@@ -106,6 +106,7 @@ class spych_wake:
         thunks=[]
         for i in range(self.listeners):
             spych_object=spych(model_file=self.model_file, scorer_file=self.scorer_file)
+            spych_object.model.addHotWord(self.wake_word, 10.0)
             thunks.append(wake_listener(spych_wake_obj=self, spych_object=spych_object))
         while True:
             for thunk in thunks:

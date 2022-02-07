@@ -41,7 +41,7 @@ pip install spych
 ```
 
 3. Get DeepSpeech Model and Score files:
-```
+```sh
 curl -LO https://github.com/mozilla/DeepSpeech/releases/download/v0.9.3/deepspeech-0.9.3-models.pbmm
 curl -LO https://github.com/mozilla/DeepSpeech/releases/download/v0.9.3/deepspeech-0.9.3-models.scorer
 ```
@@ -93,4 +93,18 @@ def my_function():
 listener=spych_wake(model_file=model_file, scorer_file=scorer_file, on_wake_fn=my_function, wake_word="computer")
 
 listener.start()
+```
+
+### Modifying the DeepSpeech Model
+
+Initialized `spych` objects contain a fully functional `DeepSpeech.Model` object inside of them. You can modify this for each `spych` object any time after initialization.
+
+`DeepSpeech.Model` options are documented [here](https://deepspeech.readthedocs.io/en/latest/Python-API.html#)
+
+Example:
+```py
+spych_obj=spych(model_file='deepspeech-0.9.3-models.pbmm')
+
+spych_obj.model.enableExternalScorer('deepspeech-0.9.3-models.scorer')
+spych_obj.model.addHotWord('activate',10.0)
 ```
