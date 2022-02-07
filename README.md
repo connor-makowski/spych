@@ -7,9 +7,9 @@ Python wrapper for easily accessing the [DeepSpeech](https://github.com/mozilla/
 
 Documentation for Spych Functions
 --------
-https://connor-makowski.github.io/spych/core.html
+Spych - https://connor-makowski.github.io/spych/core.html
 
-https://connor-makowski.github.io/spych/wake.html
+Spych Wake - https://connor-makowski.github.io/spych/wake.html
 
 Key Features
 --------
@@ -49,7 +49,9 @@ curl -LO https://github.com/mozilla/DeepSpeech/releases/download/v0.9.3/deepspee
 # Examples
 
 ## Transcribe Existing Audio File
-- Note: A `.wav` file at the same sample rate as your selected DeepSpeech models is processed the fastest
+
+- [Spych Docs](https://connor-makowski.github.io/spych/core.html)
+
 ```py
 from spych import spych
 
@@ -59,8 +61,12 @@ spych_obj=spych(model_file='deepspeech-0.9.3-models.pbmm', scorer_file='deepspee
 print('Transcription:')
 print(spych_obj.stt(audio_file='test.wav'))
 ```
+- Note: A `.wav` file at the same sample rate as your selected DeepSpeech models is processed the fastest
 
 ## Record and Transcribe
+
+- [Spych Docs](https://connor-makowski.github.io/spych/core.html)
+
 ```py
 from spych import spych
 
@@ -77,6 +83,10 @@ print(spych_obj.stt(my_audio_buffer))
 ```
 
 ## Process a Function After Hearing a Wake Word (Example Wake Word: `computer`)
+
+- [Spych Wake Docs](https://connor-makowski.github.io/spych/wake.html)
+- [Spych Docs](https://connor-makowski.github.io/spych/core.html)
+
 ```py
 from spych import spych, spych_wake
 
@@ -87,7 +97,7 @@ spych_object=spych(model_file=model_file, scorer_file=scorer_file)
 
 def my_function():
     print("Listening...")
-    audio_buffer=spych_object.record(duration=3)
+    audio_buffer=spych_object.record(duration=3)M
     print("You said:",spych_object.stt(audio_buffer=audio_buffer))
 
 listener=spych_wake(model_file=model_file, scorer_file=scorer_file, on_wake_fn=my_function, wake_word="computer")
@@ -95,11 +105,11 @@ listener=spych_wake(model_file=model_file, scorer_file=scorer_file, on_wake_fn=m
 listener.start()
 ```
 
-### Modifying the DeepSpeech Model
+## Modifying the DeepSpeech Model
 
-Initialized `spych` objects contain a fully functional `DeepSpeech.Model` object inside of them. You can modify this for each `spych` object any time after initialization.
-
-`DeepSpeech.Model` options are documented [here](https://deepspeech.readthedocs.io/en/latest/Python-API.html#)
+- Initialized `spych` objects contain a fully functional `DeepSpeech.Model` object inside of them
+- You can modify this for each `spych` object any time after initialization
+- `DeepSpeech.Model` options are documented [here](https://deepspeech.readthedocs.io/en/latest/Python-API.html#)
 
 Example:
 ```py
