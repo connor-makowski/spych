@@ -108,10 +108,10 @@ class spych_wake:
         Start the spych_wake runtime to listen for the wake word
         """
         thunks=[]
-        spych_object=spych(model_file=self.model_file, scorer_file=self.scorer_file)
-        if self.scorer_file:
-            spych_object.model.addHotWord(self.wake_word, 10.0)
         for i in range(self.listeners):
+            spych_object=spych(model_file=self.model_file, scorer_file=self.scorer_file)
+            if self.scorer_file:
+                spych_object.model.addHotWord(self.wake_word, 10.0)
             thunks.append(wake_listener(spych_wake_obj=self, spych_object=spych_object))
         while True:
             for thunk in thunks:
