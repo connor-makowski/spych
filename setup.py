@@ -2,13 +2,13 @@ from distutils.core import setup
 setup(
   name = 'spych',
   packages = ['spych'],
-  version = '0.0.3',
+  version = '0.0.4',
   license='MIT',
   description = 'Python wrapper for the deepspeech library',
   author = 'Connor Makowski',
   author_email = 'connor.m.makowski@gmail.com',
   url = 'https://github.com/connor-makowski/spych',
-  download_url = 'https://github.com/connor-makowski/spych/dist/spych-0.0.3.tar.gz',
+  download_url = 'https://github.com/connor-makowski/spych/dist/spych-0.0.4.tar.gz',
   keywords = ['function', 'voice', 'machine','learning'],
   install_requires=[
     'deepspeech==0.9.3'
