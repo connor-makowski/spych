@@ -5,7 +5,7 @@ class wake_listener:
     """
     An internal class to be used as a thunkified listener function for threading purposes
     """
-    def __init__(self, spych_wake_obj, spych_object):
+    def __init__(self, spych_wake_obj):
         """
         Internal function to initialize a wake_listener class
 
@@ -14,13 +14,10 @@ class wake_listener:
             - `spych_wake_obj`:
                 - Type: `spych_wake` class
                 - What: An invoked spych_wake class to use for listening
-            - `spych_obj`:
-                - Type: `spych` class
-                - What: An invoked spych class to use for generating transcripts
 
         """
         self.spych_wake_obj=spych_wake_obj
-        self.spych_object=spych_object
+        self.spych_object=spych_wake_obj.spych_object
         self.locked=False
 
     def __call__(self):
@@ -57,15 +54,12 @@ class spych_wake:
     """
     A spcial class to triger a wake function after hearing a wake word
     """
-    def __init__(self, model_file, on_wake_fn, wake_word, scorer_file=None, listeners=3, listen_time=2, candidates_per_listener=3):
+    def __init__(self, on_wake_fn, wake_word, spych_object=None, model_file=None, scorer_file=None, listeners=3, listen_time=2, candidates_per_listener=3):
         """
         Initialize a spych_wake class
 
         Required:
 
-            - `model_file`:
-                - Type: str
-                - What: The location of your deepspeech model
             - `on_wake_fn`:
                 - Type: callable class or function
                 - What: A no input callable class or function that is executed when the wake word is said
@@ -73,12 +67,25 @@ class spych_wake:
                 - Type: str
                 - What: The word that triggers the on_wake_fn function
 
+
+            - `model_file`:
+                - Type: str
+                - What: The location of your deepspeech model file
+                - Note: If provided, this class will automatically initialize a new spych_object given this `model_file`
+                - Note: If `model_file` and `scorer_file` are both provided, then the `wake_word` is added as a hot word
+            - OR
+            - `spych_object`:
+                - Type: spych object
+                - What: An initialized spych object to use
+                - Note: This is only used if a `model_file` is not specified
+
         Optional:
 
             - `scorer_file`:
                 - Type: str
                 - What: The location of your deepspeech scorer
                 - Default: None
+                - Note: Only used if `model_file` is specified
             - `listeners`:
                 - Type: int
                 - What: The amount of concurrent threads to listen for the wake word with
@@ -93,13 +100,23 @@ class spych_wake:
                 - What: The number of candidate transcripts to check for the wake word
 
         """
-        self.model_file=model_file
-        self.scorer_file=scorer_file
+
         self.on_wake_fn=on_wake_fn
         self.wake_word=wake_word
         self.listeners=listeners
         self.listen_time=listen_time
         self.candidates_per_listener=candidates_per_listener
+
+        if model_file is None:
+            if spych_object is None:
+                self.exception("A spych_object or model_file must be supplied")
+            self.spych_object=spych_object
+        else:
+            self.spych_object=spych(model_file=model_file, scorer_file=scorer_file)
+            if scorer_file:
+                self.spych_object.model.addHotWord(self.wake_word, 10.0)
+
+        self.thunks=[wake_listener(spych_wake_obj=self) for i in range(self.listeners)]
 
         self.locked=False
 
@@ -107,14 +124,8 @@ class spych_wake:
         """
         Start the spych_wake runtime to listen for the wake word
         """
-        thunks=[]
-        for i in range(self.listeners):
-            spych_object=spych(model_file=self.model_file, scorer_file=self.scorer_file)
-            if self.scorer_file:
-                spych_object.model.addHotWord(self.wake_word, 10.0)
-            thunks.append(wake_listener(spych_wake_obj=self, spych_object=spych_object))
         while True:
-            for thunk in thunks:
+            for thunk in self.thunks:
                 thread=threading.Thread(target=thunk)
                 thread.start()
                 time.sleep((self.listen_time+1)/self.listeners)

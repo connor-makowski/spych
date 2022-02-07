@@ -100,7 +100,10 @@ def my_function():
     audio_buffer=spych_object.record(duration=3)M
     print("You said:",spych_object.stt(audio_buffer=audio_buffer))
 
-listener=spych_wake(model_file=model_file, scorer_file=scorer_file, on_wake_fn=my_function, wake_word="computer")
+listener=spych_wake(spych_object=spych_object, on_wake_fn=my_function, wake_word="computer")
+
+# Alternatively you can specify a model and scorer file to initialized a wake object in the spych_wake class
+# listener=spych_wake(model_file=model_file, scorer_file=scorer_file, on_wake_fn=my_function, wake_word="computer")
 
 listener.start()
 ```
