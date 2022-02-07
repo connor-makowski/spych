@@ -38,8 +38,12 @@ class wake_listener:
         if self.spych_wake_obj.locked:
             self.locked=False
             return
-        transcriptions=self.spych_object.stt_list(audio_buffer=audio_buffer, num_candidates=self.spych_wake_obj.candidates_per_listener)
-        words=" ".join(transcriptions).split(" ")
+        if self.spych_wake_obj.candidates_per_listener>1:
+            transcriptions=self.spych_object.stt_list(audio_buffer=audio_buffer, num_candidates=self.spych_wake_obj.candidates_per_listener)
+            words=" ".join(transcriptions).split(" ")
+        else:
+            transcription=self.spych_object.stt(audio_buffer=audio_buffer)
+            words=transcription.split(" ")
         if self.spych_wake_obj.wake_word in words:
             if self.spych_wake_obj.locked:
                 self.locked=False
