@@ -26,7 +26,9 @@
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">import sys, json, csv, traceback
+<pre><code class="python">import sys
+import traceback
+
 
 class error:
     def warn(self, message, depth=0):
@@ -56,19 +58,19 @@ class error:
         - If `self.show_warnings=False`, supresses all warnings
 
         &#34;&#34;&#34;
-        if self.__dict__.get(&#39;show_warnings&#39;,True):
-            kwargs={
-                &#39;class_name&#39;:self.__class__.__name__,
-                &#39;method_name&#39;:sys._getframe(depth).f_back.f_code.co_name
+        if self.__dict__.get(&#34;show_warnings&#34;, True):
+            kwargs = {
+                &#34;class_name&#34;: self.__class__.__name__,
+                &#34;method_name&#34;: sys._getframe(depth).f_back.f_code.co_name,
             }
-            pre_message=&#34;(Warning for `{class_name}.{method_name}`): &#34;.format(**kwargs)
+            pre_message = &#34;(Warning for `{class_name}.{method_name}`): &#34;.format(**kwargs)
             # post_message=&#34;\nYou can show the warning stack trace by setting: `{class_name}.show_warning_stack=True`\nYou can silence this message by setting:`{class_name}.show_warnings=False`&#34;.format(**kwargs)
             # Attempt to format in kwargs where possible
             try:
-                message=pre_message+message.format(**kwargs)
+                message = pre_message + message.format(**kwargs)
             except:
-                message=pre_message+message
-            if self.__dict__.get(&#39;show_warning_stack&#39;,True):
+                message = pre_message + message
+            if self.__dict__.get(&#34;show_warning_stack&#34;, True):
                 traceback.print_stack(limit=10)
             print(message)
 
@@ -100,16 +102,16 @@ class error:
 
         &#34;&#34;&#34;
         if self.verbose or force:
-            kwargs={
-                &#39;class_name&#39;:self.__class__.__name__,
-                &#39;method_name&#39;:sys._getframe(depth).f_back.f_code.co_name
+            kwargs = {
+                &#34;class_name&#34;: self.__class__.__name__,
+                &#34;method_name&#34;: sys._getframe(depth).f_back.f_code.co_name,
             }
-            pre_message=&#34;(`{class_name}.{method_name}`): &#34;.format(**kwargs)
+            pre_message = &#34;(`{class_name}.{method_name}`): &#34;.format(**kwargs)
             # Attempt to format in kwargs where possible
             try:
-                message=pre_message+message.format(**kwargs)
+                message = pre_message + message.format(**kwargs)
             except:
-                message=pre_message+message
+                message = pre_message + message
             print(message)
 
     def exception(self, message, depth=0):
@@ -134,16 +136,16 @@ class error:
             - Default: 0
 
         &#34;&#34;&#34;
-        kwargs={
-            &#39;class_name&#39;:self.__class__.__name__,
-            &#39;method_name&#39;:sys._getframe(depth).f_back.f_code.co_name
+        kwargs = {
+            &#34;class_name&#34;: self.__class__.__name__,
+            &#34;method_name&#34;: sys._getframe(depth).f_back.f_code.co_name,
         }
-        pre_message=&#34;(Exception for `{class_name}.{method_name}`): &#34;.format(**kwargs)
+        pre_message = &#34;(Exception for `{class_name}.{method_name}`): &#34;.format(**kwargs)
         # Attempt to format in kwargs where possible
         try:
-            message=pre_message+message.format(**kwargs)
+            message = pre_message + message.format(**kwargs)
         except:
-            message=pre_message+message
+            message = pre_message + message
         raise Exception(message)</code></pre>
 </details>
 </section>
@@ -193,19 +195,19 @@ class error:
         - If `self.show_warnings=False`, supresses all warnings
 
         &#34;&#34;&#34;
-        if self.__dict__.get(&#39;show_warnings&#39;,True):
-            kwargs={
-                &#39;class_name&#39;:self.__class__.__name__,
-                &#39;method_name&#39;:sys._getframe(depth).f_back.f_code.co_name
+        if self.__dict__.get(&#34;show_warnings&#34;, True):
+            kwargs = {
+                &#34;class_name&#34;: self.__class__.__name__,
+                &#34;method_name&#34;: sys._getframe(depth).f_back.f_code.co_name,
             }
-            pre_message=&#34;(Warning for `{class_name}.{method_name}`): &#34;.format(**kwargs)
+            pre_message = &#34;(Warning for `{class_name}.{method_name}`): &#34;.format(**kwargs)
             # post_message=&#34;\nYou can show the warning stack trace by setting: `{class_name}.show_warning_stack=True`\nYou can silence this message by setting:`{class_name}.show_warnings=False`&#34;.format(**kwargs)
             # Attempt to format in kwargs where possible
             try:
-                message=pre_message+message.format(**kwargs)
+                message = pre_message + message.format(**kwargs)
             except:
-                message=pre_message+message
-            if self.__dict__.get(&#39;show_warning_stack&#39;,True):
+                message = pre_message + message
+            if self.__dict__.get(&#34;show_warning_stack&#34;, True):
                 traceback.print_stack(limit=10)
             print(message)
 
@@ -237,16 +239,16 @@ class error:
 
         &#34;&#34;&#34;
         if self.verbose or force:
-            kwargs={
-                &#39;class_name&#39;:self.__class__.__name__,
-                &#39;method_name&#39;:sys._getframe(depth).f_back.f_code.co_name
+            kwargs = {
+                &#34;class_name&#34;: self.__class__.__name__,
+                &#34;method_name&#34;: sys._getframe(depth).f_back.f_code.co_name,
             }
-            pre_message=&#34;(`{class_name}.{method_name}`): &#34;.format(**kwargs)
+            pre_message = &#34;(`{class_name}.{method_name}`): &#34;.format(**kwargs)
             # Attempt to format in kwargs where possible
             try:
-                message=pre_message+message.format(**kwargs)
+                message = pre_message + message.format(**kwargs)
             except:
-                message=pre_message+message
+                message = pre_message + message
             print(message)
 
     def exception(self, message, depth=0):
@@ -271,16 +273,16 @@ class error:
             - Default: 0
 
         &#34;&#34;&#34;
-        kwargs={
-            &#39;class_name&#39;:self.__class__.__name__,
-            &#39;method_name&#39;:sys._getframe(depth).f_back.f_code.co_name
+        kwargs = {
+            &#34;class_name&#34;: self.__class__.__name__,
+            &#34;method_name&#34;: sys._getframe(depth).f_back.f_code.co_name,
         }
-        pre_message=&#34;(Exception for `{class_name}.{method_name}`): &#34;.format(**kwargs)
+        pre_message = &#34;(Exception for `{class_name}.{method_name}`): &#34;.format(**kwargs)
         # Attempt to format in kwargs where possible
         try:
-            message=pre_message+message.format(**kwargs)
+            message = pre_message + message.format(**kwargs)
         except:
-            message=pre_message+message
+            message = pre_message + message
         raise Exception(message)</code></pre>
 </details>
 <h3>Subclasses</h3>
@@ -342,16 +344,16 @@ class error:
         - Default: 0
 
     &#34;&#34;&#34;
-    kwargs={
-        &#39;class_name&#39;:self.__class__.__name__,
-        &#39;method_name&#39;:sys._getframe(depth).f_back.f_code.co_name
+    kwargs = {
+        &#34;class_name&#34;: self.__class__.__name__,
+        &#34;method_name&#34;: sys._getframe(depth).f_back.f_code.co_name,
     }
-    pre_message=&#34;(Exception for `{class_name}.{method_name}`): &#34;.format(**kwargs)
+    pre_message = &#34;(Exception for `{class_name}.{method_name}`): &#34;.format(**kwargs)
     # Attempt to format in kwargs where possible
     try:
-        message=pre_message+message.format(**kwargs)
+        message = pre_message + message.format(**kwargs)
     except:
-        message=pre_message+message
+        message = pre_message + message
     raise Exception(message)</code></pre>
 </details>
 </dd>
@@ -421,16 +423,16 @@ class error:
 
     &#34;&#34;&#34;
     if self.verbose or force:
-        kwargs={
-            &#39;class_name&#39;:self.__class__.__name__,
-            &#39;method_name&#39;:sys._getframe(depth).f_back.f_code.co_name
+        kwargs = {
+            &#34;class_name&#34;: self.__class__.__name__,
+            &#34;method_name&#34;: sys._getframe(depth).f_back.f_code.co_name,
         }
-        pre_message=&#34;(`{class_name}.{method_name}`): &#34;.format(**kwargs)
+        pre_message = &#34;(`{class_name}.{method_name}`): &#34;.format(**kwargs)
         # Attempt to format in kwargs where possible
         try:
-            message=pre_message+message.format(**kwargs)
+            message = pre_message + message.format(**kwargs)
         except:
-            message=pre_message+message
+            message = pre_message + message
         print(message)</code></pre>
 </details>
 </dd>
@@ -497,19 +499,19 @@ class error:
     - If `self.show_warnings=False`, supresses all warnings
 
     &#34;&#34;&#34;
-    if self.__dict__.get(&#39;show_warnings&#39;,True):
-        kwargs={
-            &#39;class_name&#39;:self.__class__.__name__,
-            &#39;method_name&#39;:sys._getframe(depth).f_back.f_code.co_name
+    if self.__dict__.get(&#34;show_warnings&#34;, True):
+        kwargs = {
+            &#34;class_name&#34;: self.__class__.__name__,
+            &#34;method_name&#34;: sys._getframe(depth).f_back.f_code.co_name,
         }
-        pre_message=&#34;(Warning for `{class_name}.{method_name}`): &#34;.format(**kwargs)
+        pre_message = &#34;(Warning for `{class_name}.{method_name}`): &#34;.format(**kwargs)
         # post_message=&#34;\nYou can show the warning stack trace by setting: `{class_name}.show_warning_stack=True`\nYou can silence this message by setting:`{class_name}.show_warnings=False`&#34;.format(**kwargs)
         # Attempt to format in kwargs where possible
         try:
-            message=pre_message+message.format(**kwargs)
+            message = pre_message + message.format(**kwargs)
         except:
-            message=pre_message+message
-        if self.__dict__.get(&#39;show_warning_stack&#39;,True):
+            message = pre_message + message
+        if self.__dict__.get(&#34;show_warning_stack&#34;, True):
             traceback.print_stack(limit=10)
         print(message)</code></pre>
 </details>

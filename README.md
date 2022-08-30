@@ -20,7 +20,7 @@ Key Features
 Setup
 ----------
 
-Make sure you have Python 3.6.x (or higher) installed on your system. You can download it [here](https://www.python.org/downloads/).
+Make sure you have Python 3.6.x (or higher) and 3.8.x (or lower) installed on your system. You can download it [here](https://www.python.org/downloads/).
 
 ### Installation
 

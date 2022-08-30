@@ -2,10 +2,13 @@
 # https://github.com/mozilla/DeepSpeech/blob/master/native_client/python/client.py
 
 from spych.utils import error
-from deepspeech import Model, version
+from deepspeech import Model
 
 import numpy as np
-import shlex, subprocess, sys, wave, json
+import shlex
+import subprocess
+import wave
+
 
 class spych(error):
     def __init__(self, model_file, scorer_file=None):
@@ -25,12 +28,12 @@ class spych(error):
                 - What: The location of your deepspeech scorer
                 - Default: None
         """
-        self.model_file=model_file
-        self.scorer_file=scorer_file
+        self.model_file = model_file
+        self.scorer_file = scorer_file
         self.model = Model(self.model_file)
         if self.scorer_file:
             self.model.enableExternalScorer(self.scorer_file)
-        self.desired_sample_rate=self.model.sampleRate()
+        self.desired_sample_rate = self.model.sampleRate()
 
     def execute_cmd(self, cmd, capture_output=True, check=True):
         """
@@ -45,9 +48,9 @@ class spych(error):
         try:
             output = subprocess.run(shlex.split(cmd), check=check, capture_output=capture_output)
         except subprocess.CalledProcessError as e:
-            raise RuntimeError(f'Execution of {cmd} returned non-zero status: {e.stderr}')
+            raise RuntimeError(f"Execution of {cmd} returned non-zero status: {e.stderr}")
         except OSError as e:
-            raise OSError(e.errno, f'Execution of {cmd} returned OS Error: {e.strerror}')
+            raise OSError(e.errno, f"Execution of {cmd} returned OS Error: {e.strerror}")
         return output
 
     def parse_audio_sox(self, audio_file):
@@ -67,7 +70,7 @@ class spych(error):
                 - What: A 16-bit, mono raw audio signal at the appropriate sample rate serialized as a numpy array
                 - Note: Exactly matches the DeepSpeech Model
         """
-        sox_cmd = f'sox {shlex.quote(audio_file)} --type raw --bits 16 --channels 1 --rate {self.desired_sample_rate} --encoding signed-integer --endian little --compression 0.0 --no-dither - '
+        sox_cmd = f"sox {shlex.quote(audio_file)} --type raw --bits 16 --channels 1 --rate {self.desired_sample_rate} --encoding signed-integer --endian little --compression 0.0 --no-dither - "
         output = self.execute_cmd(sox_cmd)
         return np.frombuffer(output.stdout, np.int16)
 
@@ -92,10 +95,12 @@ class spych(error):
         if ".wav" not in audio_file:
             self.warn(f"Selected audio file is not in `.wav` format. Attempting SoX conversion.")
             return self.parse_audio_sox(audio_file=audio_file)
-        with wave.open(audio_file, 'rb') as audio_raw:
+        with wave.open(audio_file, "rb") as audio_raw:
             audio_sample_rate = audio_raw.getframerate()
             if audio_sample_rate != self.desired_sample_rate:
-                self.warn(f"Selected audio sample rate ({audio_sample_rate}) is different from the desired rate ({self.desired_sample_rate}). Attempting SoX conversion.")
+                self.warn(
+                    f"Selected audio sample rate ({audio_sample_rate}) is different from the desired rate ({self.desired_sample_rate}). Attempting SoX conversion."
+                )
                 return self.parse_audio_sox(audio_file=audio_file)
             else:
                 return np.frombuffer(audio_raw.readframes(audio_raw.getnframes()), np.int16)
@@ -136,11 +141,11 @@ class spych(error):
 
         """
         if output_audio_file:
-            sox_cmd = f'sox -d --channels 1 --rate {self.desired_sample_rate} --no-dither {shlex.quote(output_audio_file)} trim 0 {duration}'
-            output=self.execute_cmd(sox_cmd)
+            sox_cmd = f"sox -d --channels 1 --rate {self.desired_sample_rate} --no-dither {shlex.quote(output_audio_file)} trim 0 {duration}"
+            output = self.execute_cmd(sox_cmd)
             return output_audio_file
         else:
-            sox_cmd = f'sox -d --type raw --bits 16 --channels 1 --rate {self.desired_sample_rate} --encoding signed-integer --endian little --compression 0.0 --no-dither - trim 0 {duration}'
+            sox_cmd = f"sox -d --type raw --bits 16 --channels 1 --rate {self.desired_sample_rate} --encoding signed-integer --endian little --compression 0.0 --no-dither - trim 0 {duration}"
             output = self.execute_cmd(sox_cmd)
             return np.frombuffer(output.stdout, np.int16)
 
@@ -154,7 +159,7 @@ class spych(error):
                 - Type: str
                 - What: The location of your target audio file to transcribe
         """
-        sox_cmd = f'sox {shlex.quote(audio_file)} -d'
+        sox_cmd = f"sox {shlex.quote(audio_file)} -d"
         self.execute_cmd(sox_cmd)
 
     def get_word_timings(self, transcript):
@@ -173,31 +178,35 @@ class spych(error):
                 - Type: dict
                 - What: A dictionary of the `start_time`, `end_time` and `duration` for each word in this transcript where those values are provided in seconds
         """
-        if len(transcript.tokens)==0:
+        if len(transcript.tokens) == 0:
             return []
-        word_data=[]
-        word_tokens=[]
+        word_data = []
+        word_tokens = []
         for token in transcript.tokens:
             word_tokens.append(token)
-            if token.text==" ":
+            if token.text == " ":
                 word_data.append(word_tokens)
-                word_tokens=[]
+                word_tokens = []
         word_data.append(word_tokens)
-        output=[]
+        output = []
         for word_tokens in word_data:
             try:
-                start=round(word_tokens[0].start_time,3)
-                end=round(word_tokens[-1].start_time,3)
-                output.append({
-                    'start':start,
-                    'end':end,
-                    'duration':round(end-start,3)
-                })
+                start = round(word_tokens[0].start_time, 3)
+                end = round(word_tokens[-1].start_time, 3)
+                output.append({"start": start, "end": end, "duration": round(end - start, 3)})
             except:
                 pass
         return output
 
-    def get_transcript_dict(self, transcript, return_text=True, return_confidence=False, return_words=False, return_word_timings=False, return_meta=False):
+    def get_transcript_dict(
+        self,
+        transcript,
+        return_text=True,
+        return_confidence=False,
+        return_words=False,
+        return_word_timings=False,
+        return_meta=False,
+    ):
         """
         Helper function to parse a clean dictionary from a transcription metadata object
 
@@ -236,21 +245,25 @@ class spych(error):
                 - Type: dict
                 - What: Dictionary of serialized transcription items specified by optional inputs
         """
-        string=''.join(i.text for i in transcript.tokens)
-        output={}
+        string = "".join(i.text for i in transcript.tokens)
+        output = {}
         if return_text:
-            output['text']=string
+            output["text"] = string
         if return_confidence:
-            output['confidence']=transcript.confidence
+            output["confidence"] = transcript.confidence
         if return_words:
-            output['words']=string.split(" ")
+            output["words"] = string.split(" ")
         if return_word_timings:
-            output['words_timings']=self.get_word_timings(transcript)
+            output["words_timings"] = self.get_word_timings(transcript)
         if return_meta:
-            output['meta']=transcript
+            output["meta"] = transcript
         return output
 
-    def stt(self, audio_buffer=None, audio_file=None, ):
+    def stt(
+        self,
+        audio_buffer=None,
+        audio_file=None,
+    ):
         """
         Compute speech-to-text transcription for a provided audio file
 
@@ -334,8 +347,10 @@ class spych(error):
             audio_buffer = self.parse_audio(audio_file)
         if audio_buffer is None:
             self.exception("You must specify a valid audio_file or audio_buffer")
-        output_meta=self.model.sttWithMetadata(audio_buffer, num_candidates)
-        return [self.get_transcript_dict(transcript, **kwargs) for transcript in output_meta.transcripts]
+        output_meta = self.model.sttWithMetadata(audio_buffer, num_candidates)
+        return [
+            self.get_transcript_dict(transcript, **kwargs) for transcript in output_meta.transcripts
+        ]
 
     def stt_list(self, audio_file=None, audio_buffer=None, num_candidates=3):
         """
@@ -368,5 +383,10 @@ class spych(error):
                 - Type: list of strs
                 - What: A list of potential transcriptions in decending order of confidence
         """
-        expanded_list=self.stt_expanded(audio_file=audio_file, audio_buffer=audio_buffer, num_candidates=num_candidates, return_text=True)
-        return [i['text'] for i in expanded_list]
+        expanded_list = self.stt_expanded(
+            audio_file=audio_file,
+            audio_buffer=audio_buffer,
+            num_candidates=num_candidates,
+            return_text=True,
+        )
+        return [i["text"] for i in expanded_list]
