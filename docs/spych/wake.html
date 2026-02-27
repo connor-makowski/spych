@@ -217,7 +217,7 @@
 </span><span id="L-89"><a href="#L-89"><span class="linenos"> 89</span></a>        <span class="n">segments</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">spych_wake_object</span><span class="o">.</span><span class="n">wake_model</span><span class="o">.</span><span class="n">transcribe</span><span class="p">(</span>
 </span><span id="L-90"><a href="#L-90"><span class="linenos"> 90</span></a>            <span class="n">audio_buffer</span><span class="p">,</span>
 </span><span id="L-91"><a href="#L-91"><span class="linenos"> 91</span></a>            <span class="n">beam_size</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
-</span><span id="L-92"><a href="#L-92"><span class="linenos"> 92</span></a>            <span class="n">initial_prompt</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;You are listening for wake words: </span><span class="si">{</span><span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">wake_words</span><span class="p">)</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
+</span><span id="L-92"><a href="#L-92"><span class="linenos"> 92</span></a>            <span class="n">initial_prompt</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;You are listening for wake words: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">wake_words</span><span class="p">)</span><span class="si">}</span><span class="s2">. Do not transcribe anything else. You should be quite sure you hear these words before you return them.&quot;</span><span class="p">,</span>
 </span><span id="L-93"><a href="#L-93"><span class="linenos"> 93</span></a>        <span class="p">)</span>
 </span><span id="L-94"><a href="#L-94"><span class="linenos"> 94</span></a>        <span class="k">for</span> <span class="n">segment</span> <span class="ow">in</span> <span class="n">segments</span><span class="p">:</span>
 </span><span id="L-95"><a href="#L-95"><span class="linenos"> 95</span></a>            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">should_stop</span><span class="p">():</span>
@@ -321,115 +321,124 @@
 </span><span id="L-193"><a href="#L-193"><span class="linenos">193</span></a><span class="sd">        &quot;&quot;&quot;</span>
 </span><span id="L-194"><a href="#L-194"><span class="linenos">194</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">wake_word_map</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="o">.</span><span class="n">lower</span><span class="p">():</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">wake_word_map</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
 </span><span id="L-195"><a href="#L-195"><span class="linenos">195</span></a>        <span class="c1"># Handle Terminating Words</span>
-</span><span id="L-196"><a href="#L-196"><span class="linenos">196</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">terminate_words</span> <span class="o">=</span> <span class="p">[</span><span class="n">w</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">terminate_words</span><span class="p">]</span> <span class="k">if</span> <span class="n">terminate_words</span> <span class="k">else</span> <span class="p">[]</span>
-</span><span id="L-197"><a href="#L-197"><span class="linenos">197</span></a>        <span class="k">for</span> <span class="n">word</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">terminate_words</span><span class="p">:</span>
-</span><span id="L-198"><a href="#L-198"><span class="linenos">198</span></a>            <span class="k">if</span> <span class="n">word</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">wake_word_map</span><span class="p">:</span>
-</span><span id="L-199"><a href="#L-199"><span class="linenos">199</span></a>                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Terminate word &#39;</span><span class="si">{</span><span class="n">word</span><span class="si">}</span><span class="s2">&#39; cannot also be a wake word.&quot;</span><span class="p">)</span>
-</span><span id="L-200"><a href="#L-200"><span class="linenos">200</span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">wake_word_map</span><span class="p">[</span><span class="n">word</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">stop</span>
-</span><span id="L-201"><a href="#L-201"><span class="linenos">201</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">wake_listener_count</span> <span class="o">=</span> <span class="n">wake_listener_count</span>
-</span><span id="L-202"><a href="#L-202"><span class="linenos">202</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">wake_listener_time</span> <span class="o">=</span> <span class="n">wake_listener_time</span>
-</span><span id="L-203"><a href="#L-203"><span class="linenos">203</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">wake_listener_max_processing_time</span> <span class="o">=</span> <span class="n">wake_listener_max_processing_time</span>
-</span><span id="L-204"><a href="#L-204"><span class="linenos">204</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">device_index</span> <span class="o">=</span> <span class="n">device_index</span>
-</span><span id="L-205"><a href="#L-205"><span class="linenos">205</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">locked</span> <span class="o">=</span> <span class="kc">False</span>
-</span><span id="L-206"><a href="#L-206"><span class="linenos">206</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">kill</span> <span class="o">=</span> <span class="kc">False</span>
-</span><span id="L-207"><a href="#L-207"><span class="linenos">207</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">wake_model</span> <span class="o">=</span> <span class="n">WhisperModel</span><span class="p">(</span>
-</span><span id="L-208"><a href="#L-208"><span class="linenos">208</span></a>            <span class="n">whisper_model</span><span class="p">,</span>
-</span><span id="L-209"><a href="#L-209"><span class="linenos">209</span></a>            <span class="n">device</span><span class="o">=</span><span class="n">whisper_device</span><span class="p">,</span>
-</span><span id="L-210"><a href="#L-210"><span class="linenos">210</span></a>            <span class="n">compute_type</span><span class="o">=</span><span class="n">whisper_compute_type</span><span class="p">,</span>
-</span><span id="L-211"><a href="#L-211"><span class="linenos">211</span></a>        <span class="p">)</span>
-</span><span id="L-212"><a href="#L-212"><span class="linenos">212</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">wake_listeners</span> <span class="o">=</span> <span class="p">[</span>
-</span><span id="L-213"><a href="#L-213"><span class="linenos">213</span></a>            <span class="n">SpychWakeListener</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wake_listener_count</span><span class="p">)</span>
-</span><span id="L-214"><a href="#L-214"><span class="linenos">214</span></a>        <span class="p">]</span>
-</span><span id="L-215"><a href="#L-215"><span class="linenos">215</span></a>
-</span><span id="L-216"><a href="#L-216"><span class="linenos">216</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">start</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-</span><span id="L-217"><a href="#L-217"><span class="linenos">217</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="L-218"><a href="#L-218"><span class="linenos">218</span></a><span class="sd">        Usage:</span>
-</span><span id="L-219"><a href="#L-219"><span class="linenos">219</span></a>
-</span><span id="L-220"><a href="#L-220"><span class="linenos">220</span></a><span class="sd">        - Starts the wake word detection loop using overlapping listener threads</span>
-</span><span id="L-221"><a href="#L-221"><span class="linenos">221</span></a><span class="sd">        - Blocks until a KeyboardInterrupt is received or `stop()` is called</span>
-</span><span id="L-222"><a href="#L-222"><span class="linenos">222</span></a>
-</span><span id="L-223"><a href="#L-223"><span class="linenos">223</span></a><span class="sd">        Notes:</span>
-</span><span id="L-224"><a href="#L-224"><span class="linenos">224</span></a>
-</span><span id="L-225"><a href="#L-225"><span class="linenos">225</span></a><span class="sd">        - Callbacks are defined in `wake_word_map` at init time rather than passed to `start`</span>
-</span><span id="L-226"><a href="#L-226"><span class="linenos">226</span></a><span class="sd">        - Listener threads are staggered by `(wake_listener_time + wake_listener_max_processing_time)</span>
-</span><span id="L-227"><a href="#L-227"><span class="linenos">227</span></a><span class="sd">          / wake_listener_count` seconds to ensure continuous audio coverage</span>
-</span><span id="L-228"><a href="#L-228"><span class="linenos">228</span></a><span class="sd">        - New threads are only launched when the system is not locked (i.e. not currently</span>
-</span><span id="L-229"><a href="#L-229"><span class="linenos">229</span></a><span class="sd">          processing a wake event)</span>
-</span><span id="L-230"><a href="#L-230"><span class="linenos">230</span></a><span class="sd">        &quot;&quot;&quot;</span>
-</span><span id="L-231"><a href="#L-231"><span class="linenos">231</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">notify</span><span class="p">(</span>
-</span><span id="L-232"><a href="#L-232"><span class="linenos">232</span></a>            <span class="sa">f</span><span class="s2">&quot;Listening for wake words: </span><span class="si">{</span><span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wake_word_map</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span><span class="si">}</span><span class="s2">...&quot;</span><span class="p">,</span>
-</span><span id="L-233"><a href="#L-233"><span class="linenos">233</span></a>            <span class="n">notification_type</span><span class="o">=</span><span class="s2">&quot;verbose&quot;</span><span class="p">,</span>
-</span><span id="L-234"><a href="#L-234"><span class="linenos">234</span></a>        <span class="p">)</span>
-</span><span id="L-235"><a href="#L-235"><span class="linenos">235</span></a>        <span class="k">try</span><span class="p">:</span>
-</span><span id="L-236"><a href="#L-236"><span class="linenos">236</span></a>            <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
-</span><span id="L-237"><a href="#L-237"><span class="linenos">237</span></a>                <span class="k">for</span> <span class="n">listener</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">wake_listeners</span><span class="p">:</span>
-</span><span id="L-238"><a href="#L-238"><span class="linenos">238</span></a>                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">kill</span><span class="p">:</span>
-</span><span id="L-239"><a href="#L-239"><span class="linenos">239</span></a>                        <span class="bp">self</span><span class="o">.</span><span class="n">kill</span> <span class="o">=</span> <span class="kc">False</span>
-</span><span id="L-240"><a href="#L-240"><span class="linenos">240</span></a>                        <span class="k">return</span>
-</span><span id="L-241"><a href="#L-241"><span class="linenos">241</span></a>                    <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">locked</span><span class="p">:</span>
-</span><span id="L-242"><a href="#L-242"><span class="linenos">242</span></a>                        <span class="n">threading</span><span class="o">.</span><span class="n">Thread</span><span class="p">(</span><span class="n">target</span><span class="o">=</span><span class="n">listener</span><span class="p">)</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
-</span><span id="L-243"><a href="#L-243"><span class="linenos">243</span></a>                    <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span>
-</span><span id="L-244"><a href="#L-244"><span class="linenos">244</span></a>                        <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wake_listener_time</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">wake_listener_max_processing_time</span><span class="p">)</span>
-</span><span id="L-245"><a href="#L-245"><span class="linenos">245</span></a>                        <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">wake_listener_count</span>
-</span><span id="L-246"><a href="#L-246"><span class="linenos">246</span></a>                    <span class="p">)</span>
-</span><span id="L-247"><a href="#L-247"><span class="linenos">247</span></a>        <span class="k">except</span> <span class="ne">KeyboardInterrupt</span><span class="p">:</span>
-</span><span id="L-248"><a href="#L-248"><span class="linenos">248</span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">notify</span><span class="p">(</span><span class="s2">&quot;Stopping.&quot;</span><span class="p">,</span> <span class="n">notification_type</span><span class="o">=</span><span class="s2">&quot;verbose&quot;</span><span class="p">)</span>
-</span><span id="L-249"><a href="#L-249"><span class="linenos">249</span></a>
-</span><span id="L-250"><a href="#L-250"><span class="linenos">250</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">stop_listeners</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-</span><span id="L-251"><a href="#L-251"><span class="linenos">251</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="L-252"><a href="#L-252"><span class="linenos">252</span></a><span class="sd">        Usage:</span>
-</span><span id="L-253"><a href="#L-253"><span class="linenos">253</span></a>
-</span><span id="L-254"><a href="#L-254"><span class="linenos">254</span></a><span class="sd">        - Signals all listener threads to stop at their next available checkpoint</span>
-</span><span id="L-255"><a href="#L-255"><span class="linenos">255</span></a><span class="sd">        - Note: Does not block; listeners will exit cleanly after their current operation</span>
-</span><span id="L-256"><a href="#L-256"><span class="linenos">256</span></a><span class="sd">        &quot;&quot;&quot;</span>
-</span><span id="L-257"><a href="#L-257"><span class="linenos">257</span></a>        <span class="k">for</span> <span class="n">listener</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">wake_listeners</span><span class="p">:</span>
-</span><span id="L-258"><a href="#L-258"><span class="linenos">258</span></a>            <span class="n">listener</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span>
-</span><span id="L-259"><a href="#L-259"><span class="linenos">259</span></a>
-</span><span id="L-260"><a href="#L-260"><span class="linenos">260</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">stop</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-</span><span id="L-261"><a href="#L-261"><span class="linenos">261</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="L-262"><a href="#L-262"><span class="linenos">262</span></a><span class="sd">        Usage:</span>
-</span><span id="L-263"><a href="#L-263"><span class="linenos">263</span></a>
-</span><span id="L-264"><a href="#L-264"><span class="linenos">264</span></a><span class="sd">        - Stops all listener threads and exits the `start` loop</span>
-</span><span id="L-265"><a href="#L-265"><span class="linenos">265</span></a><span class="sd">        - Note: Combines `stop_listeners` with setting the kill flag on the main loop</span>
-</span><span id="L-266"><a href="#L-266"><span class="linenos">266</span></a><span class="sd">        &quot;&quot;&quot;</span>
-</span><span id="L-267"><a href="#L-267"><span class="linenos">267</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">stop_listeners</span><span class="p">()</span>
-</span><span id="L-268"><a href="#L-268"><span class="linenos">268</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">kill</span> <span class="o">=</span> <span class="kc">True</span>
-</span><span id="L-269"><a href="#L-269"><span class="linenos">269</span></a>
-</span><span id="L-270"><a href="#L-270"><span class="linenos">270</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">wake</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">wake_word</span><span class="p">):</span>
-</span><span id="L-271"><a href="#L-271"><span class="linenos">271</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="L-272"><a href="#L-272"><span class="linenos">272</span></a><span class="sd">        Usage:</span>
-</span><span id="L-273"><a href="#L-273"><span class="linenos">273</span></a>
-</span><span id="L-274"><a href="#L-274"><span class="linenos">274</span></a><span class="sd">        - Called internally when a wake word is detected</span>
-</span><span id="L-275"><a href="#L-275"><span class="linenos">275</span></a><span class="sd">        - Stops all listeners, locks the system, executes the mapped callback for the</span>
-</span><span id="L-276"><a href="#L-276"><span class="linenos">276</span></a><span class="sd">          detected wake word, then unlocks</span>
-</span><span id="L-277"><a href="#L-277"><span class="linenos">277</span></a>
-</span><span id="L-278"><a href="#L-278"><span class="linenos">278</span></a><span class="sd">        Requires:</span>
-</span><span id="L-279"><a href="#L-279"><span class="linenos">279</span></a>
-</span><span id="L-280"><a href="#L-280"><span class="linenos">280</span></a><span class="sd">        - `wake_word`:</span>
-</span><span id="L-281"><a href="#L-281"><span class="linenos">281</span></a><span class="sd">            - Type: str</span>
-</span><span id="L-282"><a href="#L-282"><span class="linenos">282</span></a><span class="sd">            - What: The detected wake word, used to look up the correct callback in</span>
-</span><span id="L-283"><a href="#L-283"><span class="linenos">283</span></a><span class="sd">              `wake_word_map`</span>
-</span><span id="L-284"><a href="#L-284"><span class="linenos">284</span></a>
-</span><span id="L-285"><a href="#L-285"><span class="linenos">285</span></a><span class="sd">        Notes:</span>
+</span><span id="L-196"><a href="#L-196"><span class="linenos">196</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">terminate_words</span> <span class="o">=</span> <span class="p">(</span>
+</span><span id="L-197"><a href="#L-197"><span class="linenos">197</span></a>            <span class="p">[</span><span class="n">w</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">terminate_words</span><span class="p">]</span> <span class="k">if</span> <span class="n">terminate_words</span> <span class="k">else</span> <span class="p">[]</span>
+</span><span id="L-198"><a href="#L-198"><span class="linenos">198</span></a>        <span class="p">)</span>
+</span><span id="L-199"><a href="#L-199"><span class="linenos">199</span></a>        <span class="k">for</span> <span class="n">word</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">terminate_words</span><span class="p">:</span>
+</span><span id="L-200"><a href="#L-200"><span class="linenos">200</span></a>            <span class="k">if</span> <span class="n">word</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">wake_word_map</span><span class="p">:</span>
+</span><span id="L-201"><a href="#L-201"><span class="linenos">201</span></a>                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+</span><span id="L-202"><a href="#L-202"><span class="linenos">202</span></a>                    <span class="sa">f</span><span class="s2">&quot;Terminate word &#39;</span><span class="si">{</span><span class="n">word</span><span class="si">}</span><span class="s2">&#39; cannot also be a wake word.&quot;</span>
+</span><span id="L-203"><a href="#L-203"><span class="linenos">203</span></a>                <span class="p">)</span>
+</span><span id="L-204"><a href="#L-204"><span class="linenos">204</span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">wake_word_map</span><span class="p">[</span><span class="n">word</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">stop</span>
+</span><span id="L-205"><a href="#L-205"><span class="linenos">205</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">wake_listener_count</span> <span class="o">=</span> <span class="n">wake_listener_count</span>
+</span><span id="L-206"><a href="#L-206"><span class="linenos">206</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">wake_listener_time</span> <span class="o">=</span> <span class="n">wake_listener_time</span>
+</span><span id="L-207"><a href="#L-207"><span class="linenos">207</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">wake_listener_max_processing_time</span> <span class="o">=</span> <span class="p">(</span>
+</span><span id="L-208"><a href="#L-208"><span class="linenos">208</span></a>            <span class="n">wake_listener_max_processing_time</span>
+</span><span id="L-209"><a href="#L-209"><span class="linenos">209</span></a>        <span class="p">)</span>
+</span><span id="L-210"><a href="#L-210"><span class="linenos">210</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">device_index</span> <span class="o">=</span> <span class="n">device_index</span>
+</span><span id="L-211"><a href="#L-211"><span class="linenos">211</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">locked</span> <span class="o">=</span> <span class="kc">False</span>
+</span><span id="L-212"><a href="#L-212"><span class="linenos">212</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">kill</span> <span class="o">=</span> <span class="kc">False</span>
+</span><span id="L-213"><a href="#L-213"><span class="linenos">213</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">wake_model</span> <span class="o">=</span> <span class="n">WhisperModel</span><span class="p">(</span>
+</span><span id="L-214"><a href="#L-214"><span class="linenos">214</span></a>            <span class="n">whisper_model</span><span class="p">,</span>
+</span><span id="L-215"><a href="#L-215"><span class="linenos">215</span></a>            <span class="n">device</span><span class="o">=</span><span class="n">whisper_device</span><span class="p">,</span>
+</span><span id="L-216"><a href="#L-216"><span class="linenos">216</span></a>            <span class="n">compute_type</span><span class="o">=</span><span class="n">whisper_compute_type</span><span class="p">,</span>
+</span><span id="L-217"><a href="#L-217"><span class="linenos">217</span></a>        <span class="p">)</span>
+</span><span id="L-218"><a href="#L-218"><span class="linenos">218</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">wake_listeners</span> <span class="o">=</span> <span class="p">[</span>
+</span><span id="L-219"><a href="#L-219"><span class="linenos">219</span></a>            <span class="n">SpychWakeListener</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wake_listener_count</span><span class="p">)</span>
+</span><span id="L-220"><a href="#L-220"><span class="linenos">220</span></a>        <span class="p">]</span>
+</span><span id="L-221"><a href="#L-221"><span class="linenos">221</span></a>
+</span><span id="L-222"><a href="#L-222"><span class="linenos">222</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">start</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span><span id="L-223"><a href="#L-223"><span class="linenos">223</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-224"><a href="#L-224"><span class="linenos">224</span></a><span class="sd">        Usage:</span>
+</span><span id="L-225"><a href="#L-225"><span class="linenos">225</span></a>
+</span><span id="L-226"><a href="#L-226"><span class="linenos">226</span></a><span class="sd">        - Starts the wake word detection loop using overlapping listener threads</span>
+</span><span id="L-227"><a href="#L-227"><span class="linenos">227</span></a><span class="sd">        - Blocks until a KeyboardInterrupt is received or `stop()` is called</span>
+</span><span id="L-228"><a href="#L-228"><span class="linenos">228</span></a>
+</span><span id="L-229"><a href="#L-229"><span class="linenos">229</span></a><span class="sd">        Notes:</span>
+</span><span id="L-230"><a href="#L-230"><span class="linenos">230</span></a>
+</span><span id="L-231"><a href="#L-231"><span class="linenos">231</span></a><span class="sd">        - Callbacks are defined in `wake_word_map` at init time rather than passed to `start`</span>
+</span><span id="L-232"><a href="#L-232"><span class="linenos">232</span></a><span class="sd">        - Listener threads are staggered by `(wake_listener_time + wake_listener_max_processing_time)</span>
+</span><span id="L-233"><a href="#L-233"><span class="linenos">233</span></a><span class="sd">          / wake_listener_count` seconds to ensure continuous audio coverage</span>
+</span><span id="L-234"><a href="#L-234"><span class="linenos">234</span></a><span class="sd">        - New threads are only launched when the system is not locked (i.e. not currently</span>
+</span><span id="L-235"><a href="#L-235"><span class="linenos">235</span></a><span class="sd">          processing a wake event)</span>
+</span><span id="L-236"><a href="#L-236"><span class="linenos">236</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="L-237"><a href="#L-237"><span class="linenos">237</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">notify</span><span class="p">(</span>
+</span><span id="L-238"><a href="#L-238"><span class="linenos">238</span></a>            <span class="sa">f</span><span class="s2">&quot;Listening for wake words: </span><span class="si">{</span><span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wake_word_map</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span><span class="si">}</span><span class="s2">...&quot;</span><span class="p">,</span>
+</span><span id="L-239"><a href="#L-239"><span class="linenos">239</span></a>            <span class="n">notification_type</span><span class="o">=</span><span class="s2">&quot;verbose&quot;</span><span class="p">,</span>
+</span><span id="L-240"><a href="#L-240"><span class="linenos">240</span></a>        <span class="p">)</span>
+</span><span id="L-241"><a href="#L-241"><span class="linenos">241</span></a>        <span class="k">try</span><span class="p">:</span>
+</span><span id="L-242"><a href="#L-242"><span class="linenos">242</span></a>            <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+</span><span id="L-243"><a href="#L-243"><span class="linenos">243</span></a>                <span class="k">for</span> <span class="n">listener</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">wake_listeners</span><span class="p">:</span>
+</span><span id="L-244"><a href="#L-244"><span class="linenos">244</span></a>                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">kill</span><span class="p">:</span>
+</span><span id="L-245"><a href="#L-245"><span class="linenos">245</span></a>                        <span class="bp">self</span><span class="o">.</span><span class="n">kill</span> <span class="o">=</span> <span class="kc">False</span>
+</span><span id="L-246"><a href="#L-246"><span class="linenos">246</span></a>                        <span class="k">return</span>
+</span><span id="L-247"><a href="#L-247"><span class="linenos">247</span></a>                    <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">locked</span><span class="p">:</span>
+</span><span id="L-248"><a href="#L-248"><span class="linenos">248</span></a>                        <span class="n">threading</span><span class="o">.</span><span class="n">Thread</span><span class="p">(</span><span class="n">target</span><span class="o">=</span><span class="n">listener</span><span class="p">)</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+</span><span id="L-249"><a href="#L-249"><span class="linenos">249</span></a>                    <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span>
+</span><span id="L-250"><a href="#L-250"><span class="linenos">250</span></a>                        <span class="p">(</span>
+</span><span id="L-251"><a href="#L-251"><span class="linenos">251</span></a>                            <span class="bp">self</span><span class="o">.</span><span class="n">wake_listener_time</span>
+</span><span id="L-252"><a href="#L-252"><span class="linenos">252</span></a>                            <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">wake_listener_max_processing_time</span>
+</span><span id="L-253"><a href="#L-253"><span class="linenos">253</span></a>                        <span class="p">)</span>
+</span><span id="L-254"><a href="#L-254"><span class="linenos">254</span></a>                        <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">wake_listener_count</span>
+</span><span id="L-255"><a href="#L-255"><span class="linenos">255</span></a>                    <span class="p">)</span>
+</span><span id="L-256"><a href="#L-256"><span class="linenos">256</span></a>        <span class="k">except</span> <span class="ne">KeyboardInterrupt</span><span class="p">:</span>
+</span><span id="L-257"><a href="#L-257"><span class="linenos">257</span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">notify</span><span class="p">(</span><span class="s2">&quot;Stopping.&quot;</span><span class="p">,</span> <span class="n">notification_type</span><span class="o">=</span><span class="s2">&quot;verbose&quot;</span><span class="p">)</span>
+</span><span id="L-258"><a href="#L-258"><span class="linenos">258</span></a>
+</span><span id="L-259"><a href="#L-259"><span class="linenos">259</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">stop_listeners</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span><span id="L-260"><a href="#L-260"><span class="linenos">260</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-261"><a href="#L-261"><span class="linenos">261</span></a><span class="sd">        Usage:</span>
+</span><span id="L-262"><a href="#L-262"><span class="linenos">262</span></a>
+</span><span id="L-263"><a href="#L-263"><span class="linenos">263</span></a><span class="sd">        - Signals all listener threads to stop at their next available checkpoint</span>
+</span><span id="L-264"><a href="#L-264"><span class="linenos">264</span></a><span class="sd">        - Note: Does not block; listeners will exit cleanly after their current operation</span>
+</span><span id="L-265"><a href="#L-265"><span class="linenos">265</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="L-266"><a href="#L-266"><span class="linenos">266</span></a>        <span class="k">for</span> <span class="n">listener</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">wake_listeners</span><span class="p">:</span>
+</span><span id="L-267"><a href="#L-267"><span class="linenos">267</span></a>            <span class="n">listener</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span>
+</span><span id="L-268"><a href="#L-268"><span class="linenos">268</span></a>
+</span><span id="L-269"><a href="#L-269"><span class="linenos">269</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">stop</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span><span id="L-270"><a href="#L-270"><span class="linenos">270</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-271"><a href="#L-271"><span class="linenos">271</span></a><span class="sd">        Usage:</span>
+</span><span id="L-272"><a href="#L-272"><span class="linenos">272</span></a>
+</span><span id="L-273"><a href="#L-273"><span class="linenos">273</span></a><span class="sd">        - Stops all listener threads and exits the `start` loop</span>
+</span><span id="L-274"><a href="#L-274"><span class="linenos">274</span></a><span class="sd">        - Note: Combines `stop_listeners` with setting the kill flag on the main loop</span>
+</span><span id="L-275"><a href="#L-275"><span class="linenos">275</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="L-276"><a href="#L-276"><span class="linenos">276</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">stop_listeners</span><span class="p">()</span>
+</span><span id="L-277"><a href="#L-277"><span class="linenos">277</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">kill</span> <span class="o">=</span> <span class="kc">True</span>
+</span><span id="L-278"><a href="#L-278"><span class="linenos">278</span></a>
+</span><span id="L-279"><a href="#L-279"><span class="linenos">279</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">wake</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">wake_word</span><span class="p">):</span>
+</span><span id="L-280"><a href="#L-280"><span class="linenos">280</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-281"><a href="#L-281"><span class="linenos">281</span></a><span class="sd">        Usage:</span>
+</span><span id="L-282"><a href="#L-282"><span class="linenos">282</span></a>
+</span><span id="L-283"><a href="#L-283"><span class="linenos">283</span></a><span class="sd">        - Called internally when a wake word is detected</span>
+</span><span id="L-284"><a href="#L-284"><span class="linenos">284</span></a><span class="sd">        - Stops all listeners, locks the system, executes the mapped callback for the</span>
+</span><span id="L-285"><a href="#L-285"><span class="linenos">285</span></a><span class="sd">          detected wake word, then unlocks</span>
 </span><span id="L-286"><a href="#L-286"><span class="linenos">286</span></a>
-</span><span id="L-287"><a href="#L-287"><span class="linenos">287</span></a><span class="sd">        - If the system is already locked when `wake` is called, the call is a no-op</span>
-</span><span id="L-288"><a href="#L-288"><span class="linenos">288</span></a><span class="sd">          to prevent concurrent wake executions</span>
-</span><span id="L-289"><a href="#L-289"><span class="linenos">289</span></a><span class="sd">        - Any exception raised by the callback is caught and re-raised as a spych exception</span>
-</span><span id="L-290"><a href="#L-290"><span class="linenos">290</span></a><span class="sd">        - The system is always unlocked in the `finally` block, even if the callback raises</span>
-</span><span id="L-291"><a href="#L-291"><span class="linenos">291</span></a><span class="sd">        &quot;&quot;&quot;</span>
-</span><span id="L-292"><a href="#L-292"><span class="linenos">292</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">stop_listeners</span><span class="p">()</span>
-</span><span id="L-293"><a href="#L-293"><span class="linenos">293</span></a>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">locked</span><span class="p">:</span>
-</span><span id="L-294"><a href="#L-294"><span class="linenos">294</span></a>            <span class="k">return</span>
-</span><span id="L-295"><a href="#L-295"><span class="linenos">295</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">locked</span> <span class="o">=</span> <span class="kc">True</span>
-</span><span id="L-296"><a href="#L-296"><span class="linenos">296</span></a>        <span class="k">try</span><span class="p">:</span>
-</span><span id="L-297"><a href="#L-297"><span class="linenos">297</span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">wake_word_map</span><span class="p">[</span><span class="n">wake_word</span><span class="p">]()</span>
-</span><span id="L-298"><a href="#L-298"><span class="linenos">298</span></a>        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-</span><span id="L-299"><a href="#L-299"><span class="linenos">299</span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">notify</span><span class="p">(</span>
-</span><span id="L-300"><a href="#L-300"><span class="linenos">300</span></a>                <span class="sa">f</span><span class="s2">&quot;Error in on_wake_fn for &#39;</span><span class="si">{</span><span class="n">wake_word</span><span class="si">}</span><span class="s2">&#39;: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
-</span><span id="L-301"><a href="#L-301"><span class="linenos">301</span></a>                <span class="n">notification_type</span><span class="o">=</span><span class="s2">&quot;exception&quot;</span><span class="p">,</span>
-</span><span id="L-302"><a href="#L-302"><span class="linenos">302</span></a>            <span class="p">)</span>
-</span><span id="L-303"><a href="#L-303"><span class="linenos">303</span></a>        <span class="k">finally</span><span class="p">:</span>
-</span><span id="L-304"><a href="#L-304"><span class="linenos">304</span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">locked</span> <span class="o">=</span> <span class="kc">False</span>
+</span><span id="L-287"><a href="#L-287"><span class="linenos">287</span></a><span class="sd">        Requires:</span>
+</span><span id="L-288"><a href="#L-288"><span class="linenos">288</span></a>
+</span><span id="L-289"><a href="#L-289"><span class="linenos">289</span></a><span class="sd">        - `wake_word`:</span>
+</span><span id="L-290"><a href="#L-290"><span class="linenos">290</span></a><span class="sd">            - Type: str</span>
+</span><span id="L-291"><a href="#L-291"><span class="linenos">291</span></a><span class="sd">            - What: The detected wake word, used to look up the correct callback in</span>
+</span><span id="L-292"><a href="#L-292"><span class="linenos">292</span></a><span class="sd">              `wake_word_map`</span>
+</span><span id="L-293"><a href="#L-293"><span class="linenos">293</span></a>
+</span><span id="L-294"><a href="#L-294"><span class="linenos">294</span></a><span class="sd">        Notes:</span>
+</span><span id="L-295"><a href="#L-295"><span class="linenos">295</span></a>
+</span><span id="L-296"><a href="#L-296"><span class="linenos">296</span></a><span class="sd">        - If the system is already locked when `wake` is called, the call is a no-op</span>
+</span><span id="L-297"><a href="#L-297"><span class="linenos">297</span></a><span class="sd">          to prevent concurrent wake executions</span>
+</span><span id="L-298"><a href="#L-298"><span class="linenos">298</span></a><span class="sd">        - Any exception raised by the callback is caught and re-raised as a spych exception</span>
+</span><span id="L-299"><a href="#L-299"><span class="linenos">299</span></a><span class="sd">        - The system is always unlocked in the `finally` block, even if the callback raises</span>
+</span><span id="L-300"><a href="#L-300"><span class="linenos">300</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="L-301"><a href="#L-301"><span class="linenos">301</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">stop_listeners</span><span class="p">()</span>
+</span><span id="L-302"><a href="#L-302"><span class="linenos">302</span></a>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">locked</span><span class="p">:</span>
+</span><span id="L-303"><a href="#L-303"><span class="linenos">303</span></a>            <span class="k">return</span>
+</span><span id="L-304"><a href="#L-304"><span class="linenos">304</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">locked</span> <span class="o">=</span> <span class="kc">True</span>
+</span><span id="L-305"><a href="#L-305"><span class="linenos">305</span></a>        <span class="k">try</span><span class="p">:</span>
+</span><span id="L-306"><a href="#L-306"><span class="linenos">306</span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">wake_word_map</span><span class="p">[</span><span class="n">wake_word</span><span class="p">]()</span>
+</span><span id="L-307"><a href="#L-307"><span class="linenos">307</span></a>        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+</span><span id="L-308"><a href="#L-308"><span class="linenos">308</span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">notify</span><span class="p">(</span>
+</span><span id="L-309"><a href="#L-309"><span class="linenos">309</span></a>                <span class="sa">f</span><span class="s2">&quot;Error in on_wake_fn for &#39;</span><span class="si">{</span><span class="n">wake_word</span><span class="si">}</span><span class="s2">&#39;: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+</span><span id="L-310"><a href="#L-310"><span class="linenos">310</span></a>                <span class="n">notification_type</span><span class="o">=</span><span class="s2">&quot;exception&quot;</span><span class="p">,</span>
+</span><span id="L-311"><a href="#L-311"><span class="linenos">311</span></a>            <span class="p">)</span>
+</span><span id="L-312"><a href="#L-312"><span class="linenos">312</span></a>        <span class="k">finally</span><span class="p">:</span>
+</span><span id="L-313"><a href="#L-313"><span class="linenos">313</span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">locked</span> <span class="o">=</span> <span class="kc">False</span>
 </span></pre></div>
 
 
@@ -531,7 +540,7 @@
 </span><span id="SpychWakeListener-90"><a href="#SpychWakeListener-90"><span class="linenos"> 90</span></a>        <span class="n">segments</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">spych_wake_object</span><span class="o">.</span><span class="n">wake_model</span><span class="o">.</span><span class="n">transcribe</span><span class="p">(</span>
 </span><span id="SpychWakeListener-91"><a href="#SpychWakeListener-91"><span class="linenos"> 91</span></a>            <span class="n">audio_buffer</span><span class="p">,</span>
 </span><span id="SpychWakeListener-92"><a href="#SpychWakeListener-92"><span class="linenos"> 92</span></a>            <span class="n">beam_size</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
-</span><span id="SpychWakeListener-93"><a href="#SpychWakeListener-93"><span class="linenos"> 93</span></a>            <span class="n">initial_prompt</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;You are listening for wake words: </span><span class="si">{</span><span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">wake_words</span><span class="p">)</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
+</span><span id="SpychWakeListener-93"><a href="#SpychWakeListener-93"><span class="linenos"> 93</span></a>            <span class="n">initial_prompt</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;You are listening for wake words: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">wake_words</span><span class="p">)</span><span class="si">}</span><span class="s2">. Do not transcribe anything else. You should be quite sure you hear these words before you return them.&quot;</span><span class="p">,</span>
 </span><span id="SpychWakeListener-94"><a href="#SpychWakeListener-94"><span class="linenos"> 94</span></a>        <span class="p">)</span>
 </span><span id="SpychWakeListener-95"><a href="#SpychWakeListener-95"><span class="linenos"> 95</span></a>        <span class="k">for</span> <span class="n">segment</span> <span class="ow">in</span> <span class="n">segments</span><span class="p">:</span>
 </span><span id="SpychWakeListener-96"><a href="#SpychWakeListener-96"><span class="linenos"> 96</span></a>            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">should_stop</span><span class="p">():</span>
@@ -831,115 +840,124 @@ after its current operation completes</li>
 </span><span id="SpychWake-194"><a href="#SpychWake-194"><span class="linenos">194</span></a><span class="sd">        &quot;&quot;&quot;</span>
 </span><span id="SpychWake-195"><a href="#SpychWake-195"><span class="linenos">195</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">wake_word_map</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="o">.</span><span class="n">lower</span><span class="p">():</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">wake_word_map</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
 </span><span id="SpychWake-196"><a href="#SpychWake-196"><span class="linenos">196</span></a>        <span class="c1"># Handle Terminating Words</span>
-</span><span id="SpychWake-197"><a href="#SpychWake-197"><span class="linenos">197</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">terminate_words</span> <span class="o">=</span> <span class="p">[</span><span class="n">w</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">terminate_words</span><span class="p">]</span> <span class="k">if</span> <span class="n">terminate_words</span> <span class="k">else</span> <span class="p">[]</span>
-</span><span id="SpychWake-198"><a href="#SpychWake-198"><span class="linenos">198</span></a>        <span class="k">for</span> <span class="n">word</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">terminate_words</span><span class="p">:</span>
-</span><span id="SpychWake-199"><a href="#SpychWake-199"><span class="linenos">199</span></a>            <span class="k">if</span> <span class="n">word</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">wake_word_map</span><span class="p">:</span>
-</span><span id="SpychWake-200"><a href="#SpychWake-200"><span class="linenos">200</span></a>                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Terminate word &#39;</span><span class="si">{</span><span class="n">word</span><span class="si">}</span><span class="s2">&#39; cannot also be a wake word.&quot;</span><span class="p">)</span>
-</span><span id="SpychWake-201"><a href="#SpychWake-201"><span class="linenos">201</span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">wake_word_map</span><span class="p">[</span><span class="n">word</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">stop</span>
-</span><span id="SpychWake-202"><a href="#SpychWake-202"><span class="linenos">202</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">wake_listener_count</span> <span class="o">=</span> <span class="n">wake_listener_count</span>
-</span><span id="SpychWake-203"><a href="#SpychWake-203"><span class="linenos">203</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">wake_listener_time</span> <span class="o">=</span> <span class="n">wake_listener_time</span>
-</span><span id="SpychWake-204"><a href="#SpychWake-204"><span class="linenos">204</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">wake_listener_max_processing_time</span> <span class="o">=</span> <span class="n">wake_listener_max_processing_time</span>
-</span><span id="SpychWake-205"><a href="#SpychWake-205"><span class="linenos">205</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">device_index</span> <span class="o">=</span> <span class="n">device_index</span>
-</span><span id="SpychWake-206"><a href="#SpychWake-206"><span class="linenos">206</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">locked</span> <span class="o">=</span> <span class="kc">False</span>
-</span><span id="SpychWake-207"><a href="#SpychWake-207"><span class="linenos">207</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">kill</span> <span class="o">=</span> <span class="kc">False</span>
-</span><span id="SpychWake-208"><a href="#SpychWake-208"><span class="linenos">208</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">wake_model</span> <span class="o">=</span> <span class="n">WhisperModel</span><span class="p">(</span>
-</span><span id="SpychWake-209"><a href="#SpychWake-209"><span class="linenos">209</span></a>            <span class="n">whisper_model</span><span class="p">,</span>
-</span><span id="SpychWake-210"><a href="#SpychWake-210"><span class="linenos">210</span></a>            <span class="n">device</span><span class="o">=</span><span class="n">whisper_device</span><span class="p">,</span>
-</span><span id="SpychWake-211"><a href="#SpychWake-211"><span class="linenos">211</span></a>            <span class="n">compute_type</span><span class="o">=</span><span class="n">whisper_compute_type</span><span class="p">,</span>
-</span><span id="SpychWake-212"><a href="#SpychWake-212"><span class="linenos">212</span></a>        <span class="p">)</span>
-</span><span id="SpychWake-213"><a href="#SpychWake-213"><span class="linenos">213</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">wake_listeners</span> <span class="o">=</span> <span class="p">[</span>
-</span><span id="SpychWake-214"><a href="#SpychWake-214"><span class="linenos">214</span></a>            <span class="n">SpychWakeListener</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wake_listener_count</span><span class="p">)</span>
-</span><span id="SpychWake-215"><a href="#SpychWake-215"><span class="linenos">215</span></a>        <span class="p">]</span>
-</span><span id="SpychWake-216"><a href="#SpychWake-216"><span class="linenos">216</span></a>
-</span><span id="SpychWake-217"><a href="#SpychWake-217"><span class="linenos">217</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">start</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-</span><span id="SpychWake-218"><a href="#SpychWake-218"><span class="linenos">218</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="SpychWake-219"><a href="#SpychWake-219"><span class="linenos">219</span></a><span class="sd">        Usage:</span>
-</span><span id="SpychWake-220"><a href="#SpychWake-220"><span class="linenos">220</span></a>
-</span><span id="SpychWake-221"><a href="#SpychWake-221"><span class="linenos">221</span></a><span class="sd">        - Starts the wake word detection loop using overlapping listener threads</span>
-</span><span id="SpychWake-222"><a href="#SpychWake-222"><span class="linenos">222</span></a><span class="sd">        - Blocks until a KeyboardInterrupt is received or `stop()` is called</span>
-</span><span id="SpychWake-223"><a href="#SpychWake-223"><span class="linenos">223</span></a>
-</span><span id="SpychWake-224"><a href="#SpychWake-224"><span class="linenos">224</span></a><span class="sd">        Notes:</span>
-</span><span id="SpychWake-225"><a href="#SpychWake-225"><span class="linenos">225</span></a>
-</span><span id="SpychWake-226"><a href="#SpychWake-226"><span class="linenos">226</span></a><span class="sd">        - Callbacks are defined in `wake_word_map` at init time rather than passed to `start`</span>
-</span><span id="SpychWake-227"><a href="#SpychWake-227"><span class="linenos">227</span></a><span class="sd">        - Listener threads are staggered by `(wake_listener_time + wake_listener_max_processing_time)</span>
-</span><span id="SpychWake-228"><a href="#SpychWake-228"><span class="linenos">228</span></a><span class="sd">          / wake_listener_count` seconds to ensure continuous audio coverage</span>
-</span><span id="SpychWake-229"><a href="#SpychWake-229"><span class="linenos">229</span></a><span class="sd">        - New threads are only launched when the system is not locked (i.e. not currently</span>
-</span><span id="SpychWake-230"><a href="#SpychWake-230"><span class="linenos">230</span></a><span class="sd">          processing a wake event)</span>
-</span><span id="SpychWake-231"><a href="#SpychWake-231"><span class="linenos">231</span></a><span class="sd">        &quot;&quot;&quot;</span>
-</span><span id="SpychWake-232"><a href="#SpychWake-232"><span class="linenos">232</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">notify</span><span class="p">(</span>
-</span><span id="SpychWake-233"><a href="#SpychWake-233"><span class="linenos">233</span></a>            <span class="sa">f</span><span class="s2">&quot;Listening for wake words: </span><span class="si">{</span><span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wake_word_map</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span><span class="si">}</span><span class="s2">...&quot;</span><span class="p">,</span>
-</span><span id="SpychWake-234"><a href="#SpychWake-234"><span class="linenos">234</span></a>            <span class="n">notification_type</span><span class="o">=</span><span class="s2">&quot;verbose&quot;</span><span class="p">,</span>
-</span><span id="SpychWake-235"><a href="#SpychWake-235"><span class="linenos">235</span></a>        <span class="p">)</span>
-</span><span id="SpychWake-236"><a href="#SpychWake-236"><span class="linenos">236</span></a>        <span class="k">try</span><span class="p">:</span>
-</span><span id="SpychWake-237"><a href="#SpychWake-237"><span class="linenos">237</span></a>            <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
-</span><span id="SpychWake-238"><a href="#SpychWake-238"><span class="linenos">238</span></a>                <span class="k">for</span> <span class="n">listener</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">wake_listeners</span><span class="p">:</span>
-</span><span id="SpychWake-239"><a href="#SpychWake-239"><span class="linenos">239</span></a>                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">kill</span><span class="p">:</span>
-</span><span id="SpychWake-240"><a href="#SpychWake-240"><span class="linenos">240</span></a>                        <span class="bp">self</span><span class="o">.</span><span class="n">kill</span> <span class="o">=</span> <span class="kc">False</span>
-</span><span id="SpychWake-241"><a href="#SpychWake-241"><span class="linenos">241</span></a>                        <span class="k">return</span>
-</span><span id="SpychWake-242"><a href="#SpychWake-242"><span class="linenos">242</span></a>                    <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">locked</span><span class="p">:</span>
-</span><span id="SpychWake-243"><a href="#SpychWake-243"><span class="linenos">243</span></a>                        <span class="n">threading</span><span class="o">.</span><span class="n">Thread</span><span class="p">(</span><span class="n">target</span><span class="o">=</span><span class="n">listener</span><span class="p">)</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
-</span><span id="SpychWake-244"><a href="#SpychWake-244"><span class="linenos">244</span></a>                    <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span>
-</span><span id="SpychWake-245"><a href="#SpychWake-245"><span class="linenos">245</span></a>                        <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wake_listener_time</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">wake_listener_max_processing_time</span><span class="p">)</span>
-</span><span id="SpychWake-246"><a href="#SpychWake-246"><span class="linenos">246</span></a>                        <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">wake_listener_count</span>
-</span><span id="SpychWake-247"><a href="#SpychWake-247"><span class="linenos">247</span></a>                    <span class="p">)</span>
-</span><span id="SpychWake-248"><a href="#SpychWake-248"><span class="linenos">248</span></a>        <span class="k">except</span> <span class="ne">KeyboardInterrupt</span><span class="p">:</span>
-</span><span id="SpychWake-249"><a href="#SpychWake-249"><span class="linenos">249</span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">notify</span><span class="p">(</span><span class="s2">&quot;Stopping.&quot;</span><span class="p">,</span> <span class="n">notification_type</span><span class="o">=</span><span class="s2">&quot;verbose&quot;</span><span class="p">)</span>
-</span><span id="SpychWake-250"><a href="#SpychWake-250"><span class="linenos">250</span></a>
-</span><span id="SpychWake-251"><a href="#SpychWake-251"><span class="linenos">251</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">stop_listeners</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-</span><span id="SpychWake-252"><a href="#SpychWake-252"><span class="linenos">252</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="SpychWake-253"><a href="#SpychWake-253"><span class="linenos">253</span></a><span class="sd">        Usage:</span>
-</span><span id="SpychWake-254"><a href="#SpychWake-254"><span class="linenos">254</span></a>
-</span><span id="SpychWake-255"><a href="#SpychWake-255"><span class="linenos">255</span></a><span class="sd">        - Signals all listener threads to stop at their next available checkpoint</span>
-</span><span id="SpychWake-256"><a href="#SpychWake-256"><span class="linenos">256</span></a><span class="sd">        - Note: Does not block; listeners will exit cleanly after their current operation</span>
-</span><span id="SpychWake-257"><a href="#SpychWake-257"><span class="linenos">257</span></a><span class="sd">        &quot;&quot;&quot;</span>
-</span><span id="SpychWake-258"><a href="#SpychWake-258"><span class="linenos">258</span></a>        <span class="k">for</span> <span class="n">listener</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">wake_listeners</span><span class="p">:</span>
-</span><span id="SpychWake-259"><a href="#SpychWake-259"><span class="linenos">259</span></a>            <span class="n">listener</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span>
-</span><span id="SpychWake-260"><a href="#SpychWake-260"><span class="linenos">260</span></a>
-</span><span id="SpychWake-261"><a href="#SpychWake-261"><span class="linenos">261</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">stop</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-</span><span id="SpychWake-262"><a href="#SpychWake-262"><span class="linenos">262</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="SpychWake-263"><a href="#SpychWake-263"><span class="linenos">263</span></a><span class="sd">        Usage:</span>
-</span><span id="SpychWake-264"><a href="#SpychWake-264"><span class="linenos">264</span></a>
-</span><span id="SpychWake-265"><a href="#SpychWake-265"><span class="linenos">265</span></a><span class="sd">        - Stops all listener threads and exits the `start` loop</span>
-</span><span id="SpychWake-266"><a href="#SpychWake-266"><span class="linenos">266</span></a><span class="sd">        - Note: Combines `stop_listeners` with setting the kill flag on the main loop</span>
-</span><span id="SpychWake-267"><a href="#SpychWake-267"><span class="linenos">267</span></a><span class="sd">        &quot;&quot;&quot;</span>
-</span><span id="SpychWake-268"><a href="#SpychWake-268"><span class="linenos">268</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">stop_listeners</span><span class="p">()</span>
-</span><span id="SpychWake-269"><a href="#SpychWake-269"><span class="linenos">269</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">kill</span> <span class="o">=</span> <span class="kc">True</span>
-</span><span id="SpychWake-270"><a href="#SpychWake-270"><span class="linenos">270</span></a>
-</span><span id="SpychWake-271"><a href="#SpychWake-271"><span class="linenos">271</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">wake</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">wake_word</span><span class="p">):</span>
-</span><span id="SpychWake-272"><a href="#SpychWake-272"><span class="linenos">272</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="SpychWake-273"><a href="#SpychWake-273"><span class="linenos">273</span></a><span class="sd">        Usage:</span>
-</span><span id="SpychWake-274"><a href="#SpychWake-274"><span class="linenos">274</span></a>
-</span><span id="SpychWake-275"><a href="#SpychWake-275"><span class="linenos">275</span></a><span class="sd">        - Called internally when a wake word is detected</span>
-</span><span id="SpychWake-276"><a href="#SpychWake-276"><span class="linenos">276</span></a><span class="sd">        - Stops all listeners, locks the system, executes the mapped callback for the</span>
-</span><span id="SpychWake-277"><a href="#SpychWake-277"><span class="linenos">277</span></a><span class="sd">          detected wake word, then unlocks</span>
-</span><span id="SpychWake-278"><a href="#SpychWake-278"><span class="linenos">278</span></a>
-</span><span id="SpychWake-279"><a href="#SpychWake-279"><span class="linenos">279</span></a><span class="sd">        Requires:</span>
-</span><span id="SpychWake-280"><a href="#SpychWake-280"><span class="linenos">280</span></a>
-</span><span id="SpychWake-281"><a href="#SpychWake-281"><span class="linenos">281</span></a><span class="sd">        - `wake_word`:</span>
-</span><span id="SpychWake-282"><a href="#SpychWake-282"><span class="linenos">282</span></a><span class="sd">            - Type: str</span>
-</span><span id="SpychWake-283"><a href="#SpychWake-283"><span class="linenos">283</span></a><span class="sd">            - What: The detected wake word, used to look up the correct callback in</span>
-</span><span id="SpychWake-284"><a href="#SpychWake-284"><span class="linenos">284</span></a><span class="sd">              `wake_word_map`</span>
-</span><span id="SpychWake-285"><a href="#SpychWake-285"><span class="linenos">285</span></a>
-</span><span id="SpychWake-286"><a href="#SpychWake-286"><span class="linenos">286</span></a><span class="sd">        Notes:</span>
+</span><span id="SpychWake-197"><a href="#SpychWake-197"><span class="linenos">197</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">terminate_words</span> <span class="o">=</span> <span class="p">(</span>
+</span><span id="SpychWake-198"><a href="#SpychWake-198"><span class="linenos">198</span></a>            <span class="p">[</span><span class="n">w</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">terminate_words</span><span class="p">]</span> <span class="k">if</span> <span class="n">terminate_words</span> <span class="k">else</span> <span class="p">[]</span>
+</span><span id="SpychWake-199"><a href="#SpychWake-199"><span class="linenos">199</span></a>        <span class="p">)</span>
+</span><span id="SpychWake-200"><a href="#SpychWake-200"><span class="linenos">200</span></a>        <span class="k">for</span> <span class="n">word</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">terminate_words</span><span class="p">:</span>
+</span><span id="SpychWake-201"><a href="#SpychWake-201"><span class="linenos">201</span></a>            <span class="k">if</span> <span class="n">word</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">wake_word_map</span><span class="p">:</span>
+</span><span id="SpychWake-202"><a href="#SpychWake-202"><span class="linenos">202</span></a>                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+</span><span id="SpychWake-203"><a href="#SpychWake-203"><span class="linenos">203</span></a>                    <span class="sa">f</span><span class="s2">&quot;Terminate word &#39;</span><span class="si">{</span><span class="n">word</span><span class="si">}</span><span class="s2">&#39; cannot also be a wake word.&quot;</span>
+</span><span id="SpychWake-204"><a href="#SpychWake-204"><span class="linenos">204</span></a>                <span class="p">)</span>
+</span><span id="SpychWake-205"><a href="#SpychWake-205"><span class="linenos">205</span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">wake_word_map</span><span class="p">[</span><span class="n">word</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">stop</span>
+</span><span id="SpychWake-206"><a href="#SpychWake-206"><span class="linenos">206</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">wake_listener_count</span> <span class="o">=</span> <span class="n">wake_listener_count</span>
+</span><span id="SpychWake-207"><a href="#SpychWake-207"><span class="linenos">207</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">wake_listener_time</span> <span class="o">=</span> <span class="n">wake_listener_time</span>
+</span><span id="SpychWake-208"><a href="#SpychWake-208"><span class="linenos">208</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">wake_listener_max_processing_time</span> <span class="o">=</span> <span class="p">(</span>
+</span><span id="SpychWake-209"><a href="#SpychWake-209"><span class="linenos">209</span></a>            <span class="n">wake_listener_max_processing_time</span>
+</span><span id="SpychWake-210"><a href="#SpychWake-210"><span class="linenos">210</span></a>        <span class="p">)</span>
+</span><span id="SpychWake-211"><a href="#SpychWake-211"><span class="linenos">211</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">device_index</span> <span class="o">=</span> <span class="n">device_index</span>
+</span><span id="SpychWake-212"><a href="#SpychWake-212"><span class="linenos">212</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">locked</span> <span class="o">=</span> <span class="kc">False</span>
+</span><span id="SpychWake-213"><a href="#SpychWake-213"><span class="linenos">213</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">kill</span> <span class="o">=</span> <span class="kc">False</span>
+</span><span id="SpychWake-214"><a href="#SpychWake-214"><span class="linenos">214</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">wake_model</span> <span class="o">=</span> <span class="n">WhisperModel</span><span class="p">(</span>
+</span><span id="SpychWake-215"><a href="#SpychWake-215"><span class="linenos">215</span></a>            <span class="n">whisper_model</span><span class="p">,</span>
+</span><span id="SpychWake-216"><a href="#SpychWake-216"><span class="linenos">216</span></a>            <span class="n">device</span><span class="o">=</span><span class="n">whisper_device</span><span class="p">,</span>
+</span><span id="SpychWake-217"><a href="#SpychWake-217"><span class="linenos">217</span></a>            <span class="n">compute_type</span><span class="o">=</span><span class="n">whisper_compute_type</span><span class="p">,</span>
+</span><span id="SpychWake-218"><a href="#SpychWake-218"><span class="linenos">218</span></a>        <span class="p">)</span>
+</span><span id="SpychWake-219"><a href="#SpychWake-219"><span class="linenos">219</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">wake_listeners</span> <span class="o">=</span> <span class="p">[</span>
+</span><span id="SpychWake-220"><a href="#SpychWake-220"><span class="linenos">220</span></a>            <span class="n">SpychWakeListener</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wake_listener_count</span><span class="p">)</span>
+</span><span id="SpychWake-221"><a href="#SpychWake-221"><span class="linenos">221</span></a>        <span class="p">]</span>
+</span><span id="SpychWake-222"><a href="#SpychWake-222"><span class="linenos">222</span></a>
+</span><span id="SpychWake-223"><a href="#SpychWake-223"><span class="linenos">223</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">start</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span><span id="SpychWake-224"><a href="#SpychWake-224"><span class="linenos">224</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="SpychWake-225"><a href="#SpychWake-225"><span class="linenos">225</span></a><span class="sd">        Usage:</span>
+</span><span id="SpychWake-226"><a href="#SpychWake-226"><span class="linenos">226</span></a>
+</span><span id="SpychWake-227"><a href="#SpychWake-227"><span class="linenos">227</span></a><span class="sd">        - Starts the wake word detection loop using overlapping listener threads</span>
+</span><span id="SpychWake-228"><a href="#SpychWake-228"><span class="linenos">228</span></a><span class="sd">        - Blocks until a KeyboardInterrupt is received or `stop()` is called</span>
+</span><span id="SpychWake-229"><a href="#SpychWake-229"><span class="linenos">229</span></a>
+</span><span id="SpychWake-230"><a href="#SpychWake-230"><span class="linenos">230</span></a><span class="sd">        Notes:</span>
+</span><span id="SpychWake-231"><a href="#SpychWake-231"><span class="linenos">231</span></a>
+</span><span id="SpychWake-232"><a href="#SpychWake-232"><span class="linenos">232</span></a><span class="sd">        - Callbacks are defined in `wake_word_map` at init time rather than passed to `start`</span>
+</span><span id="SpychWake-233"><a href="#SpychWake-233"><span class="linenos">233</span></a><span class="sd">        - Listener threads are staggered by `(wake_listener_time + wake_listener_max_processing_time)</span>
+</span><span id="SpychWake-234"><a href="#SpychWake-234"><span class="linenos">234</span></a><span class="sd">          / wake_listener_count` seconds to ensure continuous audio coverage</span>
+</span><span id="SpychWake-235"><a href="#SpychWake-235"><span class="linenos">235</span></a><span class="sd">        - New threads are only launched when the system is not locked (i.e. not currently</span>
+</span><span id="SpychWake-236"><a href="#SpychWake-236"><span class="linenos">236</span></a><span class="sd">          processing a wake event)</span>
+</span><span id="SpychWake-237"><a href="#SpychWake-237"><span class="linenos">237</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="SpychWake-238"><a href="#SpychWake-238"><span class="linenos">238</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">notify</span><span class="p">(</span>
+</span><span id="SpychWake-239"><a href="#SpychWake-239"><span class="linenos">239</span></a>            <span class="sa">f</span><span class="s2">&quot;Listening for wake words: </span><span class="si">{</span><span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wake_word_map</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span><span class="si">}</span><span class="s2">...&quot;</span><span class="p">,</span>
+</span><span id="SpychWake-240"><a href="#SpychWake-240"><span class="linenos">240</span></a>            <span class="n">notification_type</span><span class="o">=</span><span class="s2">&quot;verbose&quot;</span><span class="p">,</span>
+</span><span id="SpychWake-241"><a href="#SpychWake-241"><span class="linenos">241</span></a>        <span class="p">)</span>
+</span><span id="SpychWake-242"><a href="#SpychWake-242"><span class="linenos">242</span></a>        <span class="k">try</span><span class="p">:</span>
+</span><span id="SpychWake-243"><a href="#SpychWake-243"><span class="linenos">243</span></a>            <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+</span><span id="SpychWake-244"><a href="#SpychWake-244"><span class="linenos">244</span></a>                <span class="k">for</span> <span class="n">listener</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">wake_listeners</span><span class="p">:</span>
+</span><span id="SpychWake-245"><a href="#SpychWake-245"><span class="linenos">245</span></a>                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">kill</span><span class="p">:</span>
+</span><span id="SpychWake-246"><a href="#SpychWake-246"><span class="linenos">246</span></a>                        <span class="bp">self</span><span class="o">.</span><span class="n">kill</span> <span class="o">=</span> <span class="kc">False</span>
+</span><span id="SpychWake-247"><a href="#SpychWake-247"><span class="linenos">247</span></a>                        <span class="k">return</span>
+</span><span id="SpychWake-248"><a href="#SpychWake-248"><span class="linenos">248</span></a>                    <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">locked</span><span class="p">:</span>
+</span><span id="SpychWake-249"><a href="#SpychWake-249"><span class="linenos">249</span></a>                        <span class="n">threading</span><span class="o">.</span><span class="n">Thread</span><span class="p">(</span><span class="n">target</span><span class="o">=</span><span class="n">listener</span><span class="p">)</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+</span><span id="SpychWake-250"><a href="#SpychWake-250"><span class="linenos">250</span></a>                    <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span>
+</span><span id="SpychWake-251"><a href="#SpychWake-251"><span class="linenos">251</span></a>                        <span class="p">(</span>
+</span><span id="SpychWake-252"><a href="#SpychWake-252"><span class="linenos">252</span></a>                            <span class="bp">self</span><span class="o">.</span><span class="n">wake_listener_time</span>
+</span><span id="SpychWake-253"><a href="#SpychWake-253"><span class="linenos">253</span></a>                            <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">wake_listener_max_processing_time</span>
+</span><span id="SpychWake-254"><a href="#SpychWake-254"><span class="linenos">254</span></a>                        <span class="p">)</span>
+</span><span id="SpychWake-255"><a href="#SpychWake-255"><span class="linenos">255</span></a>                        <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">wake_listener_count</span>
+</span><span id="SpychWake-256"><a href="#SpychWake-256"><span class="linenos">256</span></a>                    <span class="p">)</span>
+</span><span id="SpychWake-257"><a href="#SpychWake-257"><span class="linenos">257</span></a>        <span class="k">except</span> <span class="ne">KeyboardInterrupt</span><span class="p">:</span>
+</span><span id="SpychWake-258"><a href="#SpychWake-258"><span class="linenos">258</span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">notify</span><span class="p">(</span><span class="s2">&quot;Stopping.&quot;</span><span class="p">,</span> <span class="n">notification_type</span><span class="o">=</span><span class="s2">&quot;verbose&quot;</span><span class="p">)</span>
+</span><span id="SpychWake-259"><a href="#SpychWake-259"><span class="linenos">259</span></a>
+</span><span id="SpychWake-260"><a href="#SpychWake-260"><span class="linenos">260</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">stop_listeners</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span><span id="SpychWake-261"><a href="#SpychWake-261"><span class="linenos">261</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="SpychWake-262"><a href="#SpychWake-262"><span class="linenos">262</span></a><span class="sd">        Usage:</span>
+</span><span id="SpychWake-263"><a href="#SpychWake-263"><span class="linenos">263</span></a>
+</span><span id="SpychWake-264"><a href="#SpychWake-264"><span class="linenos">264</span></a><span class="sd">        - Signals all listener threads to stop at their next available checkpoint</span>
+</span><span id="SpychWake-265"><a href="#SpychWake-265"><span class="linenos">265</span></a><span class="sd">        - Note: Does not block; listeners will exit cleanly after their current operation</span>
+</span><span id="SpychWake-266"><a href="#SpychWake-266"><span class="linenos">266</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="SpychWake-267"><a href="#SpychWake-267"><span class="linenos">267</span></a>        <span class="k">for</span> <span class="n">listener</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">wake_listeners</span><span class="p">:</span>
+</span><span id="SpychWake-268"><a href="#SpychWake-268"><span class="linenos">268</span></a>            <span class="n">listener</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span>
+</span><span id="SpychWake-269"><a href="#SpychWake-269"><span class="linenos">269</span></a>
+</span><span id="SpychWake-270"><a href="#SpychWake-270"><span class="linenos">270</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">stop</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span><span id="SpychWake-271"><a href="#SpychWake-271"><span class="linenos">271</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="SpychWake-272"><a href="#SpychWake-272"><span class="linenos">272</span></a><span class="sd">        Usage:</span>
+</span><span id="SpychWake-273"><a href="#SpychWake-273"><span class="linenos">273</span></a>
+</span><span id="SpychWake-274"><a href="#SpychWake-274"><span class="linenos">274</span></a><span class="sd">        - Stops all listener threads and exits the `start` loop</span>
+</span><span id="SpychWake-275"><a href="#SpychWake-275"><span class="linenos">275</span></a><span class="sd">        - Note: Combines `stop_listeners` with setting the kill flag on the main loop</span>
+</span><span id="SpychWake-276"><a href="#SpychWake-276"><span class="linenos">276</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="SpychWake-277"><a href="#SpychWake-277"><span class="linenos">277</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">stop_listeners</span><span class="p">()</span>
+</span><span id="SpychWake-278"><a href="#SpychWake-278"><span class="linenos">278</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">kill</span> <span class="o">=</span> <span class="kc">True</span>
+</span><span id="SpychWake-279"><a href="#SpychWake-279"><span class="linenos">279</span></a>
+</span><span id="SpychWake-280"><a href="#SpychWake-280"><span class="linenos">280</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">wake</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">wake_word</span><span class="p">):</span>
+</span><span id="SpychWake-281"><a href="#SpychWake-281"><span class="linenos">281</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="SpychWake-282"><a href="#SpychWake-282"><span class="linenos">282</span></a><span class="sd">        Usage:</span>
+</span><span id="SpychWake-283"><a href="#SpychWake-283"><span class="linenos">283</span></a>
+</span><span id="SpychWake-284"><a href="#SpychWake-284"><span class="linenos">284</span></a><span class="sd">        - Called internally when a wake word is detected</span>
+</span><span id="SpychWake-285"><a href="#SpychWake-285"><span class="linenos">285</span></a><span class="sd">        - Stops all listeners, locks the system, executes the mapped callback for the</span>
+</span><span id="SpychWake-286"><a href="#SpychWake-286"><span class="linenos">286</span></a><span class="sd">          detected wake word, then unlocks</span>
 </span><span id="SpychWake-287"><a href="#SpychWake-287"><span class="linenos">287</span></a>
-</span><span id="SpychWake-288"><a href="#SpychWake-288"><span class="linenos">288</span></a><span class="sd">        - If the system is already locked when `wake` is called, the call is a no-op</span>
-</span><span id="SpychWake-289"><a href="#SpychWake-289"><span class="linenos">289</span></a><span class="sd">          to prevent concurrent wake executions</span>
-</span><span id="SpychWake-290"><a href="#SpychWake-290"><span class="linenos">290</span></a><span class="sd">        - Any exception raised by the callback is caught and re-raised as a spych exception</span>
-</span><span id="SpychWake-291"><a href="#SpychWake-291"><span class="linenos">291</span></a><span class="sd">        - The system is always unlocked in the `finally` block, even if the callback raises</span>
-</span><span id="SpychWake-292"><a href="#SpychWake-292"><span class="linenos">292</span></a><span class="sd">        &quot;&quot;&quot;</span>
-</span><span id="SpychWake-293"><a href="#SpychWake-293"><span class="linenos">293</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">stop_listeners</span><span class="p">()</span>
-</span><span id="SpychWake-294"><a href="#SpychWake-294"><span class="linenos">294</span></a>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">locked</span><span class="p">:</span>
-</span><span id="SpychWake-295"><a href="#SpychWake-295"><span class="linenos">295</span></a>            <span class="k">return</span>
-</span><span id="SpychWake-296"><a href="#SpychWake-296"><span class="linenos">296</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">locked</span> <span class="o">=</span> <span class="kc">True</span>
-</span><span id="SpychWake-297"><a href="#SpychWake-297"><span class="linenos">297</span></a>        <span class="k">try</span><span class="p">:</span>
-</span><span id="SpychWake-298"><a href="#SpychWake-298"><span class="linenos">298</span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">wake_word_map</span><span class="p">[</span><span class="n">wake_word</span><span class="p">]()</span>
-</span><span id="SpychWake-299"><a href="#SpychWake-299"><span class="linenos">299</span></a>        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-</span><span id="SpychWake-300"><a href="#SpychWake-300"><span class="linenos">300</span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">notify</span><span class="p">(</span>
-</span><span id="SpychWake-301"><a href="#SpychWake-301"><span class="linenos">301</span></a>                <span class="sa">f</span><span class="s2">&quot;Error in on_wake_fn for &#39;</span><span class="si">{</span><span class="n">wake_word</span><span class="si">}</span><span class="s2">&#39;: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
-</span><span id="SpychWake-302"><a href="#SpychWake-302"><span class="linenos">302</span></a>                <span class="n">notification_type</span><span class="o">=</span><span class="s2">&quot;exception&quot;</span><span class="p">,</span>
-</span><span id="SpychWake-303"><a href="#SpychWake-303"><span class="linenos">303</span></a>            <span class="p">)</span>
-</span><span id="SpychWake-304"><a href="#SpychWake-304"><span class="linenos">304</span></a>        <span class="k">finally</span><span class="p">:</span>
-</span><span id="SpychWake-305"><a href="#SpychWake-305"><span class="linenos">305</span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">locked</span> <span class="o">=</span> <span class="kc">False</span>
+</span><span id="SpychWake-288"><a href="#SpychWake-288"><span class="linenos">288</span></a><span class="sd">        Requires:</span>
+</span><span id="SpychWake-289"><a href="#SpychWake-289"><span class="linenos">289</span></a>
+</span><span id="SpychWake-290"><a href="#SpychWake-290"><span class="linenos">290</span></a><span class="sd">        - `wake_word`:</span>
+</span><span id="SpychWake-291"><a href="#SpychWake-291"><span class="linenos">291</span></a><span class="sd">            - Type: str</span>
+</span><span id="SpychWake-292"><a href="#SpychWake-292"><span class="linenos">292</span></a><span class="sd">            - What: The detected wake word, used to look up the correct callback in</span>
+</span><span id="SpychWake-293"><a href="#SpychWake-293"><span class="linenos">293</span></a><span class="sd">              `wake_word_map`</span>
+</span><span id="SpychWake-294"><a href="#SpychWake-294"><span class="linenos">294</span></a>
+</span><span id="SpychWake-295"><a href="#SpychWake-295"><span class="linenos">295</span></a><span class="sd">        Notes:</span>
+</span><span id="SpychWake-296"><a href="#SpychWake-296"><span class="linenos">296</span></a>
+</span><span id="SpychWake-297"><a href="#SpychWake-297"><span class="linenos">297</span></a><span class="sd">        - If the system is already locked when `wake` is called, the call is a no-op</span>
+</span><span id="SpychWake-298"><a href="#SpychWake-298"><span class="linenos">298</span></a><span class="sd">          to prevent concurrent wake executions</span>
+</span><span id="SpychWake-299"><a href="#SpychWake-299"><span class="linenos">299</span></a><span class="sd">        - Any exception raised by the callback is caught and re-raised as a spych exception</span>
+</span><span id="SpychWake-300"><a href="#SpychWake-300"><span class="linenos">300</span></a><span class="sd">        - The system is always unlocked in the `finally` block, even if the callback raises</span>
+</span><span id="SpychWake-301"><a href="#SpychWake-301"><span class="linenos">301</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="SpychWake-302"><a href="#SpychWake-302"><span class="linenos">302</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">stop_listeners</span><span class="p">()</span>
+</span><span id="SpychWake-303"><a href="#SpychWake-303"><span class="linenos">303</span></a>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">locked</span><span class="p">:</span>
+</span><span id="SpychWake-304"><a href="#SpychWake-304"><span class="linenos">304</span></a>            <span class="k">return</span>
+</span><span id="SpychWake-305"><a href="#SpychWake-305"><span class="linenos">305</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">locked</span> <span class="o">=</span> <span class="kc">True</span>
+</span><span id="SpychWake-306"><a href="#SpychWake-306"><span class="linenos">306</span></a>        <span class="k">try</span><span class="p">:</span>
+</span><span id="SpychWake-307"><a href="#SpychWake-307"><span class="linenos">307</span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">wake_word_map</span><span class="p">[</span><span class="n">wake_word</span><span class="p">]()</span>
+</span><span id="SpychWake-308"><a href="#SpychWake-308"><span class="linenos">308</span></a>        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+</span><span id="SpychWake-309"><a href="#SpychWake-309"><span class="linenos">309</span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">notify</span><span class="p">(</span>
+</span><span id="SpychWake-310"><a href="#SpychWake-310"><span class="linenos">310</span></a>                <span class="sa">f</span><span class="s2">&quot;Error in on_wake_fn for &#39;</span><span class="si">{</span><span class="n">wake_word</span><span class="si">}</span><span class="s2">&#39;: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+</span><span id="SpychWake-311"><a href="#SpychWake-311"><span class="linenos">311</span></a>                <span class="n">notification_type</span><span class="o">=</span><span class="s2">&quot;exception&quot;</span><span class="p">,</span>
+</span><span id="SpychWake-312"><a href="#SpychWake-312"><span class="linenos">312</span></a>            <span class="p">)</span>
+</span><span id="SpychWake-313"><a href="#SpychWake-313"><span class="linenos">313</span></a>        <span class="k">finally</span><span class="p">:</span>
+</span><span id="SpychWake-314"><a href="#SpychWake-314"><span class="linenos">314</span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">locked</span> <span class="o">=</span> <span class="kc">False</span>
 </span></pre></div>
 
 
@@ -1042,25 +1060,31 @@ after its current operation completes</li>
 </span><span id="SpychWake.__init__-194"><a href="#SpychWake.__init__-194"><span class="linenos">194</span></a><span class="sd">        &quot;&quot;&quot;</span>
 </span><span id="SpychWake.__init__-195"><a href="#SpychWake.__init__-195"><span class="linenos">195</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">wake_word_map</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="o">.</span><span class="n">lower</span><span class="p">():</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">wake_word_map</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
 </span><span id="SpychWake.__init__-196"><a href="#SpychWake.__init__-196"><span class="linenos">196</span></a>        <span class="c1"># Handle Terminating Words</span>
-</span><span id="SpychWake.__init__-197"><a href="#SpychWake.__init__-197"><span class="linenos">197</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">terminate_words</span> <span class="o">=</span> <span class="p">[</span><span class="n">w</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">terminate_words</span><span class="p">]</span> <span class="k">if</span> <span class="n">terminate_words</span> <span class="k">else</span> <span class="p">[]</span>
-</span><span id="SpychWake.__init__-198"><a href="#SpychWake.__init__-198"><span class="linenos">198</span></a>        <span class="k">for</span> <span class="n">word</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">terminate_words</span><span class="p">:</span>
-</span><span id="SpychWake.__init__-199"><a href="#SpychWake.__init__-199"><span class="linenos">199</span></a>            <span class="k">if</span> <span class="n">word</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">wake_word_map</span><span class="p">:</span>
-</span><span id="SpychWake.__init__-200"><a href="#SpychWake.__init__-200"><span class="linenos">200</span></a>                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Terminate word &#39;</span><span class="si">{</span><span class="n">word</span><span class="si">}</span><span class="s2">&#39; cannot also be a wake word.&quot;</span><span class="p">)</span>
-</span><span id="SpychWake.__init__-201"><a href="#SpychWake.__init__-201"><span class="linenos">201</span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">wake_word_map</span><span class="p">[</span><span class="n">word</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">stop</span>
-</span><span id="SpychWake.__init__-202"><a href="#SpychWake.__init__-202"><span class="linenos">202</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">wake_listener_count</span> <span class="o">=</span> <span class="n">wake_listener_count</span>
-</span><span id="SpychWake.__init__-203"><a href="#SpychWake.__init__-203"><span class="linenos">203</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">wake_listener_time</span> <span class="o">=</span> <span class="n">wake_listener_time</span>
-</span><span id="SpychWake.__init__-204"><a href="#SpychWake.__init__-204"><span class="linenos">204</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">wake_listener_max_processing_time</span> <span class="o">=</span> <span class="n">wake_listener_max_processing_time</span>
-</span><span id="SpychWake.__init__-205"><a href="#SpychWake.__init__-205"><span class="linenos">205</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">device_index</span> <span class="o">=</span> <span class="n">device_index</span>
-</span><span id="SpychWake.__init__-206"><a href="#SpychWake.__init__-206"><span class="linenos">206</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">locked</span> <span class="o">=</span> <span class="kc">False</span>
-</span><span id="SpychWake.__init__-207"><a href="#SpychWake.__init__-207"><span class="linenos">207</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">kill</span> <span class="o">=</span> <span class="kc">False</span>
-</span><span id="SpychWake.__init__-208"><a href="#SpychWake.__init__-208"><span class="linenos">208</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">wake_model</span> <span class="o">=</span> <span class="n">WhisperModel</span><span class="p">(</span>
-</span><span id="SpychWake.__init__-209"><a href="#SpychWake.__init__-209"><span class="linenos">209</span></a>            <span class="n">whisper_model</span><span class="p">,</span>
-</span><span id="SpychWake.__init__-210"><a href="#SpychWake.__init__-210"><span class="linenos">210</span></a>            <span class="n">device</span><span class="o">=</span><span class="n">whisper_device</span><span class="p">,</span>
-</span><span id="SpychWake.__init__-211"><a href="#SpychWake.__init__-211"><span class="linenos">211</span></a>            <span class="n">compute_type</span><span class="o">=</span><span class="n">whisper_compute_type</span><span class="p">,</span>
-</span><span id="SpychWake.__init__-212"><a href="#SpychWake.__init__-212"><span class="linenos">212</span></a>        <span class="p">)</span>
-</span><span id="SpychWake.__init__-213"><a href="#SpychWake.__init__-213"><span class="linenos">213</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">wake_listeners</span> <span class="o">=</span> <span class="p">[</span>
-</span><span id="SpychWake.__init__-214"><a href="#SpychWake.__init__-214"><span class="linenos">214</span></a>            <span class="n">SpychWakeListener</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wake_listener_count</span><span class="p">)</span>
-</span><span id="SpychWake.__init__-215"><a href="#SpychWake.__init__-215"><span class="linenos">215</span></a>        <span class="p">]</span>
+</span><span id="SpychWake.__init__-197"><a href="#SpychWake.__init__-197"><span class="linenos">197</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">terminate_words</span> <span class="o">=</span> <span class="p">(</span>
+</span><span id="SpychWake.__init__-198"><a href="#SpychWake.__init__-198"><span class="linenos">198</span></a>            <span class="p">[</span><span class="n">w</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">terminate_words</span><span class="p">]</span> <span class="k">if</span> <span class="n">terminate_words</span> <span class="k">else</span> <span class="p">[]</span>
+</span><span id="SpychWake.__init__-199"><a href="#SpychWake.__init__-199"><span class="linenos">199</span></a>        <span class="p">)</span>
+</span><span id="SpychWake.__init__-200"><a href="#SpychWake.__init__-200"><span class="linenos">200</span></a>        <span class="k">for</span> <span class="n">word</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">terminate_words</span><span class="p">:</span>
+</span><span id="SpychWake.__init__-201"><a href="#SpychWake.__init__-201"><span class="linenos">201</span></a>            <span class="k">if</span> <span class="n">word</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">wake_word_map</span><span class="p">:</span>
+</span><span id="SpychWake.__init__-202"><a href="#SpychWake.__init__-202"><span class="linenos">202</span></a>                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+</span><span id="SpychWake.__init__-203"><a href="#SpychWake.__init__-203"><span class="linenos">203</span></a>                    <span class="sa">f</span><span class="s2">&quot;Terminate word &#39;</span><span class="si">{</span><span class="n">word</span><span class="si">}</span><span class="s2">&#39; cannot also be a wake word.&quot;</span>
+</span><span id="SpychWake.__init__-204"><a href="#SpychWake.__init__-204"><span class="linenos">204</span></a>                <span class="p">)</span>
+</span><span id="SpychWake.__init__-205"><a href="#SpychWake.__init__-205"><span class="linenos">205</span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">wake_word_map</span><span class="p">[</span><span class="n">word</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">stop</span>
+</span><span id="SpychWake.__init__-206"><a href="#SpychWake.__init__-206"><span class="linenos">206</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">wake_listener_count</span> <span class="o">=</span> <span class="n">wake_listener_count</span>
+</span><span id="SpychWake.__init__-207"><a href="#SpychWake.__init__-207"><span class="linenos">207</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">wake_listener_time</span> <span class="o">=</span> <span class="n">wake_listener_time</span>
+</span><span id="SpychWake.__init__-208"><a href="#SpychWake.__init__-208"><span class="linenos">208</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">wake_listener_max_processing_time</span> <span class="o">=</span> <span class="p">(</span>
+</span><span id="SpychWake.__init__-209"><a href="#SpychWake.__init__-209"><span class="linenos">209</span></a>            <span class="n">wake_listener_max_processing_time</span>
+</span><span id="SpychWake.__init__-210"><a href="#SpychWake.__init__-210"><span class="linenos">210</span></a>        <span class="p">)</span>
+</span><span id="SpychWake.__init__-211"><a href="#SpychWake.__init__-211"><span class="linenos">211</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">device_index</span> <span class="o">=</span> <span class="n">device_index</span>
+</span><span id="SpychWake.__init__-212"><a href="#SpychWake.__init__-212"><span class="linenos">212</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">locked</span> <span class="o">=</span> <span class="kc">False</span>
+</span><span id="SpychWake.__init__-213"><a href="#SpychWake.__init__-213"><span class="linenos">213</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">kill</span> <span class="o">=</span> <span class="kc">False</span>
+</span><span id="SpychWake.__init__-214"><a href="#SpychWake.__init__-214"><span class="linenos">214</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">wake_model</span> <span class="o">=</span> <span class="n">WhisperModel</span><span class="p">(</span>
+</span><span id="SpychWake.__init__-215"><a href="#SpychWake.__init__-215"><span class="linenos">215</span></a>            <span class="n">whisper_model</span><span class="p">,</span>
+</span><span id="SpychWake.__init__-216"><a href="#SpychWake.__init__-216"><span class="linenos">216</span></a>            <span class="n">device</span><span class="o">=</span><span class="n">whisper_device</span><span class="p">,</span>
+</span><span id="SpychWake.__init__-217"><a href="#SpychWake.__init__-217"><span class="linenos">217</span></a>            <span class="n">compute_type</span><span class="o">=</span><span class="n">whisper_compute_type</span><span class="p">,</span>
+</span><span id="SpychWake.__init__-218"><a href="#SpychWake.__init__-218"><span class="linenos">218</span></a>        <span class="p">)</span>
+</span><span id="SpychWake.__init__-219"><a href="#SpychWake.__init__-219"><span class="linenos">219</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">wake_listeners</span> <span class="o">=</span> <span class="p">[</span>
+</span><span id="SpychWake.__init__-220"><a href="#SpychWake.__init__-220"><span class="linenos">220</span></a>            <span class="n">SpychWakeListener</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wake_listener_count</span><span class="p">)</span>
+</span><span id="SpychWake.__init__-221"><a href="#SpychWake.__init__-221"><span class="linenos">221</span></a>        <span class="p">]</span>
 </span></pre></div>
 
 
@@ -1285,39 +1309,42 @@ calculate the stagger delay between thread launches</li>
 
     </div>
     <a class="headerlink" href="#SpychWake.start"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="SpychWake.start-217"><a href="#SpychWake.start-217"><span class="linenos">217</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">start</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-</span><span id="SpychWake.start-218"><a href="#SpychWake.start-218"><span class="linenos">218</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="SpychWake.start-219"><a href="#SpychWake.start-219"><span class="linenos">219</span></a><span class="sd">        Usage:</span>
-</span><span id="SpychWake.start-220"><a href="#SpychWake.start-220"><span class="linenos">220</span></a>
-</span><span id="SpychWake.start-221"><a href="#SpychWake.start-221"><span class="linenos">221</span></a><span class="sd">        - Starts the wake word detection loop using overlapping listener threads</span>
-</span><span id="SpychWake.start-222"><a href="#SpychWake.start-222"><span class="linenos">222</span></a><span class="sd">        - Blocks until a KeyboardInterrupt is received or `stop()` is called</span>
-</span><span id="SpychWake.start-223"><a href="#SpychWake.start-223"><span class="linenos">223</span></a>
-</span><span id="SpychWake.start-224"><a href="#SpychWake.start-224"><span class="linenos">224</span></a><span class="sd">        Notes:</span>
-</span><span id="SpychWake.start-225"><a href="#SpychWake.start-225"><span class="linenos">225</span></a>
-</span><span id="SpychWake.start-226"><a href="#SpychWake.start-226"><span class="linenos">226</span></a><span class="sd">        - Callbacks are defined in `wake_word_map` at init time rather than passed to `start`</span>
-</span><span id="SpychWake.start-227"><a href="#SpychWake.start-227"><span class="linenos">227</span></a><span class="sd">        - Listener threads are staggered by `(wake_listener_time + wake_listener_max_processing_time)</span>
-</span><span id="SpychWake.start-228"><a href="#SpychWake.start-228"><span class="linenos">228</span></a><span class="sd">          / wake_listener_count` seconds to ensure continuous audio coverage</span>
-</span><span id="SpychWake.start-229"><a href="#SpychWake.start-229"><span class="linenos">229</span></a><span class="sd">        - New threads are only launched when the system is not locked (i.e. not currently</span>
-</span><span id="SpychWake.start-230"><a href="#SpychWake.start-230"><span class="linenos">230</span></a><span class="sd">          processing a wake event)</span>
-</span><span id="SpychWake.start-231"><a href="#SpychWake.start-231"><span class="linenos">231</span></a><span class="sd">        &quot;&quot;&quot;</span>
-</span><span id="SpychWake.start-232"><a href="#SpychWake.start-232"><span class="linenos">232</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">notify</span><span class="p">(</span>
-</span><span id="SpychWake.start-233"><a href="#SpychWake.start-233"><span class="linenos">233</span></a>            <span class="sa">f</span><span class="s2">&quot;Listening for wake words: </span><span class="si">{</span><span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wake_word_map</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span><span class="si">}</span><span class="s2">...&quot;</span><span class="p">,</span>
-</span><span id="SpychWake.start-234"><a href="#SpychWake.start-234"><span class="linenos">234</span></a>            <span class="n">notification_type</span><span class="o">=</span><span class="s2">&quot;verbose&quot;</span><span class="p">,</span>
-</span><span id="SpychWake.start-235"><a href="#SpychWake.start-235"><span class="linenos">235</span></a>        <span class="p">)</span>
-</span><span id="SpychWake.start-236"><a href="#SpychWake.start-236"><span class="linenos">236</span></a>        <span class="k">try</span><span class="p">:</span>
-</span><span id="SpychWake.start-237"><a href="#SpychWake.start-237"><span class="linenos">237</span></a>            <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
-</span><span id="SpychWake.start-238"><a href="#SpychWake.start-238"><span class="linenos">238</span></a>                <span class="k">for</span> <span class="n">listener</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">wake_listeners</span><span class="p">:</span>
-</span><span id="SpychWake.start-239"><a href="#SpychWake.start-239"><span class="linenos">239</span></a>                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">kill</span><span class="p">:</span>
-</span><span id="SpychWake.start-240"><a href="#SpychWake.start-240"><span class="linenos">240</span></a>                        <span class="bp">self</span><span class="o">.</span><span class="n">kill</span> <span class="o">=</span> <span class="kc">False</span>
-</span><span id="SpychWake.start-241"><a href="#SpychWake.start-241"><span class="linenos">241</span></a>                        <span class="k">return</span>
-</span><span id="SpychWake.start-242"><a href="#SpychWake.start-242"><span class="linenos">242</span></a>                    <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">locked</span><span class="p">:</span>
-</span><span id="SpychWake.start-243"><a href="#SpychWake.start-243"><span class="linenos">243</span></a>                        <span class="n">threading</span><span class="o">.</span><span class="n">Thread</span><span class="p">(</span><span class="n">target</span><span class="o">=</span><span class="n">listener</span><span class="p">)</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
-</span><span id="SpychWake.start-244"><a href="#SpychWake.start-244"><span class="linenos">244</span></a>                    <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span>
-</span><span id="SpychWake.start-245"><a href="#SpychWake.start-245"><span class="linenos">245</span></a>                        <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wake_listener_time</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">wake_listener_max_processing_time</span><span class="p">)</span>
-</span><span id="SpychWake.start-246"><a href="#SpychWake.start-246"><span class="linenos">246</span></a>                        <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">wake_listener_count</span>
-</span><span id="SpychWake.start-247"><a href="#SpychWake.start-247"><span class="linenos">247</span></a>                    <span class="p">)</span>
-</span><span id="SpychWake.start-248"><a href="#SpychWake.start-248"><span class="linenos">248</span></a>        <span class="k">except</span> <span class="ne">KeyboardInterrupt</span><span class="p">:</span>
-</span><span id="SpychWake.start-249"><a href="#SpychWake.start-249"><span class="linenos">249</span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">notify</span><span class="p">(</span><span class="s2">&quot;Stopping.&quot;</span><span class="p">,</span> <span class="n">notification_type</span><span class="o">=</span><span class="s2">&quot;verbose&quot;</span><span class="p">)</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="SpychWake.start-223"><a href="#SpychWake.start-223"><span class="linenos">223</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">start</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span><span id="SpychWake.start-224"><a href="#SpychWake.start-224"><span class="linenos">224</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="SpychWake.start-225"><a href="#SpychWake.start-225"><span class="linenos">225</span></a><span class="sd">        Usage:</span>
+</span><span id="SpychWake.start-226"><a href="#SpychWake.start-226"><span class="linenos">226</span></a>
+</span><span id="SpychWake.start-227"><a href="#SpychWake.start-227"><span class="linenos">227</span></a><span class="sd">        - Starts the wake word detection loop using overlapping listener threads</span>
+</span><span id="SpychWake.start-228"><a href="#SpychWake.start-228"><span class="linenos">228</span></a><span class="sd">        - Blocks until a KeyboardInterrupt is received or `stop()` is called</span>
+</span><span id="SpychWake.start-229"><a href="#SpychWake.start-229"><span class="linenos">229</span></a>
+</span><span id="SpychWake.start-230"><a href="#SpychWake.start-230"><span class="linenos">230</span></a><span class="sd">        Notes:</span>
+</span><span id="SpychWake.start-231"><a href="#SpychWake.start-231"><span class="linenos">231</span></a>
+</span><span id="SpychWake.start-232"><a href="#SpychWake.start-232"><span class="linenos">232</span></a><span class="sd">        - Callbacks are defined in `wake_word_map` at init time rather than passed to `start`</span>
+</span><span id="SpychWake.start-233"><a href="#SpychWake.start-233"><span class="linenos">233</span></a><span class="sd">        - Listener threads are staggered by `(wake_listener_time + wake_listener_max_processing_time)</span>
+</span><span id="SpychWake.start-234"><a href="#SpychWake.start-234"><span class="linenos">234</span></a><span class="sd">          / wake_listener_count` seconds to ensure continuous audio coverage</span>
+</span><span id="SpychWake.start-235"><a href="#SpychWake.start-235"><span class="linenos">235</span></a><span class="sd">        - New threads are only launched when the system is not locked (i.e. not currently</span>
+</span><span id="SpychWake.start-236"><a href="#SpychWake.start-236"><span class="linenos">236</span></a><span class="sd">          processing a wake event)</span>
+</span><span id="SpychWake.start-237"><a href="#SpychWake.start-237"><span class="linenos">237</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="SpychWake.start-238"><a href="#SpychWake.start-238"><span class="linenos">238</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">notify</span><span class="p">(</span>
+</span><span id="SpychWake.start-239"><a href="#SpychWake.start-239"><span class="linenos">239</span></a>            <span class="sa">f</span><span class="s2">&quot;Listening for wake words: </span><span class="si">{</span><span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wake_word_map</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span><span class="si">}</span><span class="s2">...&quot;</span><span class="p">,</span>
+</span><span id="SpychWake.start-240"><a href="#SpychWake.start-240"><span class="linenos">240</span></a>            <span class="n">notification_type</span><span class="o">=</span><span class="s2">&quot;verbose&quot;</span><span class="p">,</span>
+</span><span id="SpychWake.start-241"><a href="#SpychWake.start-241"><span class="linenos">241</span></a>        <span class="p">)</span>
+</span><span id="SpychWake.start-242"><a href="#SpychWake.start-242"><span class="linenos">242</span></a>        <span class="k">try</span><span class="p">:</span>
+</span><span id="SpychWake.start-243"><a href="#SpychWake.start-243"><span class="linenos">243</span></a>            <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+</span><span id="SpychWake.start-244"><a href="#SpychWake.start-244"><span class="linenos">244</span></a>                <span class="k">for</span> <span class="n">listener</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">wake_listeners</span><span class="p">:</span>
+</span><span id="SpychWake.start-245"><a href="#SpychWake.start-245"><span class="linenos">245</span></a>                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">kill</span><span class="p">:</span>
+</span><span id="SpychWake.start-246"><a href="#SpychWake.start-246"><span class="linenos">246</span></a>                        <span class="bp">self</span><span class="o">.</span><span class="n">kill</span> <span class="o">=</span> <span class="kc">False</span>
+</span><span id="SpychWake.start-247"><a href="#SpychWake.start-247"><span class="linenos">247</span></a>                        <span class="k">return</span>
+</span><span id="SpychWake.start-248"><a href="#SpychWake.start-248"><span class="linenos">248</span></a>                    <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">locked</span><span class="p">:</span>
+</span><span id="SpychWake.start-249"><a href="#SpychWake.start-249"><span class="linenos">249</span></a>                        <span class="n">threading</span><span class="o">.</span><span class="n">Thread</span><span class="p">(</span><span class="n">target</span><span class="o">=</span><span class="n">listener</span><span class="p">)</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+</span><span id="SpychWake.start-250"><a href="#SpychWake.start-250"><span class="linenos">250</span></a>                    <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span>
+</span><span id="SpychWake.start-251"><a href="#SpychWake.start-251"><span class="linenos">251</span></a>                        <span class="p">(</span>
+</span><span id="SpychWake.start-252"><a href="#SpychWake.start-252"><span class="linenos">252</span></a>                            <span class="bp">self</span><span class="o">.</span><span class="n">wake_listener_time</span>
+</span><span id="SpychWake.start-253"><a href="#SpychWake.start-253"><span class="linenos">253</span></a>                            <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">wake_listener_max_processing_time</span>
+</span><span id="SpychWake.start-254"><a href="#SpychWake.start-254"><span class="linenos">254</span></a>                        <span class="p">)</span>
+</span><span id="SpychWake.start-255"><a href="#SpychWake.start-255"><span class="linenos">255</span></a>                        <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">wake_listener_count</span>
+</span><span id="SpychWake.start-256"><a href="#SpychWake.start-256"><span class="linenos">256</span></a>                    <span class="p">)</span>
+</span><span id="SpychWake.start-257"><a href="#SpychWake.start-257"><span class="linenos">257</span></a>        <span class="k">except</span> <span class="ne">KeyboardInterrupt</span><span class="p">:</span>
+</span><span id="SpychWake.start-258"><a href="#SpychWake.start-258"><span class="linenos">258</span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">notify</span><span class="p">(</span><span class="s2">&quot;Stopping.&quot;</span><span class="p">,</span> <span class="n">notification_type</span><span class="o">=</span><span class="s2">&quot;verbose&quot;</span><span class="p">)</span>
 </span></pre></div>
 
 
@@ -1352,15 +1379,15 @@ processing a wake event)</li>
 
     </div>
     <a class="headerlink" href="#SpychWake.stop_listeners"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="SpychWake.stop_listeners-251"><a href="#SpychWake.stop_listeners-251"><span class="linenos">251</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">stop_listeners</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-</span><span id="SpychWake.stop_listeners-252"><a href="#SpychWake.stop_listeners-252"><span class="linenos">252</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="SpychWake.stop_listeners-253"><a href="#SpychWake.stop_listeners-253"><span class="linenos">253</span></a><span class="sd">        Usage:</span>
-</span><span id="SpychWake.stop_listeners-254"><a href="#SpychWake.stop_listeners-254"><span class="linenos">254</span></a>
-</span><span id="SpychWake.stop_listeners-255"><a href="#SpychWake.stop_listeners-255"><span class="linenos">255</span></a><span class="sd">        - Signals all listener threads to stop at their next available checkpoint</span>
-</span><span id="SpychWake.stop_listeners-256"><a href="#SpychWake.stop_listeners-256"><span class="linenos">256</span></a><span class="sd">        - Note: Does not block; listeners will exit cleanly after their current operation</span>
-</span><span id="SpychWake.stop_listeners-257"><a href="#SpychWake.stop_listeners-257"><span class="linenos">257</span></a><span class="sd">        &quot;&quot;&quot;</span>
-</span><span id="SpychWake.stop_listeners-258"><a href="#SpychWake.stop_listeners-258"><span class="linenos">258</span></a>        <span class="k">for</span> <span class="n">listener</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">wake_listeners</span><span class="p">:</span>
-</span><span id="SpychWake.stop_listeners-259"><a href="#SpychWake.stop_listeners-259"><span class="linenos">259</span></a>            <span class="n">listener</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="SpychWake.stop_listeners-260"><a href="#SpychWake.stop_listeners-260"><span class="linenos">260</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">stop_listeners</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span><span id="SpychWake.stop_listeners-261"><a href="#SpychWake.stop_listeners-261"><span class="linenos">261</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="SpychWake.stop_listeners-262"><a href="#SpychWake.stop_listeners-262"><span class="linenos">262</span></a><span class="sd">        Usage:</span>
+</span><span id="SpychWake.stop_listeners-263"><a href="#SpychWake.stop_listeners-263"><span class="linenos">263</span></a>
+</span><span id="SpychWake.stop_listeners-264"><a href="#SpychWake.stop_listeners-264"><span class="linenos">264</span></a><span class="sd">        - Signals all listener threads to stop at their next available checkpoint</span>
+</span><span id="SpychWake.stop_listeners-265"><a href="#SpychWake.stop_listeners-265"><span class="linenos">265</span></a><span class="sd">        - Note: Does not block; listeners will exit cleanly after their current operation</span>
+</span><span id="SpychWake.stop_listeners-266"><a href="#SpychWake.stop_listeners-266"><span class="linenos">266</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="SpychWake.stop_listeners-267"><a href="#SpychWake.stop_listeners-267"><span class="linenos">267</span></a>        <span class="k">for</span> <span class="n">listener</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">wake_listeners</span><span class="p">:</span>
+</span><span id="SpychWake.stop_listeners-268"><a href="#SpychWake.stop_listeners-268"><span class="linenos">268</span></a>            <span class="n">listener</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span>
 </span></pre></div>
 
 
@@ -1385,15 +1412,15 @@ processing a wake event)</li>
 
     </div>
     <a class="headerlink" href="#SpychWake.stop"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="SpychWake.stop-261"><a href="#SpychWake.stop-261"><span class="linenos">261</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">stop</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-</span><span id="SpychWake.stop-262"><a href="#SpychWake.stop-262"><span class="linenos">262</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="SpychWake.stop-263"><a href="#SpychWake.stop-263"><span class="linenos">263</span></a><span class="sd">        Usage:</span>
-</span><span id="SpychWake.stop-264"><a href="#SpychWake.stop-264"><span class="linenos">264</span></a>
-</span><span id="SpychWake.stop-265"><a href="#SpychWake.stop-265"><span class="linenos">265</span></a><span class="sd">        - Stops all listener threads and exits the `start` loop</span>
-</span><span id="SpychWake.stop-266"><a href="#SpychWake.stop-266"><span class="linenos">266</span></a><span class="sd">        - Note: Combines `stop_listeners` with setting the kill flag on the main loop</span>
-</span><span id="SpychWake.stop-267"><a href="#SpychWake.stop-267"><span class="linenos">267</span></a><span class="sd">        &quot;&quot;&quot;</span>
-</span><span id="SpychWake.stop-268"><a href="#SpychWake.stop-268"><span class="linenos">268</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">stop_listeners</span><span class="p">()</span>
-</span><span id="SpychWake.stop-269"><a href="#SpychWake.stop-269"><span class="linenos">269</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">kill</span> <span class="o">=</span> <span class="kc">True</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="SpychWake.stop-270"><a href="#SpychWake.stop-270"><span class="linenos">270</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">stop</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span><span id="SpychWake.stop-271"><a href="#SpychWake.stop-271"><span class="linenos">271</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="SpychWake.stop-272"><a href="#SpychWake.stop-272"><span class="linenos">272</span></a><span class="sd">        Usage:</span>
+</span><span id="SpychWake.stop-273"><a href="#SpychWake.stop-273"><span class="linenos">273</span></a>
+</span><span id="SpychWake.stop-274"><a href="#SpychWake.stop-274"><span class="linenos">274</span></a><span class="sd">        - Stops all listener threads and exits the `start` loop</span>
+</span><span id="SpychWake.stop-275"><a href="#SpychWake.stop-275"><span class="linenos">275</span></a><span class="sd">        - Note: Combines `stop_listeners` with setting the kill flag on the main loop</span>
+</span><span id="SpychWake.stop-276"><a href="#SpychWake.stop-276"><span class="linenos">276</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="SpychWake.stop-277"><a href="#SpychWake.stop-277"><span class="linenos">277</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">stop_listeners</span><span class="p">()</span>
+</span><span id="SpychWake.stop-278"><a href="#SpychWake.stop-278"><span class="linenos">278</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">kill</span> <span class="o">=</span> <span class="kc">True</span>
 </span></pre></div>
 
 
@@ -1418,41 +1445,41 @@ processing a wake event)</li>
 
     </div>
     <a class="headerlink" href="#SpychWake.wake"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="SpychWake.wake-271"><a href="#SpychWake.wake-271"><span class="linenos">271</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">wake</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">wake_word</span><span class="p">):</span>
-</span><span id="SpychWake.wake-272"><a href="#SpychWake.wake-272"><span class="linenos">272</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="SpychWake.wake-273"><a href="#SpychWake.wake-273"><span class="linenos">273</span></a><span class="sd">        Usage:</span>
-</span><span id="SpychWake.wake-274"><a href="#SpychWake.wake-274"><span class="linenos">274</span></a>
-</span><span id="SpychWake.wake-275"><a href="#SpychWake.wake-275"><span class="linenos">275</span></a><span class="sd">        - Called internally when a wake word is detected</span>
-</span><span id="SpychWake.wake-276"><a href="#SpychWake.wake-276"><span class="linenos">276</span></a><span class="sd">        - Stops all listeners, locks the system, executes the mapped callback for the</span>
-</span><span id="SpychWake.wake-277"><a href="#SpychWake.wake-277"><span class="linenos">277</span></a><span class="sd">          detected wake word, then unlocks</span>
-</span><span id="SpychWake.wake-278"><a href="#SpychWake.wake-278"><span class="linenos">278</span></a>
-</span><span id="SpychWake.wake-279"><a href="#SpychWake.wake-279"><span class="linenos">279</span></a><span class="sd">        Requires:</span>
-</span><span id="SpychWake.wake-280"><a href="#SpychWake.wake-280"><span class="linenos">280</span></a>
-</span><span id="SpychWake.wake-281"><a href="#SpychWake.wake-281"><span class="linenos">281</span></a><span class="sd">        - `wake_word`:</span>
-</span><span id="SpychWake.wake-282"><a href="#SpychWake.wake-282"><span class="linenos">282</span></a><span class="sd">            - Type: str</span>
-</span><span id="SpychWake.wake-283"><a href="#SpychWake.wake-283"><span class="linenos">283</span></a><span class="sd">            - What: The detected wake word, used to look up the correct callback in</span>
-</span><span id="SpychWake.wake-284"><a href="#SpychWake.wake-284"><span class="linenos">284</span></a><span class="sd">              `wake_word_map`</span>
-</span><span id="SpychWake.wake-285"><a href="#SpychWake.wake-285"><span class="linenos">285</span></a>
-</span><span id="SpychWake.wake-286"><a href="#SpychWake.wake-286"><span class="linenos">286</span></a><span class="sd">        Notes:</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="SpychWake.wake-280"><a href="#SpychWake.wake-280"><span class="linenos">280</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">wake</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">wake_word</span><span class="p">):</span>
+</span><span id="SpychWake.wake-281"><a href="#SpychWake.wake-281"><span class="linenos">281</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="SpychWake.wake-282"><a href="#SpychWake.wake-282"><span class="linenos">282</span></a><span class="sd">        Usage:</span>
+</span><span id="SpychWake.wake-283"><a href="#SpychWake.wake-283"><span class="linenos">283</span></a>
+</span><span id="SpychWake.wake-284"><a href="#SpychWake.wake-284"><span class="linenos">284</span></a><span class="sd">        - Called internally when a wake word is detected</span>
+</span><span id="SpychWake.wake-285"><a href="#SpychWake.wake-285"><span class="linenos">285</span></a><span class="sd">        - Stops all listeners, locks the system, executes the mapped callback for the</span>
+</span><span id="SpychWake.wake-286"><a href="#SpychWake.wake-286"><span class="linenos">286</span></a><span class="sd">          detected wake word, then unlocks</span>
 </span><span id="SpychWake.wake-287"><a href="#SpychWake.wake-287"><span class="linenos">287</span></a>
-</span><span id="SpychWake.wake-288"><a href="#SpychWake.wake-288"><span class="linenos">288</span></a><span class="sd">        - If the system is already locked when `wake` is called, the call is a no-op</span>
-</span><span id="SpychWake.wake-289"><a href="#SpychWake.wake-289"><span class="linenos">289</span></a><span class="sd">          to prevent concurrent wake executions</span>
-</span><span id="SpychWake.wake-290"><a href="#SpychWake.wake-290"><span class="linenos">290</span></a><span class="sd">        - Any exception raised by the callback is caught and re-raised as a spych exception</span>
-</span><span id="SpychWake.wake-291"><a href="#SpychWake.wake-291"><span class="linenos">291</span></a><span class="sd">        - The system is always unlocked in the `finally` block, even if the callback raises</span>
-</span><span id="SpychWake.wake-292"><a href="#SpychWake.wake-292"><span class="linenos">292</span></a><span class="sd">        &quot;&quot;&quot;</span>
-</span><span id="SpychWake.wake-293"><a href="#SpychWake.wake-293"><span class="linenos">293</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">stop_listeners</span><span class="p">()</span>
-</span><span id="SpychWake.wake-294"><a href="#SpychWake.wake-294"><span class="linenos">294</span></a>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">locked</span><span class="p">:</span>
-</span><span id="SpychWake.wake-295"><a href="#SpychWake.wake-295"><span class="linenos">295</span></a>            <span class="k">return</span>
-</span><span id="SpychWake.wake-296"><a href="#SpychWake.wake-296"><span class="linenos">296</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">locked</span> <span class="o">=</span> <span class="kc">True</span>
-</span><span id="SpychWake.wake-297"><a href="#SpychWake.wake-297"><span class="linenos">297</span></a>        <span class="k">try</span><span class="p">:</span>
-</span><span id="SpychWake.wake-298"><a href="#SpychWake.wake-298"><span class="linenos">298</span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">wake_word_map</span><span class="p">[</span><span class="n">wake_word</span><span class="p">]()</span>
-</span><span id="SpychWake.wake-299"><a href="#SpychWake.wake-299"><span class="linenos">299</span></a>        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-</span><span id="SpychWake.wake-300"><a href="#SpychWake.wake-300"><span class="linenos">300</span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">notify</span><span class="p">(</span>
-</span><span id="SpychWake.wake-301"><a href="#SpychWake.wake-301"><span class="linenos">301</span></a>                <span class="sa">f</span><span class="s2">&quot;Error in on_wake_fn for &#39;</span><span class="si">{</span><span class="n">wake_word</span><span class="si">}</span><span class="s2">&#39;: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
-</span><span id="SpychWake.wake-302"><a href="#SpychWake.wake-302"><span class="linenos">302</span></a>                <span class="n">notification_type</span><span class="o">=</span><span class="s2">&quot;exception&quot;</span><span class="p">,</span>
-</span><span id="SpychWake.wake-303"><a href="#SpychWake.wake-303"><span class="linenos">303</span></a>            <span class="p">)</span>
-</span><span id="SpychWake.wake-304"><a href="#SpychWake.wake-304"><span class="linenos">304</span></a>        <span class="k">finally</span><span class="p">:</span>
-</span><span id="SpychWake.wake-305"><a href="#SpychWake.wake-305"><span class="linenos">305</span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">locked</span> <span class="o">=</span> <span class="kc">False</span>
+</span><span id="SpychWake.wake-288"><a href="#SpychWake.wake-288"><span class="linenos">288</span></a><span class="sd">        Requires:</span>
+</span><span id="SpychWake.wake-289"><a href="#SpychWake.wake-289"><span class="linenos">289</span></a>
+</span><span id="SpychWake.wake-290"><a href="#SpychWake.wake-290"><span class="linenos">290</span></a><span class="sd">        - `wake_word`:</span>
+</span><span id="SpychWake.wake-291"><a href="#SpychWake.wake-291"><span class="linenos">291</span></a><span class="sd">            - Type: str</span>
+</span><span id="SpychWake.wake-292"><a href="#SpychWake.wake-292"><span class="linenos">292</span></a><span class="sd">            - What: The detected wake word, used to look up the correct callback in</span>
+</span><span id="SpychWake.wake-293"><a href="#SpychWake.wake-293"><span class="linenos">293</span></a><span class="sd">              `wake_word_map`</span>
+</span><span id="SpychWake.wake-294"><a href="#SpychWake.wake-294"><span class="linenos">294</span></a>
+</span><span id="SpychWake.wake-295"><a href="#SpychWake.wake-295"><span class="linenos">295</span></a><span class="sd">        Notes:</span>
+</span><span id="SpychWake.wake-296"><a href="#SpychWake.wake-296"><span class="linenos">296</span></a>
+</span><span id="SpychWake.wake-297"><a href="#SpychWake.wake-297"><span class="linenos">297</span></a><span class="sd">        - If the system is already locked when `wake` is called, the call is a no-op</span>
+</span><span id="SpychWake.wake-298"><a href="#SpychWake.wake-298"><span class="linenos">298</span></a><span class="sd">          to prevent concurrent wake executions</span>
+</span><span id="SpychWake.wake-299"><a href="#SpychWake.wake-299"><span class="linenos">299</span></a><span class="sd">        - Any exception raised by the callback is caught and re-raised as a spych exception</span>
+</span><span id="SpychWake.wake-300"><a href="#SpychWake.wake-300"><span class="linenos">300</span></a><span class="sd">        - The system is always unlocked in the `finally` block, even if the callback raises</span>
+</span><span id="SpychWake.wake-301"><a href="#SpychWake.wake-301"><span class="linenos">301</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="SpychWake.wake-302"><a href="#SpychWake.wake-302"><span class="linenos">302</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">stop_listeners</span><span class="p">()</span>
+</span><span id="SpychWake.wake-303"><a href="#SpychWake.wake-303"><span class="linenos">303</span></a>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">locked</span><span class="p">:</span>
+</span><span id="SpychWake.wake-304"><a href="#SpychWake.wake-304"><span class="linenos">304</span></a>            <span class="k">return</span>
+</span><span id="SpychWake.wake-305"><a href="#SpychWake.wake-305"><span class="linenos">305</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">locked</span> <span class="o">=</span> <span class="kc">True</span>
+</span><span id="SpychWake.wake-306"><a href="#SpychWake.wake-306"><span class="linenos">306</span></a>        <span class="k">try</span><span class="p">:</span>
+</span><span id="SpychWake.wake-307"><a href="#SpychWake.wake-307"><span class="linenos">307</span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">wake_word_map</span><span class="p">[</span><span class="n">wake_word</span><span class="p">]()</span>
+</span><span id="SpychWake.wake-308"><a href="#SpychWake.wake-308"><span class="linenos">308</span></a>        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+</span><span id="SpychWake.wake-309"><a href="#SpychWake.wake-309"><span class="linenos">309</span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">notify</span><span class="p">(</span>
+</span><span id="SpychWake.wake-310"><a href="#SpychWake.wake-310"><span class="linenos">310</span></a>                <span class="sa">f</span><span class="s2">&quot;Error in on_wake_fn for &#39;</span><span class="si">{</span><span class="n">wake_word</span><span class="si">}</span><span class="s2">&#39;: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+</span><span id="SpychWake.wake-311"><a href="#SpychWake.wake-311"><span class="linenos">311</span></a>                <span class="n">notification_type</span><span class="o">=</span><span class="s2">&quot;exception&quot;</span><span class="p">,</span>
+</span><span id="SpychWake.wake-312"><a href="#SpychWake.wake-312"><span class="linenos">312</span></a>            <span class="p">)</span>
+</span><span id="SpychWake.wake-313"><a href="#SpychWake.wake-313"><span class="linenos">313</span></a>        <span class="k">finally</span><span class="p">:</span>
+</span><span id="SpychWake.wake-314"><a href="#SpychWake.wake-314"><span class="linenos">314</span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">locked</span> <span class="o">=</span> <span class="kc">False</span>
 </span></pre></div>
 
 

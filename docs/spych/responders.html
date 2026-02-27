@@ -190,7 +190,7 @@
 </span><span id="L-56"><a href="#L-56"><span class="linenos"> 56</span></a>        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
 </span><span id="L-57"><a href="#L-57"><span class="linenos"> 57</span></a>            <span class="s2">&quot;Subclasses must implement the `respond` method&quot;</span>
 </span><span id="L-58"><a href="#L-58"><span class="linenos"> 58</span></a>        <span class="p">)</span>
-</span><span id="L-59"><a href="#L-59"><span class="linenos"> 59</span></a>    
+</span><span id="L-59"><a href="#L-59"><span class="linenos"> 59</span></a>
 </span><span id="L-60"><a href="#L-60"><span class="linenos"> 60</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">on_listen_start</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 </span><span id="L-61"><a href="#L-61"><span class="linenos"> 61</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="L-62"><a href="#L-62"><span class="linenos"> 62</span></a><span class="sd">        Usage:</span>
@@ -205,7 +205,7 @@
 </span><span id="L-71"><a href="#L-71"><span class="linenos"> 71</span></a><span class="sd">        &quot;&quot;&quot;</span>
 </span><span id="L-72"><a href="#L-72"><span class="linenos"> 72</span></a>        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Waiting </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">listen_duration</span><span class="si">}</span><span class="s2">s for instructions...&quot;</span><span class="p">)</span>
 </span><span id="L-73"><a href="#L-73"><span class="linenos"> 73</span></a>        <span class="k">return</span> <span class="kc">None</span>
-</span><span id="L-74"><a href="#L-74"><span class="linenos"> 74</span></a>    
+</span><span id="L-74"><a href="#L-74"><span class="linenos"> 74</span></a>
 </span><span id="L-75"><a href="#L-75"><span class="linenos"> 75</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">on_user_input</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user_input</span><span class="p">):</span>
 </span><span id="L-76"><a href="#L-76"><span class="linenos"> 76</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="L-77"><a href="#L-77"><span class="linenos"> 77</span></a><span class="sd">        Usage:</span>
@@ -239,7 +239,7 @@
 </span><span id="L-105"><a href="#L-105"><span class="linenos">105</span></a><span class="sd">        - `response`:</span>
 </span><span id="L-106"><a href="#L-106"><span class="linenos">106</span></a><span class="sd">            - Type: str</span>
 </span><span id="L-107"><a href="#L-107"><span class="linenos">107</span></a><span class="sd">            - What: The generated response string</span>
-</span><span id="L-108"><a href="#L-108"><span class="linenos">108</span></a><span class="sd">            </span>
+</span><span id="L-108"><a href="#L-108"><span class="linenos">108</span></a>
 </span><span id="L-109"><a href="#L-109"><span class="linenos">109</span></a><span class="sd">        Returns:</span>
 </span><span id="L-110"><a href="#L-110"><span class="linenos">110</span></a><span class="sd">        - `None` (default behavior does nothing)</span>
 </span><span id="L-111"><a href="#L-111"><span class="linenos">111</span></a><span class="sd">        &quot;&quot;&quot;</span>
@@ -377,71 +377,74 @@
 </span><span id="L-243"><a href="#L-243"><span class="linenos">243</span></a>
 </span><span id="L-244"><a href="#L-244"><span class="linenos">244</span></a>
 </span><span id="L-245"><a href="#L-245"><span class="linenos">245</span></a><span class="k">class</span><span class="w"> </span><span class="nc">LocalClaudeCodeCLIResponder</span><span class="p">(</span><span class="n">BaseResponder</span><span class="p">):</span>
-</span><span id="L-246"><a href="#L-246"><span class="linenos">246</span></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">spych_object</span><span class="p">,</span> <span class="n">continue_conversation</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">listen_duration</span><span class="o">=</span><span class="mi">5</span><span class="p">):</span>
-</span><span id="L-247"><a href="#L-247"><span class="linenos">247</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="L-248"><a href="#L-248"><span class="linenos">248</span></a><span class="sd">        Usage:</span>
-</span><span id="L-249"><a href="#L-249"><span class="linenos">249</span></a>
-</span><span id="L-250"><a href="#L-250"><span class="linenos">250</span></a><span class="sd">        - A responder that pipes transcribed audio into the Claude Code CLI (`claude -p`)</span>
-</span><span id="L-251"><a href="#L-251"><span class="linenos">251</span></a><span class="sd">          and returns the final response, waiting for all tool calls to complete</span>
-</span><span id="L-252"><a href="#L-252"><span class="linenos">252</span></a>
-</span><span id="L-253"><a href="#L-253"><span class="linenos">253</span></a><span class="sd">        Requires:</span>
+</span><span id="L-246"><a href="#L-246"><span class="linenos">246</span></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+</span><span id="L-247"><a href="#L-247"><span class="linenos">247</span></a>        <span class="bp">self</span><span class="p">,</span> <span class="n">spych_object</span><span class="p">,</span> <span class="n">continue_conversation</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">listen_duration</span><span class="o">=</span><span class="mi">5</span>
+</span><span id="L-248"><a href="#L-248"><span class="linenos">248</span></a>    <span class="p">):</span>
+</span><span id="L-249"><a href="#L-249"><span class="linenos">249</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-250"><a href="#L-250"><span class="linenos">250</span></a><span class="sd">        Usage:</span>
+</span><span id="L-251"><a href="#L-251"><span class="linenos">251</span></a>
+</span><span id="L-252"><a href="#L-252"><span class="linenos">252</span></a><span class="sd">        - A responder that pipes transcribed audio into the Claude Code CLI (`claude -p`)</span>
+</span><span id="L-253"><a href="#L-253"><span class="linenos">253</span></a><span class="sd">          and returns the final response, waiting for all tool calls to complete</span>
 </span><span id="L-254"><a href="#L-254"><span class="linenos">254</span></a>
-</span><span id="L-255"><a href="#L-255"><span class="linenos">255</span></a><span class="sd">        - `spych_object`:</span>
-</span><span id="L-256"><a href="#L-256"><span class="linenos">256</span></a><span class="sd">            - Type: Spych</span>
-</span><span id="L-257"><a href="#L-257"><span class="linenos">257</span></a><span class="sd">            - What: An initialized Spych instance used to record and transcribe audio</span>
-</span><span id="L-258"><a href="#L-258"><span class="linenos">258</span></a>
-</span><span id="L-259"><a href="#L-259"><span class="linenos">259</span></a><span class="sd">        Optional:</span>
+</span><span id="L-255"><a href="#L-255"><span class="linenos">255</span></a><span class="sd">        Requires:</span>
+</span><span id="L-256"><a href="#L-256"><span class="linenos">256</span></a>
+</span><span id="L-257"><a href="#L-257"><span class="linenos">257</span></a><span class="sd">        - `spych_object`:</span>
+</span><span id="L-258"><a href="#L-258"><span class="linenos">258</span></a><span class="sd">            - Type: Spych</span>
+</span><span id="L-259"><a href="#L-259"><span class="linenos">259</span></a><span class="sd">            - What: An initialized Spych instance used to record and transcribe audio</span>
 </span><span id="L-260"><a href="#L-260"><span class="linenos">260</span></a>
-</span><span id="L-261"><a href="#L-261"><span class="linenos">261</span></a><span class="sd">        - `continue_conversation`:</span>
-</span><span id="L-262"><a href="#L-262"><span class="linenos">262</span></a><span class="sd">            - Type: bool</span>
-</span><span id="L-263"><a href="#L-263"><span class="linenos">263</span></a><span class="sd">            - What: Whether to pass `--continue` to reuse the most recent session</span>
-</span><span id="L-264"><a href="#L-264"><span class="linenos">264</span></a><span class="sd">            - Default: True</span>
-</span><span id="L-265"><a href="#L-265"><span class="linenos">265</span></a>
-</span><span id="L-266"><a href="#L-266"><span class="linenos">266</span></a><span class="sd">        - `listen_duration`:</span>
-</span><span id="L-267"><a href="#L-267"><span class="linenos">267</span></a><span class="sd">            - Type: int | float</span>
-</span><span id="L-268"><a href="#L-268"><span class="linenos">268</span></a><span class="sd">            - What: The number of seconds to listen for after the wake word is detected</span>
-</span><span id="L-269"><a href="#L-269"><span class="linenos">269</span></a><span class="sd">            - Default: 5</span>
-</span><span id="L-270"><a href="#L-270"><span class="linenos">270</span></a>
-</span><span id="L-271"><a href="#L-271"><span class="linenos">271</span></a><span class="sd">        Notes:</span>
+</span><span id="L-261"><a href="#L-261"><span class="linenos">261</span></a><span class="sd">        Optional:</span>
+</span><span id="L-262"><a href="#L-262"><span class="linenos">262</span></a>
+</span><span id="L-263"><a href="#L-263"><span class="linenos">263</span></a><span class="sd">        - `continue_conversation`:</span>
+</span><span id="L-264"><a href="#L-264"><span class="linenos">264</span></a><span class="sd">            - Type: bool</span>
+</span><span id="L-265"><a href="#L-265"><span class="linenos">265</span></a><span class="sd">            - What: Whether to pass `--continue` to reuse the most recent session</span>
+</span><span id="L-266"><a href="#L-266"><span class="linenos">266</span></a><span class="sd">            - Default: True</span>
+</span><span id="L-267"><a href="#L-267"><span class="linenos">267</span></a>
+</span><span id="L-268"><a href="#L-268"><span class="linenos">268</span></a><span class="sd">        - `listen_duration`:</span>
+</span><span id="L-269"><a href="#L-269"><span class="linenos">269</span></a><span class="sd">            - Type: int | float</span>
+</span><span id="L-270"><a href="#L-270"><span class="linenos">270</span></a><span class="sd">            - What: The number of seconds to listen for after the wake word is detected</span>
+</span><span id="L-271"><a href="#L-271"><span class="linenos">271</span></a><span class="sd">            - Default: 5</span>
 </span><span id="L-272"><a href="#L-272"><span class="linenos">272</span></a>
-</span><span id="L-273"><a href="#L-273"><span class="linenos">273</span></a><span class="sd">        - Uses `--output-format json` so the subprocess blocks until Claude has finished</span>
-</span><span id="L-274"><a href="#L-274"><span class="linenos">274</span></a><span class="sd">          all tool calls and returns only the final result, not intermediate tool call XML</span>
-</span><span id="L-275"><a href="#L-275"><span class="linenos">275</span></a><span class="sd">        - Claude Code must be installed and authenticated before use</span>
-</span><span id="L-276"><a href="#L-276"><span class="linenos">276</span></a><span class="sd">        &quot;&quot;&quot;</span>
-</span><span id="L-277"><a href="#L-277"><span class="linenos">277</span></a>        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">spych_object</span><span class="o">=</span><span class="n">spych_object</span><span class="p">,</span> <span class="n">listen_duration</span><span class="o">=</span><span class="n">listen_duration</span><span class="p">)</span>
-</span><span id="L-278"><a href="#L-278"><span class="linenos">278</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;Claude Code&quot;</span>
-</span><span id="L-279"><a href="#L-279"><span class="linenos">279</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">continue_conversation</span> <span class="o">=</span> <span class="n">continue_conversation</span>
-</span><span id="L-280"><a href="#L-280"><span class="linenos">280</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">first_call</span> <span class="o">=</span> <span class="kc">True</span>
-</span><span id="L-281"><a href="#L-281"><span class="linenos">281</span></a>
-</span><span id="L-282"><a href="#L-282"><span class="linenos">282</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">respond</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user_input</span><span class="p">):</span>
-</span><span id="L-283"><a href="#L-283"><span class="linenos">283</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="L-284"><a href="#L-284"><span class="linenos">284</span></a><span class="sd">        Usage:</span>
+</span><span id="L-273"><a href="#L-273"><span class="linenos">273</span></a><span class="sd">        Notes:</span>
+</span><span id="L-274"><a href="#L-274"><span class="linenos">274</span></a>
+</span><span id="L-275"><a href="#L-275"><span class="linenos">275</span></a><span class="sd">        - Uses `--output-format json` so the subprocess blocks until Claude has finished</span>
+</span><span id="L-276"><a href="#L-276"><span class="linenos">276</span></a><span class="sd">          all tool calls and returns only the final result, not intermediate tool call XML</span>
+</span><span id="L-277"><a href="#L-277"><span class="linenos">277</span></a><span class="sd">        - Claude Code must be installed and authenticated before use</span>
+</span><span id="L-278"><a href="#L-278"><span class="linenos">278</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="L-279"><a href="#L-279"><span class="linenos">279</span></a>        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+</span><span id="L-280"><a href="#L-280"><span class="linenos">280</span></a>            <span class="n">spych_object</span><span class="o">=</span><span class="n">spych_object</span><span class="p">,</span> <span class="n">listen_duration</span><span class="o">=</span><span class="n">listen_duration</span>
+</span><span id="L-281"><a href="#L-281"><span class="linenos">281</span></a>        <span class="p">)</span>
+</span><span id="L-282"><a href="#L-282"><span class="linenos">282</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;Claude Code&quot;</span>
+</span><span id="L-283"><a href="#L-283"><span class="linenos">283</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">continue_conversation</span> <span class="o">=</span> <span class="n">continue_conversation</span>
+</span><span id="L-284"><a href="#L-284"><span class="linenos">284</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">first_call</span> <span class="o">=</span> <span class="kc">True</span>
 </span><span id="L-285"><a href="#L-285"><span class="linenos">285</span></a>
-</span><span id="L-286"><a href="#L-286"><span class="linenos">286</span></a><span class="sd">        - Pipes the transcribed user input into `claude -p` and returns the final response</span>
-</span><span id="L-287"><a href="#L-287"><span class="linenos">287</span></a><span class="sd">          after all tool calls have completed</span>
-</span><span id="L-288"><a href="#L-288"><span class="linenos">288</span></a>
-</span><span id="L-289"><a href="#L-289"><span class="linenos">289</span></a><span class="sd">        Requires:</span>
-</span><span id="L-290"><a href="#L-290"><span class="linenos">290</span></a>
-</span><span id="L-291"><a href="#L-291"><span class="linenos">291</span></a><span class="sd">        - `user_input`:</span>
-</span><span id="L-292"><a href="#L-292"><span class="linenos">292</span></a><span class="sd">            - Type: str</span>
-</span><span id="L-293"><a href="#L-293"><span class="linenos">293</span></a><span class="sd">            - What: The transcribed text from the user&#39;s audio input</span>
+</span><span id="L-286"><a href="#L-286"><span class="linenos">286</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">respond</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user_input</span><span class="p">):</span>
+</span><span id="L-287"><a href="#L-287"><span class="linenos">287</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-288"><a href="#L-288"><span class="linenos">288</span></a><span class="sd">        Usage:</span>
+</span><span id="L-289"><a href="#L-289"><span class="linenos">289</span></a>
+</span><span id="L-290"><a href="#L-290"><span class="linenos">290</span></a><span class="sd">        - Pipes the transcribed user input into `claude -p` and returns the final response</span>
+</span><span id="L-291"><a href="#L-291"><span class="linenos">291</span></a><span class="sd">          after all tool calls have completed</span>
+</span><span id="L-292"><a href="#L-292"><span class="linenos">292</span></a>
+</span><span id="L-293"><a href="#L-293"><span class="linenos">293</span></a><span class="sd">        Requires:</span>
 </span><span id="L-294"><a href="#L-294"><span class="linenos">294</span></a>
-</span><span id="L-295"><a href="#L-295"><span class="linenos">295</span></a><span class="sd">        Returns:</span>
-</span><span id="L-296"><a href="#L-296"><span class="linenos">296</span></a>
-</span><span id="L-297"><a href="#L-297"><span class="linenos">297</span></a><span class="sd">        - `response`:</span>
-</span><span id="L-298"><a href="#L-298"><span class="linenos">298</span></a><span class="sd">            - Type: str</span>
-</span><span id="L-299"><a href="#L-299"><span class="linenos">299</span></a><span class="sd">            - What: The final response string from Claude Code</span>
-</span><span id="L-300"><a href="#L-300"><span class="linenos">300</span></a><span class="sd">        &quot;&quot;&quot;</span>
-</span><span id="L-301"><a href="#L-301"><span class="linenos">301</span></a>        <span class="n">cmd</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;claude&quot;</span><span class="p">,</span> <span class="s2">&quot;-p&quot;</span><span class="p">,</span> <span class="n">user_input</span><span class="p">,</span> <span class="s2">&quot;--output-format&quot;</span><span class="p">,</span> <span class="s2">&quot;json&quot;</span><span class="p">]</span>
-</span><span id="L-302"><a href="#L-302"><span class="linenos">302</span></a>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">continue_conversation</span> <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">first_call</span><span class="p">:</span>
-</span><span id="L-303"><a href="#L-303"><span class="linenos">303</span></a>            <span class="n">cmd</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;--continue&quot;</span><span class="p">)</span>
-</span><span id="L-304"><a href="#L-304"><span class="linenos">304</span></a>        <span class="n">result</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">cmd</span><span class="p">,</span> <span class="n">capture_output</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">text</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-</span><span id="L-305"><a href="#L-305"><span class="linenos">305</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">first_call</span> <span class="o">=</span> <span class="kc">False</span>
-</span><span id="L-306"><a href="#L-306"><span class="linenos">306</span></a>        <span class="k">try</span><span class="p">:</span>
-</span><span id="L-307"><a href="#L-307"><span class="linenos">307</span></a>            <span class="k">return</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">stdout</span><span class="p">)</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;result&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
-</span><span id="L-308"><a href="#L-308"><span class="linenos">308</span></a>        <span class="k">except</span> <span class="n">json</span><span class="o">.</span><span class="n">JSONDecodeError</span><span class="p">:</span>
-</span><span id="L-309"><a href="#L-309"><span class="linenos">309</span></a>            <span class="k">return</span> <span class="n">result</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
-</span><span id="L-310"><a href="#L-310"><span class="linenos">310</span></a>        
+</span><span id="L-295"><a href="#L-295"><span class="linenos">295</span></a><span class="sd">        - `user_input`:</span>
+</span><span id="L-296"><a href="#L-296"><span class="linenos">296</span></a><span class="sd">            - Type: str</span>
+</span><span id="L-297"><a href="#L-297"><span class="linenos">297</span></a><span class="sd">            - What: The transcribed text from the user&#39;s audio input</span>
+</span><span id="L-298"><a href="#L-298"><span class="linenos">298</span></a>
+</span><span id="L-299"><a href="#L-299"><span class="linenos">299</span></a><span class="sd">        Returns:</span>
+</span><span id="L-300"><a href="#L-300"><span class="linenos">300</span></a>
+</span><span id="L-301"><a href="#L-301"><span class="linenos">301</span></a><span class="sd">        - `response`:</span>
+</span><span id="L-302"><a href="#L-302"><span class="linenos">302</span></a><span class="sd">            - Type: str</span>
+</span><span id="L-303"><a href="#L-303"><span class="linenos">303</span></a><span class="sd">            - What: The final response string from Claude Code</span>
+</span><span id="L-304"><a href="#L-304"><span class="linenos">304</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="L-305"><a href="#L-305"><span class="linenos">305</span></a>        <span class="n">cmd</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;claude&quot;</span><span class="p">,</span> <span class="s2">&quot;-p&quot;</span><span class="p">,</span> <span class="n">user_input</span><span class="p">,</span> <span class="s2">&quot;--output-format&quot;</span><span class="p">,</span> <span class="s2">&quot;json&quot;</span><span class="p">]</span>
+</span><span id="L-306"><a href="#L-306"><span class="linenos">306</span></a>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">continue_conversation</span> <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">first_call</span><span class="p">:</span>
+</span><span id="L-307"><a href="#L-307"><span class="linenos">307</span></a>            <span class="n">cmd</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;--continue&quot;</span><span class="p">)</span>
+</span><span id="L-308"><a href="#L-308"><span class="linenos">308</span></a>        <span class="n">result</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">cmd</span><span class="p">,</span> <span class="n">capture_output</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">text</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</span><span id="L-309"><a href="#L-309"><span class="linenos">309</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">first_call</span> <span class="o">=</span> <span class="kc">False</span>
+</span><span id="L-310"><a href="#L-310"><span class="linenos">310</span></a>        <span class="k">try</span><span class="p">:</span>
+</span><span id="L-311"><a href="#L-311"><span class="linenos">311</span></a>            <span class="k">return</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">stdout</span><span class="p">)</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;result&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+</span><span id="L-312"><a href="#L-312"><span class="linenos">312</span></a>        <span class="k">except</span> <span class="n">json</span><span class="o">.</span><span class="n">JSONDecodeError</span><span class="p">:</span>
+</span><span id="L-313"><a href="#L-313"><span class="linenos">313</span></a>            <span class="k">return</span> <span class="n">result</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
 </span></pre></div>
 
 
@@ -511,7 +514,7 @@
 </span><span id="BaseResponder-57"><a href="#BaseResponder-57"><span class="linenos"> 57</span></a>        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
 </span><span id="BaseResponder-58"><a href="#BaseResponder-58"><span class="linenos"> 58</span></a>            <span class="s2">&quot;Subclasses must implement the `respond` method&quot;</span>
 </span><span id="BaseResponder-59"><a href="#BaseResponder-59"><span class="linenos"> 59</span></a>        <span class="p">)</span>
-</span><span id="BaseResponder-60"><a href="#BaseResponder-60"><span class="linenos"> 60</span></a>    
+</span><span id="BaseResponder-60"><a href="#BaseResponder-60"><span class="linenos"> 60</span></a>
 </span><span id="BaseResponder-61"><a href="#BaseResponder-61"><span class="linenos"> 61</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">on_listen_start</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 </span><span id="BaseResponder-62"><a href="#BaseResponder-62"><span class="linenos"> 62</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="BaseResponder-63"><a href="#BaseResponder-63"><span class="linenos"> 63</span></a><span class="sd">        Usage:</span>
@@ -526,7 +529,7 @@
 </span><span id="BaseResponder-72"><a href="#BaseResponder-72"><span class="linenos"> 72</span></a><span class="sd">        &quot;&quot;&quot;</span>
 </span><span id="BaseResponder-73"><a href="#BaseResponder-73"><span class="linenos"> 73</span></a>        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Waiting </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">listen_duration</span><span class="si">}</span><span class="s2">s for instructions...&quot;</span><span class="p">)</span>
 </span><span id="BaseResponder-74"><a href="#BaseResponder-74"><span class="linenos"> 74</span></a>        <span class="k">return</span> <span class="kc">None</span>
-</span><span id="BaseResponder-75"><a href="#BaseResponder-75"><span class="linenos"> 75</span></a>    
+</span><span id="BaseResponder-75"><a href="#BaseResponder-75"><span class="linenos"> 75</span></a>
 </span><span id="BaseResponder-76"><a href="#BaseResponder-76"><span class="linenos"> 76</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">on_user_input</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user_input</span><span class="p">):</span>
 </span><span id="BaseResponder-77"><a href="#BaseResponder-77"><span class="linenos"> 77</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="BaseResponder-78"><a href="#BaseResponder-78"><span class="linenos"> 78</span></a><span class="sd">        Usage:</span>
@@ -560,7 +563,7 @@
 </span><span id="BaseResponder-106"><a href="#BaseResponder-106"><span class="linenos">106</span></a><span class="sd">        - `response`:</span>
 </span><span id="BaseResponder-107"><a href="#BaseResponder-107"><span class="linenos">107</span></a><span class="sd">            - Type: str</span>
 </span><span id="BaseResponder-108"><a href="#BaseResponder-108"><span class="linenos">108</span></a><span class="sd">            - What: The generated response string</span>
-</span><span id="BaseResponder-109"><a href="#BaseResponder-109"><span class="linenos">109</span></a><span class="sd">            </span>
+</span><span id="BaseResponder-109"><a href="#BaseResponder-109"><span class="linenos">109</span></a>
 </span><span id="BaseResponder-110"><a href="#BaseResponder-110"><span class="linenos">110</span></a><span class="sd">        Returns:</span>
 </span><span id="BaseResponder-111"><a href="#BaseResponder-111"><span class="linenos">111</span></a><span class="sd">        - `None` (default behavior does nothing)</span>
 </span><span id="BaseResponder-112"><a href="#BaseResponder-112"><span class="linenos">112</span></a><span class="sd">        &quot;&quot;&quot;</span>
@@ -916,7 +919,7 @@ and handles printing; subclasses only need to handle the response logic</li>
 </span><span id="BaseResponder.on_response-106"><a href="#BaseResponder.on_response-106"><span class="linenos">106</span></a><span class="sd">        - `response`:</span>
 </span><span id="BaseResponder.on_response-107"><a href="#BaseResponder.on_response-107"><span class="linenos">107</span></a><span class="sd">            - Type: str</span>
 </span><span id="BaseResponder.on_response-108"><a href="#BaseResponder.on_response-108"><span class="linenos">108</span></a><span class="sd">            - What: The generated response string</span>
-</span><span id="BaseResponder.on_response-109"><a href="#BaseResponder.on_response-109"><span class="linenos">109</span></a><span class="sd">            </span>
+</span><span id="BaseResponder.on_response-109"><a href="#BaseResponder.on_response-109"><span class="linenos">109</span></a>
 </span><span id="BaseResponder.on_response-110"><a href="#BaseResponder.on_response-110"><span class="linenos">110</span></a><span class="sd">        Returns:</span>
 </span><span id="BaseResponder.on_response-111"><a href="#BaseResponder.on_response-111"><span class="linenos">111</span></a><span class="sd">        - `None` (default behavior does nothing)</span>
 </span><span id="BaseResponder.on_response-112"><a href="#BaseResponder.on_response-112"><span class="linenos">112</span></a><span class="sd">        &quot;&quot;&quot;</span>
@@ -1409,70 +1412,74 @@ the actual history buffer is <code>history_length * 2</code> entries</li>
     </div>
     <a class="headerlink" href="#LocalClaudeCodeCLIResponder"></a>
             <div class="pdoc-code codehilite"><pre><span></span><span id="LocalClaudeCodeCLIResponder-246"><a href="#LocalClaudeCodeCLIResponder-246"><span class="linenos">246</span></a><span class="k">class</span><span class="w"> </span><span class="nc">LocalClaudeCodeCLIResponder</span><span class="p">(</span><span class="n">BaseResponder</span><span class="p">):</span>
-</span><span id="LocalClaudeCodeCLIResponder-247"><a href="#LocalClaudeCodeCLIResponder-247"><span class="linenos">247</span></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">spych_object</span><span class="p">,</span> <span class="n">continue_conversation</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">listen_duration</span><span class="o">=</span><span class="mi">5</span><span class="p">):</span>
-</span><span id="LocalClaudeCodeCLIResponder-248"><a href="#LocalClaudeCodeCLIResponder-248"><span class="linenos">248</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="LocalClaudeCodeCLIResponder-249"><a href="#LocalClaudeCodeCLIResponder-249"><span class="linenos">249</span></a><span class="sd">        Usage:</span>
-</span><span id="LocalClaudeCodeCLIResponder-250"><a href="#LocalClaudeCodeCLIResponder-250"><span class="linenos">250</span></a>
-</span><span id="LocalClaudeCodeCLIResponder-251"><a href="#LocalClaudeCodeCLIResponder-251"><span class="linenos">251</span></a><span class="sd">        - A responder that pipes transcribed audio into the Claude Code CLI (`claude -p`)</span>
-</span><span id="LocalClaudeCodeCLIResponder-252"><a href="#LocalClaudeCodeCLIResponder-252"><span class="linenos">252</span></a><span class="sd">          and returns the final response, waiting for all tool calls to complete</span>
-</span><span id="LocalClaudeCodeCLIResponder-253"><a href="#LocalClaudeCodeCLIResponder-253"><span class="linenos">253</span></a>
-</span><span id="LocalClaudeCodeCLIResponder-254"><a href="#LocalClaudeCodeCLIResponder-254"><span class="linenos">254</span></a><span class="sd">        Requires:</span>
+</span><span id="LocalClaudeCodeCLIResponder-247"><a href="#LocalClaudeCodeCLIResponder-247"><span class="linenos">247</span></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+</span><span id="LocalClaudeCodeCLIResponder-248"><a href="#LocalClaudeCodeCLIResponder-248"><span class="linenos">248</span></a>        <span class="bp">self</span><span class="p">,</span> <span class="n">spych_object</span><span class="p">,</span> <span class="n">continue_conversation</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">listen_duration</span><span class="o">=</span><span class="mi">5</span>
+</span><span id="LocalClaudeCodeCLIResponder-249"><a href="#LocalClaudeCodeCLIResponder-249"><span class="linenos">249</span></a>    <span class="p">):</span>
+</span><span id="LocalClaudeCodeCLIResponder-250"><a href="#LocalClaudeCodeCLIResponder-250"><span class="linenos">250</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="LocalClaudeCodeCLIResponder-251"><a href="#LocalClaudeCodeCLIResponder-251"><span class="linenos">251</span></a><span class="sd">        Usage:</span>
+</span><span id="LocalClaudeCodeCLIResponder-252"><a href="#LocalClaudeCodeCLIResponder-252"><span class="linenos">252</span></a>
+</span><span id="LocalClaudeCodeCLIResponder-253"><a href="#LocalClaudeCodeCLIResponder-253"><span class="linenos">253</span></a><span class="sd">        - A responder that pipes transcribed audio into the Claude Code CLI (`claude -p`)</span>
+</span><span id="LocalClaudeCodeCLIResponder-254"><a href="#LocalClaudeCodeCLIResponder-254"><span class="linenos">254</span></a><span class="sd">          and returns the final response, waiting for all tool calls to complete</span>
 </span><span id="LocalClaudeCodeCLIResponder-255"><a href="#LocalClaudeCodeCLIResponder-255"><span class="linenos">255</span></a>
-</span><span id="LocalClaudeCodeCLIResponder-256"><a href="#LocalClaudeCodeCLIResponder-256"><span class="linenos">256</span></a><span class="sd">        - `spych_object`:</span>
-</span><span id="LocalClaudeCodeCLIResponder-257"><a href="#LocalClaudeCodeCLIResponder-257"><span class="linenos">257</span></a><span class="sd">            - Type: Spych</span>
-</span><span id="LocalClaudeCodeCLIResponder-258"><a href="#LocalClaudeCodeCLIResponder-258"><span class="linenos">258</span></a><span class="sd">            - What: An initialized Spych instance used to record and transcribe audio</span>
-</span><span id="LocalClaudeCodeCLIResponder-259"><a href="#LocalClaudeCodeCLIResponder-259"><span class="linenos">259</span></a>
-</span><span id="LocalClaudeCodeCLIResponder-260"><a href="#LocalClaudeCodeCLIResponder-260"><span class="linenos">260</span></a><span class="sd">        Optional:</span>
+</span><span id="LocalClaudeCodeCLIResponder-256"><a href="#LocalClaudeCodeCLIResponder-256"><span class="linenos">256</span></a><span class="sd">        Requires:</span>
+</span><span id="LocalClaudeCodeCLIResponder-257"><a href="#LocalClaudeCodeCLIResponder-257"><span class="linenos">257</span></a>
+</span><span id="LocalClaudeCodeCLIResponder-258"><a href="#LocalClaudeCodeCLIResponder-258"><span class="linenos">258</span></a><span class="sd">        - `spych_object`:</span>
+</span><span id="LocalClaudeCodeCLIResponder-259"><a href="#LocalClaudeCodeCLIResponder-259"><span class="linenos">259</span></a><span class="sd">            - Type: Spych</span>
+</span><span id="LocalClaudeCodeCLIResponder-260"><a href="#LocalClaudeCodeCLIResponder-260"><span class="linenos">260</span></a><span class="sd">            - What: An initialized Spych instance used to record and transcribe audio</span>
 </span><span id="LocalClaudeCodeCLIResponder-261"><a href="#LocalClaudeCodeCLIResponder-261"><span class="linenos">261</span></a>
-</span><span id="LocalClaudeCodeCLIResponder-262"><a href="#LocalClaudeCodeCLIResponder-262"><span class="linenos">262</span></a><span class="sd">        - `continue_conversation`:</span>
-</span><span id="LocalClaudeCodeCLIResponder-263"><a href="#LocalClaudeCodeCLIResponder-263"><span class="linenos">263</span></a><span class="sd">            - Type: bool</span>
-</span><span id="LocalClaudeCodeCLIResponder-264"><a href="#LocalClaudeCodeCLIResponder-264"><span class="linenos">264</span></a><span class="sd">            - What: Whether to pass `--continue` to reuse the most recent session</span>
-</span><span id="LocalClaudeCodeCLIResponder-265"><a href="#LocalClaudeCodeCLIResponder-265"><span class="linenos">265</span></a><span class="sd">            - Default: True</span>
-</span><span id="LocalClaudeCodeCLIResponder-266"><a href="#LocalClaudeCodeCLIResponder-266"><span class="linenos">266</span></a>
-</span><span id="LocalClaudeCodeCLIResponder-267"><a href="#LocalClaudeCodeCLIResponder-267"><span class="linenos">267</span></a><span class="sd">        - `listen_duration`:</span>
-</span><span id="LocalClaudeCodeCLIResponder-268"><a href="#LocalClaudeCodeCLIResponder-268"><span class="linenos">268</span></a><span class="sd">            - Type: int | float</span>
-</span><span id="LocalClaudeCodeCLIResponder-269"><a href="#LocalClaudeCodeCLIResponder-269"><span class="linenos">269</span></a><span class="sd">            - What: The number of seconds to listen for after the wake word is detected</span>
-</span><span id="LocalClaudeCodeCLIResponder-270"><a href="#LocalClaudeCodeCLIResponder-270"><span class="linenos">270</span></a><span class="sd">            - Default: 5</span>
-</span><span id="LocalClaudeCodeCLIResponder-271"><a href="#LocalClaudeCodeCLIResponder-271"><span class="linenos">271</span></a>
-</span><span id="LocalClaudeCodeCLIResponder-272"><a href="#LocalClaudeCodeCLIResponder-272"><span class="linenos">272</span></a><span class="sd">        Notes:</span>
+</span><span id="LocalClaudeCodeCLIResponder-262"><a href="#LocalClaudeCodeCLIResponder-262"><span class="linenos">262</span></a><span class="sd">        Optional:</span>
+</span><span id="LocalClaudeCodeCLIResponder-263"><a href="#LocalClaudeCodeCLIResponder-263"><span class="linenos">263</span></a>
+</span><span id="LocalClaudeCodeCLIResponder-264"><a href="#LocalClaudeCodeCLIResponder-264"><span class="linenos">264</span></a><span class="sd">        - `continue_conversation`:</span>
+</span><span id="LocalClaudeCodeCLIResponder-265"><a href="#LocalClaudeCodeCLIResponder-265"><span class="linenos">265</span></a><span class="sd">            - Type: bool</span>
+</span><span id="LocalClaudeCodeCLIResponder-266"><a href="#LocalClaudeCodeCLIResponder-266"><span class="linenos">266</span></a><span class="sd">            - What: Whether to pass `--continue` to reuse the most recent session</span>
+</span><span id="LocalClaudeCodeCLIResponder-267"><a href="#LocalClaudeCodeCLIResponder-267"><span class="linenos">267</span></a><span class="sd">            - Default: True</span>
+</span><span id="LocalClaudeCodeCLIResponder-268"><a href="#LocalClaudeCodeCLIResponder-268"><span class="linenos">268</span></a>
+</span><span id="LocalClaudeCodeCLIResponder-269"><a href="#LocalClaudeCodeCLIResponder-269"><span class="linenos">269</span></a><span class="sd">        - `listen_duration`:</span>
+</span><span id="LocalClaudeCodeCLIResponder-270"><a href="#LocalClaudeCodeCLIResponder-270"><span class="linenos">270</span></a><span class="sd">            - Type: int | float</span>
+</span><span id="LocalClaudeCodeCLIResponder-271"><a href="#LocalClaudeCodeCLIResponder-271"><span class="linenos">271</span></a><span class="sd">            - What: The number of seconds to listen for after the wake word is detected</span>
+</span><span id="LocalClaudeCodeCLIResponder-272"><a href="#LocalClaudeCodeCLIResponder-272"><span class="linenos">272</span></a><span class="sd">            - Default: 5</span>
 </span><span id="LocalClaudeCodeCLIResponder-273"><a href="#LocalClaudeCodeCLIResponder-273"><span class="linenos">273</span></a>
-</span><span id="LocalClaudeCodeCLIResponder-274"><a href="#LocalClaudeCodeCLIResponder-274"><span class="linenos">274</span></a><span class="sd">        - Uses `--output-format json` so the subprocess blocks until Claude has finished</span>
-</span><span id="LocalClaudeCodeCLIResponder-275"><a href="#LocalClaudeCodeCLIResponder-275"><span class="linenos">275</span></a><span class="sd">          all tool calls and returns only the final result, not intermediate tool call XML</span>
-</span><span id="LocalClaudeCodeCLIResponder-276"><a href="#LocalClaudeCodeCLIResponder-276"><span class="linenos">276</span></a><span class="sd">        - Claude Code must be installed and authenticated before use</span>
-</span><span id="LocalClaudeCodeCLIResponder-277"><a href="#LocalClaudeCodeCLIResponder-277"><span class="linenos">277</span></a><span class="sd">        &quot;&quot;&quot;</span>
-</span><span id="LocalClaudeCodeCLIResponder-278"><a href="#LocalClaudeCodeCLIResponder-278"><span class="linenos">278</span></a>        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">spych_object</span><span class="o">=</span><span class="n">spych_object</span><span class="p">,</span> <span class="n">listen_duration</span><span class="o">=</span><span class="n">listen_duration</span><span class="p">)</span>
-</span><span id="LocalClaudeCodeCLIResponder-279"><a href="#LocalClaudeCodeCLIResponder-279"><span class="linenos">279</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;Claude Code&quot;</span>
-</span><span id="LocalClaudeCodeCLIResponder-280"><a href="#LocalClaudeCodeCLIResponder-280"><span class="linenos">280</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">continue_conversation</span> <span class="o">=</span> <span class="n">continue_conversation</span>
-</span><span id="LocalClaudeCodeCLIResponder-281"><a href="#LocalClaudeCodeCLIResponder-281"><span class="linenos">281</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">first_call</span> <span class="o">=</span> <span class="kc">True</span>
-</span><span id="LocalClaudeCodeCLIResponder-282"><a href="#LocalClaudeCodeCLIResponder-282"><span class="linenos">282</span></a>
-</span><span id="LocalClaudeCodeCLIResponder-283"><a href="#LocalClaudeCodeCLIResponder-283"><span class="linenos">283</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">respond</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user_input</span><span class="p">):</span>
-</span><span id="LocalClaudeCodeCLIResponder-284"><a href="#LocalClaudeCodeCLIResponder-284"><span class="linenos">284</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="LocalClaudeCodeCLIResponder-285"><a href="#LocalClaudeCodeCLIResponder-285"><span class="linenos">285</span></a><span class="sd">        Usage:</span>
+</span><span id="LocalClaudeCodeCLIResponder-274"><a href="#LocalClaudeCodeCLIResponder-274"><span class="linenos">274</span></a><span class="sd">        Notes:</span>
+</span><span id="LocalClaudeCodeCLIResponder-275"><a href="#LocalClaudeCodeCLIResponder-275"><span class="linenos">275</span></a>
+</span><span id="LocalClaudeCodeCLIResponder-276"><a href="#LocalClaudeCodeCLIResponder-276"><span class="linenos">276</span></a><span class="sd">        - Uses `--output-format json` so the subprocess blocks until Claude has finished</span>
+</span><span id="LocalClaudeCodeCLIResponder-277"><a href="#LocalClaudeCodeCLIResponder-277"><span class="linenos">277</span></a><span class="sd">          all tool calls and returns only the final result, not intermediate tool call XML</span>
+</span><span id="LocalClaudeCodeCLIResponder-278"><a href="#LocalClaudeCodeCLIResponder-278"><span class="linenos">278</span></a><span class="sd">        - Claude Code must be installed and authenticated before use</span>
+</span><span id="LocalClaudeCodeCLIResponder-279"><a href="#LocalClaudeCodeCLIResponder-279"><span class="linenos">279</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="LocalClaudeCodeCLIResponder-280"><a href="#LocalClaudeCodeCLIResponder-280"><span class="linenos">280</span></a>        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+</span><span id="LocalClaudeCodeCLIResponder-281"><a href="#LocalClaudeCodeCLIResponder-281"><span class="linenos">281</span></a>            <span class="n">spych_object</span><span class="o">=</span><span class="n">spych_object</span><span class="p">,</span> <span class="n">listen_duration</span><span class="o">=</span><span class="n">listen_duration</span>
+</span><span id="LocalClaudeCodeCLIResponder-282"><a href="#LocalClaudeCodeCLIResponder-282"><span class="linenos">282</span></a>        <span class="p">)</span>
+</span><span id="LocalClaudeCodeCLIResponder-283"><a href="#LocalClaudeCodeCLIResponder-283"><span class="linenos">283</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;Claude Code&quot;</span>
+</span><span id="LocalClaudeCodeCLIResponder-284"><a href="#LocalClaudeCodeCLIResponder-284"><span class="linenos">284</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">continue_conversation</span> <span class="o">=</span> <span class="n">continue_conversation</span>
+</span><span id="LocalClaudeCodeCLIResponder-285"><a href="#LocalClaudeCodeCLIResponder-285"><span class="linenos">285</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">first_call</span> <span class="o">=</span> <span class="kc">True</span>
 </span><span id="LocalClaudeCodeCLIResponder-286"><a href="#LocalClaudeCodeCLIResponder-286"><span class="linenos">286</span></a>
-</span><span id="LocalClaudeCodeCLIResponder-287"><a href="#LocalClaudeCodeCLIResponder-287"><span class="linenos">287</span></a><span class="sd">        - Pipes the transcribed user input into `claude -p` and returns the final response</span>
-</span><span id="LocalClaudeCodeCLIResponder-288"><a href="#LocalClaudeCodeCLIResponder-288"><span class="linenos">288</span></a><span class="sd">          after all tool calls have completed</span>
-</span><span id="LocalClaudeCodeCLIResponder-289"><a href="#LocalClaudeCodeCLIResponder-289"><span class="linenos">289</span></a>
-</span><span id="LocalClaudeCodeCLIResponder-290"><a href="#LocalClaudeCodeCLIResponder-290"><span class="linenos">290</span></a><span class="sd">        Requires:</span>
-</span><span id="LocalClaudeCodeCLIResponder-291"><a href="#LocalClaudeCodeCLIResponder-291"><span class="linenos">291</span></a>
-</span><span id="LocalClaudeCodeCLIResponder-292"><a href="#LocalClaudeCodeCLIResponder-292"><span class="linenos">292</span></a><span class="sd">        - `user_input`:</span>
-</span><span id="LocalClaudeCodeCLIResponder-293"><a href="#LocalClaudeCodeCLIResponder-293"><span class="linenos">293</span></a><span class="sd">            - Type: str</span>
-</span><span id="LocalClaudeCodeCLIResponder-294"><a href="#LocalClaudeCodeCLIResponder-294"><span class="linenos">294</span></a><span class="sd">            - What: The transcribed text from the user&#39;s audio input</span>
+</span><span id="LocalClaudeCodeCLIResponder-287"><a href="#LocalClaudeCodeCLIResponder-287"><span class="linenos">287</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">respond</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user_input</span><span class="p">):</span>
+</span><span id="LocalClaudeCodeCLIResponder-288"><a href="#LocalClaudeCodeCLIResponder-288"><span class="linenos">288</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="LocalClaudeCodeCLIResponder-289"><a href="#LocalClaudeCodeCLIResponder-289"><span class="linenos">289</span></a><span class="sd">        Usage:</span>
+</span><span id="LocalClaudeCodeCLIResponder-290"><a href="#LocalClaudeCodeCLIResponder-290"><span class="linenos">290</span></a>
+</span><span id="LocalClaudeCodeCLIResponder-291"><a href="#LocalClaudeCodeCLIResponder-291"><span class="linenos">291</span></a><span class="sd">        - Pipes the transcribed user input into `claude -p` and returns the final response</span>
+</span><span id="LocalClaudeCodeCLIResponder-292"><a href="#LocalClaudeCodeCLIResponder-292"><span class="linenos">292</span></a><span class="sd">          after all tool calls have completed</span>
+</span><span id="LocalClaudeCodeCLIResponder-293"><a href="#LocalClaudeCodeCLIResponder-293"><span class="linenos">293</span></a>
+</span><span id="LocalClaudeCodeCLIResponder-294"><a href="#LocalClaudeCodeCLIResponder-294"><span class="linenos">294</span></a><span class="sd">        Requires:</span>
 </span><span id="LocalClaudeCodeCLIResponder-295"><a href="#LocalClaudeCodeCLIResponder-295"><span class="linenos">295</span></a>
-</span><span id="LocalClaudeCodeCLIResponder-296"><a href="#LocalClaudeCodeCLIResponder-296"><span class="linenos">296</span></a><span class="sd">        Returns:</span>
-</span><span id="LocalClaudeCodeCLIResponder-297"><a href="#LocalClaudeCodeCLIResponder-297"><span class="linenos">297</span></a>
-</span><span id="LocalClaudeCodeCLIResponder-298"><a href="#LocalClaudeCodeCLIResponder-298"><span class="linenos">298</span></a><span class="sd">        - `response`:</span>
-</span><span id="LocalClaudeCodeCLIResponder-299"><a href="#LocalClaudeCodeCLIResponder-299"><span class="linenos">299</span></a><span class="sd">            - Type: str</span>
-</span><span id="LocalClaudeCodeCLIResponder-300"><a href="#LocalClaudeCodeCLIResponder-300"><span class="linenos">300</span></a><span class="sd">            - What: The final response string from Claude Code</span>
-</span><span id="LocalClaudeCodeCLIResponder-301"><a href="#LocalClaudeCodeCLIResponder-301"><span class="linenos">301</span></a><span class="sd">        &quot;&quot;&quot;</span>
-</span><span id="LocalClaudeCodeCLIResponder-302"><a href="#LocalClaudeCodeCLIResponder-302"><span class="linenos">302</span></a>        <span class="n">cmd</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;claude&quot;</span><span class="p">,</span> <span class="s2">&quot;-p&quot;</span><span class="p">,</span> <span class="n">user_input</span><span class="p">,</span> <span class="s2">&quot;--output-format&quot;</span><span class="p">,</span> <span class="s2">&quot;json&quot;</span><span class="p">]</span>
-</span><span id="LocalClaudeCodeCLIResponder-303"><a href="#LocalClaudeCodeCLIResponder-303"><span class="linenos">303</span></a>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">continue_conversation</span> <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">first_call</span><span class="p">:</span>
-</span><span id="LocalClaudeCodeCLIResponder-304"><a href="#LocalClaudeCodeCLIResponder-304"><span class="linenos">304</span></a>            <span class="n">cmd</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;--continue&quot;</span><span class="p">)</span>
-</span><span id="LocalClaudeCodeCLIResponder-305"><a href="#LocalClaudeCodeCLIResponder-305"><span class="linenos">305</span></a>        <span class="n">result</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">cmd</span><span class="p">,</span> <span class="n">capture_output</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">text</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-</span><span id="LocalClaudeCodeCLIResponder-306"><a href="#LocalClaudeCodeCLIResponder-306"><span class="linenos">306</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">first_call</span> <span class="o">=</span> <span class="kc">False</span>
-</span><span id="LocalClaudeCodeCLIResponder-307"><a href="#LocalClaudeCodeCLIResponder-307"><span class="linenos">307</span></a>        <span class="k">try</span><span class="p">:</span>
-</span><span id="LocalClaudeCodeCLIResponder-308"><a href="#LocalClaudeCodeCLIResponder-308"><span class="linenos">308</span></a>            <span class="k">return</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">stdout</span><span class="p">)</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;result&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
-</span><span id="LocalClaudeCodeCLIResponder-309"><a href="#LocalClaudeCodeCLIResponder-309"><span class="linenos">309</span></a>        <span class="k">except</span> <span class="n">json</span><span class="o">.</span><span class="n">JSONDecodeError</span><span class="p">:</span>
-</span><span id="LocalClaudeCodeCLIResponder-310"><a href="#LocalClaudeCodeCLIResponder-310"><span class="linenos">310</span></a>            <span class="k">return</span> <span class="n">result</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+</span><span id="LocalClaudeCodeCLIResponder-296"><a href="#LocalClaudeCodeCLIResponder-296"><span class="linenos">296</span></a><span class="sd">        - `user_input`:</span>
+</span><span id="LocalClaudeCodeCLIResponder-297"><a href="#LocalClaudeCodeCLIResponder-297"><span class="linenos">297</span></a><span class="sd">            - Type: str</span>
+</span><span id="LocalClaudeCodeCLIResponder-298"><a href="#LocalClaudeCodeCLIResponder-298"><span class="linenos">298</span></a><span class="sd">            - What: The transcribed text from the user&#39;s audio input</span>
+</span><span id="LocalClaudeCodeCLIResponder-299"><a href="#LocalClaudeCodeCLIResponder-299"><span class="linenos">299</span></a>
+</span><span id="LocalClaudeCodeCLIResponder-300"><a href="#LocalClaudeCodeCLIResponder-300"><span class="linenos">300</span></a><span class="sd">        Returns:</span>
+</span><span id="LocalClaudeCodeCLIResponder-301"><a href="#LocalClaudeCodeCLIResponder-301"><span class="linenos">301</span></a>
+</span><span id="LocalClaudeCodeCLIResponder-302"><a href="#LocalClaudeCodeCLIResponder-302"><span class="linenos">302</span></a><span class="sd">        - `response`:</span>
+</span><span id="LocalClaudeCodeCLIResponder-303"><a href="#LocalClaudeCodeCLIResponder-303"><span class="linenos">303</span></a><span class="sd">            - Type: str</span>
+</span><span id="LocalClaudeCodeCLIResponder-304"><a href="#LocalClaudeCodeCLIResponder-304"><span class="linenos">304</span></a><span class="sd">            - What: The final response string from Claude Code</span>
+</span><span id="LocalClaudeCodeCLIResponder-305"><a href="#LocalClaudeCodeCLIResponder-305"><span class="linenos">305</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="LocalClaudeCodeCLIResponder-306"><a href="#LocalClaudeCodeCLIResponder-306"><span class="linenos">306</span></a>        <span class="n">cmd</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;claude&quot;</span><span class="p">,</span> <span class="s2">&quot;-p&quot;</span><span class="p">,</span> <span class="n">user_input</span><span class="p">,</span> <span class="s2">&quot;--output-format&quot;</span><span class="p">,</span> <span class="s2">&quot;json&quot;</span><span class="p">]</span>
+</span><span id="LocalClaudeCodeCLIResponder-307"><a href="#LocalClaudeCodeCLIResponder-307"><span class="linenos">307</span></a>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">continue_conversation</span> <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">first_call</span><span class="p">:</span>
+</span><span id="LocalClaudeCodeCLIResponder-308"><a href="#LocalClaudeCodeCLIResponder-308"><span class="linenos">308</span></a>            <span class="n">cmd</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;--continue&quot;</span><span class="p">)</span>
+</span><span id="LocalClaudeCodeCLIResponder-309"><a href="#LocalClaudeCodeCLIResponder-309"><span class="linenos">309</span></a>        <span class="n">result</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">cmd</span><span class="p">,</span> <span class="n">capture_output</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">text</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</span><span id="LocalClaudeCodeCLIResponder-310"><a href="#LocalClaudeCodeCLIResponder-310"><span class="linenos">310</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">first_call</span> <span class="o">=</span> <span class="kc">False</span>
+</span><span id="LocalClaudeCodeCLIResponder-311"><a href="#LocalClaudeCodeCLIResponder-311"><span class="linenos">311</span></a>        <span class="k">try</span><span class="p">:</span>
+</span><span id="LocalClaudeCodeCLIResponder-312"><a href="#LocalClaudeCodeCLIResponder-312"><span class="linenos">312</span></a>            <span class="k">return</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">stdout</span><span class="p">)</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;result&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+</span><span id="LocalClaudeCodeCLIResponder-313"><a href="#LocalClaudeCodeCLIResponder-313"><span class="linenos">313</span></a>        <span class="k">except</span> <span class="n">json</span><span class="o">.</span><span class="n">JSONDecodeError</span><span class="p">:</span>
+</span><span id="LocalClaudeCodeCLIResponder-314"><a href="#LocalClaudeCodeCLIResponder-314"><span class="linenos">314</span></a>            <span class="k">return</span> <span class="n">result</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
 </span></pre></div>
 
 
@@ -1488,41 +1495,45 @@ the actual history buffer is <code>history_length * 2</code> entries</li>
 
     </div>
     <a class="headerlink" href="#LocalClaudeCodeCLIResponder.__init__"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="LocalClaudeCodeCLIResponder.__init__-247"><a href="#LocalClaudeCodeCLIResponder.__init__-247"><span class="linenos">247</span></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">spych_object</span><span class="p">,</span> <span class="n">continue_conversation</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">listen_duration</span><span class="o">=</span><span class="mi">5</span><span class="p">):</span>
-</span><span id="LocalClaudeCodeCLIResponder.__init__-248"><a href="#LocalClaudeCodeCLIResponder.__init__-248"><span class="linenos">248</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="LocalClaudeCodeCLIResponder.__init__-249"><a href="#LocalClaudeCodeCLIResponder.__init__-249"><span class="linenos">249</span></a><span class="sd">        Usage:</span>
-</span><span id="LocalClaudeCodeCLIResponder.__init__-250"><a href="#LocalClaudeCodeCLIResponder.__init__-250"><span class="linenos">250</span></a>
-</span><span id="LocalClaudeCodeCLIResponder.__init__-251"><a href="#LocalClaudeCodeCLIResponder.__init__-251"><span class="linenos">251</span></a><span class="sd">        - A responder that pipes transcribed audio into the Claude Code CLI (`claude -p`)</span>
-</span><span id="LocalClaudeCodeCLIResponder.__init__-252"><a href="#LocalClaudeCodeCLIResponder.__init__-252"><span class="linenos">252</span></a><span class="sd">          and returns the final response, waiting for all tool calls to complete</span>
-</span><span id="LocalClaudeCodeCLIResponder.__init__-253"><a href="#LocalClaudeCodeCLIResponder.__init__-253"><span class="linenos">253</span></a>
-</span><span id="LocalClaudeCodeCLIResponder.__init__-254"><a href="#LocalClaudeCodeCLIResponder.__init__-254"><span class="linenos">254</span></a><span class="sd">        Requires:</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="LocalClaudeCodeCLIResponder.__init__-247"><a href="#LocalClaudeCodeCLIResponder.__init__-247"><span class="linenos">247</span></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+</span><span id="LocalClaudeCodeCLIResponder.__init__-248"><a href="#LocalClaudeCodeCLIResponder.__init__-248"><span class="linenos">248</span></a>        <span class="bp">self</span><span class="p">,</span> <span class="n">spych_object</span><span class="p">,</span> <span class="n">continue_conversation</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">listen_duration</span><span class="o">=</span><span class="mi">5</span>
+</span><span id="LocalClaudeCodeCLIResponder.__init__-249"><a href="#LocalClaudeCodeCLIResponder.__init__-249"><span class="linenos">249</span></a>    <span class="p">):</span>
+</span><span id="LocalClaudeCodeCLIResponder.__init__-250"><a href="#LocalClaudeCodeCLIResponder.__init__-250"><span class="linenos">250</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="LocalClaudeCodeCLIResponder.__init__-251"><a href="#LocalClaudeCodeCLIResponder.__init__-251"><span class="linenos">251</span></a><span class="sd">        Usage:</span>
+</span><span id="LocalClaudeCodeCLIResponder.__init__-252"><a href="#LocalClaudeCodeCLIResponder.__init__-252"><span class="linenos">252</span></a>
+</span><span id="LocalClaudeCodeCLIResponder.__init__-253"><a href="#LocalClaudeCodeCLIResponder.__init__-253"><span class="linenos">253</span></a><span class="sd">        - A responder that pipes transcribed audio into the Claude Code CLI (`claude -p`)</span>
+</span><span id="LocalClaudeCodeCLIResponder.__init__-254"><a href="#LocalClaudeCodeCLIResponder.__init__-254"><span class="linenos">254</span></a><span class="sd">          and returns the final response, waiting for all tool calls to complete</span>
 </span><span id="LocalClaudeCodeCLIResponder.__init__-255"><a href="#LocalClaudeCodeCLIResponder.__init__-255"><span class="linenos">255</span></a>
-</span><span id="LocalClaudeCodeCLIResponder.__init__-256"><a href="#LocalClaudeCodeCLIResponder.__init__-256"><span class="linenos">256</span></a><span class="sd">        - `spych_object`:</span>
-</span><span id="LocalClaudeCodeCLIResponder.__init__-257"><a href="#LocalClaudeCodeCLIResponder.__init__-257"><span class="linenos">257</span></a><span class="sd">            - Type: Spych</span>
-</span><span id="LocalClaudeCodeCLIResponder.__init__-258"><a href="#LocalClaudeCodeCLIResponder.__init__-258"><span class="linenos">258</span></a><span class="sd">            - What: An initialized Spych instance used to record and transcribe audio</span>
-</span><span id="LocalClaudeCodeCLIResponder.__init__-259"><a href="#LocalClaudeCodeCLIResponder.__init__-259"><span class="linenos">259</span></a>
-</span><span id="LocalClaudeCodeCLIResponder.__init__-260"><a href="#LocalClaudeCodeCLIResponder.__init__-260"><span class="linenos">260</span></a><span class="sd">        Optional:</span>
+</span><span id="LocalClaudeCodeCLIResponder.__init__-256"><a href="#LocalClaudeCodeCLIResponder.__init__-256"><span class="linenos">256</span></a><span class="sd">        Requires:</span>
+</span><span id="LocalClaudeCodeCLIResponder.__init__-257"><a href="#LocalClaudeCodeCLIResponder.__init__-257"><span class="linenos">257</span></a>
+</span><span id="LocalClaudeCodeCLIResponder.__init__-258"><a href="#LocalClaudeCodeCLIResponder.__init__-258"><span class="linenos">258</span></a><span class="sd">        - `spych_object`:</span>
+</span><span id="LocalClaudeCodeCLIResponder.__init__-259"><a href="#LocalClaudeCodeCLIResponder.__init__-259"><span class="linenos">259</span></a><span class="sd">            - Type: Spych</span>
+</span><span id="LocalClaudeCodeCLIResponder.__init__-260"><a href="#LocalClaudeCodeCLIResponder.__init__-260"><span class="linenos">260</span></a><span class="sd">            - What: An initialized Spych instance used to record and transcribe audio</span>
 </span><span id="LocalClaudeCodeCLIResponder.__init__-261"><a href="#LocalClaudeCodeCLIResponder.__init__-261"><span class="linenos">261</span></a>
-</span><span id="LocalClaudeCodeCLIResponder.__init__-262"><a href="#LocalClaudeCodeCLIResponder.__init__-262"><span class="linenos">262</span></a><span class="sd">        - `continue_conversation`:</span>
-</span><span id="LocalClaudeCodeCLIResponder.__init__-263"><a href="#LocalClaudeCodeCLIResponder.__init__-263"><span class="linenos">263</span></a><span class="sd">            - Type: bool</span>
-</span><span id="LocalClaudeCodeCLIResponder.__init__-264"><a href="#LocalClaudeCodeCLIResponder.__init__-264"><span class="linenos">264</span></a><span class="sd">            - What: Whether to pass `--continue` to reuse the most recent session</span>
-</span><span id="LocalClaudeCodeCLIResponder.__init__-265"><a href="#LocalClaudeCodeCLIResponder.__init__-265"><span class="linenos">265</span></a><span class="sd">            - Default: True</span>
-</span><span id="LocalClaudeCodeCLIResponder.__init__-266"><a href="#LocalClaudeCodeCLIResponder.__init__-266"><span class="linenos">266</span></a>
-</span><span id="LocalClaudeCodeCLIResponder.__init__-267"><a href="#LocalClaudeCodeCLIResponder.__init__-267"><span class="linenos">267</span></a><span class="sd">        - `listen_duration`:</span>
-</span><span id="LocalClaudeCodeCLIResponder.__init__-268"><a href="#LocalClaudeCodeCLIResponder.__init__-268"><span class="linenos">268</span></a><span class="sd">            - Type: int | float</span>
-</span><span id="LocalClaudeCodeCLIResponder.__init__-269"><a href="#LocalClaudeCodeCLIResponder.__init__-269"><span class="linenos">269</span></a><span class="sd">            - What: The number of seconds to listen for after the wake word is detected</span>
-</span><span id="LocalClaudeCodeCLIResponder.__init__-270"><a href="#LocalClaudeCodeCLIResponder.__init__-270"><span class="linenos">270</span></a><span class="sd">            - Default: 5</span>
-</span><span id="LocalClaudeCodeCLIResponder.__init__-271"><a href="#LocalClaudeCodeCLIResponder.__init__-271"><span class="linenos">271</span></a>
-</span><span id="LocalClaudeCodeCLIResponder.__init__-272"><a href="#LocalClaudeCodeCLIResponder.__init__-272"><span class="linenos">272</span></a><span class="sd">        Notes:</span>
+</span><span id="LocalClaudeCodeCLIResponder.__init__-262"><a href="#LocalClaudeCodeCLIResponder.__init__-262"><span class="linenos">262</span></a><span class="sd">        Optional:</span>
+</span><span id="LocalClaudeCodeCLIResponder.__init__-263"><a href="#LocalClaudeCodeCLIResponder.__init__-263"><span class="linenos">263</span></a>
+</span><span id="LocalClaudeCodeCLIResponder.__init__-264"><a href="#LocalClaudeCodeCLIResponder.__init__-264"><span class="linenos">264</span></a><span class="sd">        - `continue_conversation`:</span>
+</span><span id="LocalClaudeCodeCLIResponder.__init__-265"><a href="#LocalClaudeCodeCLIResponder.__init__-265"><span class="linenos">265</span></a><span class="sd">            - Type: bool</span>
+</span><span id="LocalClaudeCodeCLIResponder.__init__-266"><a href="#LocalClaudeCodeCLIResponder.__init__-266"><span class="linenos">266</span></a><span class="sd">            - What: Whether to pass `--continue` to reuse the most recent session</span>
+</span><span id="LocalClaudeCodeCLIResponder.__init__-267"><a href="#LocalClaudeCodeCLIResponder.__init__-267"><span class="linenos">267</span></a><span class="sd">            - Default: True</span>
+</span><span id="LocalClaudeCodeCLIResponder.__init__-268"><a href="#LocalClaudeCodeCLIResponder.__init__-268"><span class="linenos">268</span></a>
+</span><span id="LocalClaudeCodeCLIResponder.__init__-269"><a href="#LocalClaudeCodeCLIResponder.__init__-269"><span class="linenos">269</span></a><span class="sd">        - `listen_duration`:</span>
+</span><span id="LocalClaudeCodeCLIResponder.__init__-270"><a href="#LocalClaudeCodeCLIResponder.__init__-270"><span class="linenos">270</span></a><span class="sd">            - Type: int | float</span>
+</span><span id="LocalClaudeCodeCLIResponder.__init__-271"><a href="#LocalClaudeCodeCLIResponder.__init__-271"><span class="linenos">271</span></a><span class="sd">            - What: The number of seconds to listen for after the wake word is detected</span>
+</span><span id="LocalClaudeCodeCLIResponder.__init__-272"><a href="#LocalClaudeCodeCLIResponder.__init__-272"><span class="linenos">272</span></a><span class="sd">            - Default: 5</span>
 </span><span id="LocalClaudeCodeCLIResponder.__init__-273"><a href="#LocalClaudeCodeCLIResponder.__init__-273"><span class="linenos">273</span></a>
-</span><span id="LocalClaudeCodeCLIResponder.__init__-274"><a href="#LocalClaudeCodeCLIResponder.__init__-274"><span class="linenos">274</span></a><span class="sd">        - Uses `--output-format json` so the subprocess blocks until Claude has finished</span>
-</span><span id="LocalClaudeCodeCLIResponder.__init__-275"><a href="#LocalClaudeCodeCLIResponder.__init__-275"><span class="linenos">275</span></a><span class="sd">          all tool calls and returns only the final result, not intermediate tool call XML</span>
-</span><span id="LocalClaudeCodeCLIResponder.__init__-276"><a href="#LocalClaudeCodeCLIResponder.__init__-276"><span class="linenos">276</span></a><span class="sd">        - Claude Code must be installed and authenticated before use</span>
-</span><span id="LocalClaudeCodeCLIResponder.__init__-277"><a href="#LocalClaudeCodeCLIResponder.__init__-277"><span class="linenos">277</span></a><span class="sd">        &quot;&quot;&quot;</span>
-</span><span id="LocalClaudeCodeCLIResponder.__init__-278"><a href="#LocalClaudeCodeCLIResponder.__init__-278"><span class="linenos">278</span></a>        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">spych_object</span><span class="o">=</span><span class="n">spych_object</span><span class="p">,</span> <span class="n">listen_duration</span><span class="o">=</span><span class="n">listen_duration</span><span class="p">)</span>
-</span><span id="LocalClaudeCodeCLIResponder.__init__-279"><a href="#LocalClaudeCodeCLIResponder.__init__-279"><span class="linenos">279</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;Claude Code&quot;</span>
-</span><span id="LocalClaudeCodeCLIResponder.__init__-280"><a href="#LocalClaudeCodeCLIResponder.__init__-280"><span class="linenos">280</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">continue_conversation</span> <span class="o">=</span> <span class="n">continue_conversation</span>
-</span><span id="LocalClaudeCodeCLIResponder.__init__-281"><a href="#LocalClaudeCodeCLIResponder.__init__-281"><span class="linenos">281</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">first_call</span> <span class="o">=</span> <span class="kc">True</span>
+</span><span id="LocalClaudeCodeCLIResponder.__init__-274"><a href="#LocalClaudeCodeCLIResponder.__init__-274"><span class="linenos">274</span></a><span class="sd">        Notes:</span>
+</span><span id="LocalClaudeCodeCLIResponder.__init__-275"><a href="#LocalClaudeCodeCLIResponder.__init__-275"><span class="linenos">275</span></a>
+</span><span id="LocalClaudeCodeCLIResponder.__init__-276"><a href="#LocalClaudeCodeCLIResponder.__init__-276"><span class="linenos">276</span></a><span class="sd">        - Uses `--output-format json` so the subprocess blocks until Claude has finished</span>
+</span><span id="LocalClaudeCodeCLIResponder.__init__-277"><a href="#LocalClaudeCodeCLIResponder.__init__-277"><span class="linenos">277</span></a><span class="sd">          all tool calls and returns only the final result, not intermediate tool call XML</span>
+</span><span id="LocalClaudeCodeCLIResponder.__init__-278"><a href="#LocalClaudeCodeCLIResponder.__init__-278"><span class="linenos">278</span></a><span class="sd">        - Claude Code must be installed and authenticated before use</span>
+</span><span id="LocalClaudeCodeCLIResponder.__init__-279"><a href="#LocalClaudeCodeCLIResponder.__init__-279"><span class="linenos">279</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="LocalClaudeCodeCLIResponder.__init__-280"><a href="#LocalClaudeCodeCLIResponder.__init__-280"><span class="linenos">280</span></a>        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+</span><span id="LocalClaudeCodeCLIResponder.__init__-281"><a href="#LocalClaudeCodeCLIResponder.__init__-281"><span class="linenos">281</span></a>            <span class="n">spych_object</span><span class="o">=</span><span class="n">spych_object</span><span class="p">,</span> <span class="n">listen_duration</span><span class="o">=</span><span class="n">listen_duration</span>
+</span><span id="LocalClaudeCodeCLIResponder.__init__-282"><a href="#LocalClaudeCodeCLIResponder.__init__-282"><span class="linenos">282</span></a>        <span class="p">)</span>
+</span><span id="LocalClaudeCodeCLIResponder.__init__-283"><a href="#LocalClaudeCodeCLIResponder.__init__-283"><span class="linenos">283</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;Claude Code&quot;</span>
+</span><span id="LocalClaudeCodeCLIResponder.__init__-284"><a href="#LocalClaudeCodeCLIResponder.__init__-284"><span class="linenos">284</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">continue_conversation</span> <span class="o">=</span> <span class="n">continue_conversation</span>
+</span><span id="LocalClaudeCodeCLIResponder.__init__-285"><a href="#LocalClaudeCodeCLIResponder.__init__-285"><span class="linenos">285</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">first_call</span> <span class="o">=</span> <span class="kc">True</span>
 </span></pre></div>
 
 
@@ -1617,34 +1628,34 @@ all tool calls and returns only the final result, not intermediate tool call XML
 
     </div>
     <a class="headerlink" href="#LocalClaudeCodeCLIResponder.respond"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="LocalClaudeCodeCLIResponder.respond-283"><a href="#LocalClaudeCodeCLIResponder.respond-283"><span class="linenos">283</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">respond</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user_input</span><span class="p">):</span>
-</span><span id="LocalClaudeCodeCLIResponder.respond-284"><a href="#LocalClaudeCodeCLIResponder.respond-284"><span class="linenos">284</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="LocalClaudeCodeCLIResponder.respond-285"><a href="#LocalClaudeCodeCLIResponder.respond-285"><span class="linenos">285</span></a><span class="sd">        Usage:</span>
-</span><span id="LocalClaudeCodeCLIResponder.respond-286"><a href="#LocalClaudeCodeCLIResponder.respond-286"><span class="linenos">286</span></a>
-</span><span id="LocalClaudeCodeCLIResponder.respond-287"><a href="#LocalClaudeCodeCLIResponder.respond-287"><span class="linenos">287</span></a><span class="sd">        - Pipes the transcribed user input into `claude -p` and returns the final response</span>
-</span><span id="LocalClaudeCodeCLIResponder.respond-288"><a href="#LocalClaudeCodeCLIResponder.respond-288"><span class="linenos">288</span></a><span class="sd">          after all tool calls have completed</span>
-</span><span id="LocalClaudeCodeCLIResponder.respond-289"><a href="#LocalClaudeCodeCLIResponder.respond-289"><span class="linenos">289</span></a>
-</span><span id="LocalClaudeCodeCLIResponder.respond-290"><a href="#LocalClaudeCodeCLIResponder.respond-290"><span class="linenos">290</span></a><span class="sd">        Requires:</span>
-</span><span id="LocalClaudeCodeCLIResponder.respond-291"><a href="#LocalClaudeCodeCLIResponder.respond-291"><span class="linenos">291</span></a>
-</span><span id="LocalClaudeCodeCLIResponder.respond-292"><a href="#LocalClaudeCodeCLIResponder.respond-292"><span class="linenos">292</span></a><span class="sd">        - `user_input`:</span>
-</span><span id="LocalClaudeCodeCLIResponder.respond-293"><a href="#LocalClaudeCodeCLIResponder.respond-293"><span class="linenos">293</span></a><span class="sd">            - Type: str</span>
-</span><span id="LocalClaudeCodeCLIResponder.respond-294"><a href="#LocalClaudeCodeCLIResponder.respond-294"><span class="linenos">294</span></a><span class="sd">            - What: The transcribed text from the user&#39;s audio input</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="LocalClaudeCodeCLIResponder.respond-287"><a href="#LocalClaudeCodeCLIResponder.respond-287"><span class="linenos">287</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">respond</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user_input</span><span class="p">):</span>
+</span><span id="LocalClaudeCodeCLIResponder.respond-288"><a href="#LocalClaudeCodeCLIResponder.respond-288"><span class="linenos">288</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="LocalClaudeCodeCLIResponder.respond-289"><a href="#LocalClaudeCodeCLIResponder.respond-289"><span class="linenos">289</span></a><span class="sd">        Usage:</span>
+</span><span id="LocalClaudeCodeCLIResponder.respond-290"><a href="#LocalClaudeCodeCLIResponder.respond-290"><span class="linenos">290</span></a>
+</span><span id="LocalClaudeCodeCLIResponder.respond-291"><a href="#LocalClaudeCodeCLIResponder.respond-291"><span class="linenos">291</span></a><span class="sd">        - Pipes the transcribed user input into `claude -p` and returns the final response</span>
+</span><span id="LocalClaudeCodeCLIResponder.respond-292"><a href="#LocalClaudeCodeCLIResponder.respond-292"><span class="linenos">292</span></a><span class="sd">          after all tool calls have completed</span>
+</span><span id="LocalClaudeCodeCLIResponder.respond-293"><a href="#LocalClaudeCodeCLIResponder.respond-293"><span class="linenos">293</span></a>
+</span><span id="LocalClaudeCodeCLIResponder.respond-294"><a href="#LocalClaudeCodeCLIResponder.respond-294"><span class="linenos">294</span></a><span class="sd">        Requires:</span>
 </span><span id="LocalClaudeCodeCLIResponder.respond-295"><a href="#LocalClaudeCodeCLIResponder.respond-295"><span class="linenos">295</span></a>
-</span><span id="LocalClaudeCodeCLIResponder.respond-296"><a href="#LocalClaudeCodeCLIResponder.respond-296"><span class="linenos">296</span></a><span class="sd">        Returns:</span>
-</span><span id="LocalClaudeCodeCLIResponder.respond-297"><a href="#LocalClaudeCodeCLIResponder.respond-297"><span class="linenos">297</span></a>
-</span><span id="LocalClaudeCodeCLIResponder.respond-298"><a href="#LocalClaudeCodeCLIResponder.respond-298"><span class="linenos">298</span></a><span class="sd">        - `response`:</span>
-</span><span id="LocalClaudeCodeCLIResponder.respond-299"><a href="#LocalClaudeCodeCLIResponder.respond-299"><span class="linenos">299</span></a><span class="sd">            - Type: str</span>
-</span><span id="LocalClaudeCodeCLIResponder.respond-300"><a href="#LocalClaudeCodeCLIResponder.respond-300"><span class="linenos">300</span></a><span class="sd">            - What: The final response string from Claude Code</span>
-</span><span id="LocalClaudeCodeCLIResponder.respond-301"><a href="#LocalClaudeCodeCLIResponder.respond-301"><span class="linenos">301</span></a><span class="sd">        &quot;&quot;&quot;</span>
-</span><span id="LocalClaudeCodeCLIResponder.respond-302"><a href="#LocalClaudeCodeCLIResponder.respond-302"><span class="linenos">302</span></a>        <span class="n">cmd</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;claude&quot;</span><span class="p">,</span> <span class="s2">&quot;-p&quot;</span><span class="p">,</span> <span class="n">user_input</span><span class="p">,</span> <span class="s2">&quot;--output-format&quot;</span><span class="p">,</span> <span class="s2">&quot;json&quot;</span><span class="p">]</span>
-</span><span id="LocalClaudeCodeCLIResponder.respond-303"><a href="#LocalClaudeCodeCLIResponder.respond-303"><span class="linenos">303</span></a>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">continue_conversation</span> <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">first_call</span><span class="p">:</span>
-</span><span id="LocalClaudeCodeCLIResponder.respond-304"><a href="#LocalClaudeCodeCLIResponder.respond-304"><span class="linenos">304</span></a>            <span class="n">cmd</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;--continue&quot;</span><span class="p">)</span>
-</span><span id="LocalClaudeCodeCLIResponder.respond-305"><a href="#LocalClaudeCodeCLIResponder.respond-305"><span class="linenos">305</span></a>        <span class="n">result</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">cmd</span><span class="p">,</span> <span class="n">capture_output</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">text</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-</span><span id="LocalClaudeCodeCLIResponder.respond-306"><a href="#LocalClaudeCodeCLIResponder.respond-306"><span class="linenos">306</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">first_call</span> <span class="o">=</span> <span class="kc">False</span>
-</span><span id="LocalClaudeCodeCLIResponder.respond-307"><a href="#LocalClaudeCodeCLIResponder.respond-307"><span class="linenos">307</span></a>        <span class="k">try</span><span class="p">:</span>
-</span><span id="LocalClaudeCodeCLIResponder.respond-308"><a href="#LocalClaudeCodeCLIResponder.respond-308"><span class="linenos">308</span></a>            <span class="k">return</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">stdout</span><span class="p">)</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;result&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
-</span><span id="LocalClaudeCodeCLIResponder.respond-309"><a href="#LocalClaudeCodeCLIResponder.respond-309"><span class="linenos">309</span></a>        <span class="k">except</span> <span class="n">json</span><span class="o">.</span><span class="n">JSONDecodeError</span><span class="p">:</span>
-</span><span id="LocalClaudeCodeCLIResponder.respond-310"><a href="#LocalClaudeCodeCLIResponder.respond-310"><span class="linenos">310</span></a>            <span class="k">return</span> <span class="n">result</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+</span><span id="LocalClaudeCodeCLIResponder.respond-296"><a href="#LocalClaudeCodeCLIResponder.respond-296"><span class="linenos">296</span></a><span class="sd">        - `user_input`:</span>
+</span><span id="LocalClaudeCodeCLIResponder.respond-297"><a href="#LocalClaudeCodeCLIResponder.respond-297"><span class="linenos">297</span></a><span class="sd">            - Type: str</span>
+</span><span id="LocalClaudeCodeCLIResponder.respond-298"><a href="#LocalClaudeCodeCLIResponder.respond-298"><span class="linenos">298</span></a><span class="sd">            - What: The transcribed text from the user&#39;s audio input</span>
+</span><span id="LocalClaudeCodeCLIResponder.respond-299"><a href="#LocalClaudeCodeCLIResponder.respond-299"><span class="linenos">299</span></a>
+</span><span id="LocalClaudeCodeCLIResponder.respond-300"><a href="#LocalClaudeCodeCLIResponder.respond-300"><span class="linenos">300</span></a><span class="sd">        Returns:</span>
+</span><span id="LocalClaudeCodeCLIResponder.respond-301"><a href="#LocalClaudeCodeCLIResponder.respond-301"><span class="linenos">301</span></a>
+</span><span id="LocalClaudeCodeCLIResponder.respond-302"><a href="#LocalClaudeCodeCLIResponder.respond-302"><span class="linenos">302</span></a><span class="sd">        - `response`:</span>
+</span><span id="LocalClaudeCodeCLIResponder.respond-303"><a href="#LocalClaudeCodeCLIResponder.respond-303"><span class="linenos">303</span></a><span class="sd">            - Type: str</span>
+</span><span id="LocalClaudeCodeCLIResponder.respond-304"><a href="#LocalClaudeCodeCLIResponder.respond-304"><span class="linenos">304</span></a><span class="sd">            - What: The final response string from Claude Code</span>
+</span><span id="LocalClaudeCodeCLIResponder.respond-305"><a href="#LocalClaudeCodeCLIResponder.respond-305"><span class="linenos">305</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="LocalClaudeCodeCLIResponder.respond-306"><a href="#LocalClaudeCodeCLIResponder.respond-306"><span class="linenos">306</span></a>        <span class="n">cmd</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;claude&quot;</span><span class="p">,</span> <span class="s2">&quot;-p&quot;</span><span class="p">,</span> <span class="n">user_input</span><span class="p">,</span> <span class="s2">&quot;--output-format&quot;</span><span class="p">,</span> <span class="s2">&quot;json&quot;</span><span class="p">]</span>
+</span><span id="LocalClaudeCodeCLIResponder.respond-307"><a href="#LocalClaudeCodeCLIResponder.respond-307"><span class="linenos">307</span></a>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">continue_conversation</span> <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">first_call</span><span class="p">:</span>
+</span><span id="LocalClaudeCodeCLIResponder.respond-308"><a href="#LocalClaudeCodeCLIResponder.respond-308"><span class="linenos">308</span></a>            <span class="n">cmd</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;--continue&quot;</span><span class="p">)</span>
+</span><span id="LocalClaudeCodeCLIResponder.respond-309"><a href="#LocalClaudeCodeCLIResponder.respond-309"><span class="linenos">309</span></a>        <span class="n">result</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">cmd</span><span class="p">,</span> <span class="n">capture_output</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">text</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</span><span id="LocalClaudeCodeCLIResponder.respond-310"><a href="#LocalClaudeCodeCLIResponder.respond-310"><span class="linenos">310</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">first_call</span> <span class="o">=</span> <span class="kc">False</span>
+</span><span id="LocalClaudeCodeCLIResponder.respond-311"><a href="#LocalClaudeCodeCLIResponder.respond-311"><span class="linenos">311</span></a>        <span class="k">try</span><span class="p">:</span>
+</span><span id="LocalClaudeCodeCLIResponder.respond-312"><a href="#LocalClaudeCodeCLIResponder.respond-312"><span class="linenos">312</span></a>            <span class="k">return</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">stdout</span><span class="p">)</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;result&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+</span><span id="LocalClaudeCodeCLIResponder.respond-313"><a href="#LocalClaudeCodeCLIResponder.respond-313"><span class="linenos">313</span></a>        <span class="k">except</span> <span class="n">json</span><span class="o">.</span><span class="n">JSONDecodeError</span><span class="p">:</span>
+</span><span id="LocalClaudeCodeCLIResponder.respond-314"><a href="#LocalClaudeCodeCLIResponder.respond-314"><span class="linenos">314</span></a>            <span class="k">return</span> <span class="n">result</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
 </span></pre></div>
 
 

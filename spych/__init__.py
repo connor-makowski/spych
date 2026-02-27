@@ -33,18 +33,18 @@ Requires [Ollama](https://ollama.com) to be installed and running locally. Pull 
 from spych.agents import ollama
 
 # Say "llama" or "ollama" to trigger
-ollama(model="llama3.2:latest", whisper_device="cuda")
+ollama(model="llama3.2:latest")
 ```
 
 ### Claude Code CLI
 
-Requires [Claude Code](https://docs.anthropic.com/en/docs/claude-code) to be installed in your **terminal** and authenticated. Verify with `claude --version` in your terminal. Fun side hint, you can run claude code with ollama if you want a fully offline experience.
+Requires [Claude Code](https://docs.anthropic.com/en/docs/claude-code) to be installed in your **terminal** and authenticated. Verify with `claude --version` in your terminal. Fun side hint, you can run claude code with ollama if you want a fully offline experience. 
 
 ```python
 from spych.agents import claude_code_cli
 
 # Say "claude" to trigger
-claude_code_cli(whisper_device="cuda")
+claude_code_cli()
 ```
 
 Both agents support a `terminate_words` list (default: `["terminate"]`) — saying a terminate word will stop the listener cleanly.
@@ -79,8 +79,7 @@ from spych import Spych
 
 spych_object = Spych(
     whisper_model="base.en",
-    whisper_device="cuda",  # or "cpu"
-    whisper_compute_type="int8",
+    whisper_device="cpu",  # or "cuda" for faster performance if you have an Nvidia GPU with CUDA support
 )
 
 transcription = spych_object.listen(duration=5)
@@ -96,7 +95,7 @@ See: https://connor-makowski.github.io/spych/spych/core.html
 ```python
 from spych import SpychWake, Spych
 
-spych_object = Spych(whisper_model="base.en", whisper_device="cuda", whisper_compute_type="int8")
+spych_object = Spych(whisper_model="base.en", whisper_device="cpu", whisper_compute_type="int8")
 
 def on_wake():
     print("Wake word heard! Listening for 5 seconds...")
@@ -105,8 +104,7 @@ def on_wake():
 wake_object = SpychWake(
     wake_word_map={"speech": on_wake},
     whisper_model="tiny.en",
-    whisper_device="cuda",
-    whisper_compute_type="int8",
+    whisper_device="cpu", # or "cuda" for faster performance if you have an Nvidia GPU with CUDA support
 )
 
 wake_object.start()
@@ -121,15 +119,13 @@ Map different wake words to different callbacks in a single listener.
 from spych import SpychWake, Spych
 from spych.responders import OllamaResponder, LocalClaudeCodeCLIResponder
 
-spych_object = Spych(whisper_model="base.en", whisper_device="cuda", whisper_compute_type="int8")
+spych_object = Spych(whisper_model="base.en", whisper_device="cpu", whisper_compute_type="int8")
 wake_object = SpychWake(
     wake_word_map={
         "llama": OllamaResponder(spych_object, model="llama3.2:latest"),
         "claude": LocalClaudeCodeCLIResponder(spych_object),
     },
     whisper_model="tiny.en",
-    whisper_device="cuda",
-    whisper_compute_type="int8",
     terminate_words=["terminate"]
 )
 wake_object.start()
@@ -173,16 +169,16 @@ class MyResponder(BaseResponder):
         super().__init__(spych_object)
         # You can also customize the responder's name
         self.name = "Custom Responder"
-
+    
     def respond(self, user_input: str) -> str:
         # Your custom logic here
         return "I am a custom responder and I heard: " + user_input
 
-spych_object = Spych(whisper_model="base.en", whisper_device="cuda", whisper_compute_type="int8")
+spych_object = Spych(whisper_model="base.en", whisper_device="cpu", whisper_compute_type="int8")
 wake_object = SpychWake(
     wake_word_map={"test": MyResponder(spych_object)},
     whisper_model="tiny.en",
-    whisper_device="cuda",
+    whisper_device="cpu",
     whisper_compute_type="int8",
     terminate_words=["terminate"]
 )
@@ -217,7 +213,7 @@ Contributions are welcome! Please open an issue or submit a pull request.
 
 - Create a virtual environment: `python3.11 -m venv venv`
 - Activate: `source venv/bin/activate`
-- Install dev requirements: `pip install -r requirements/dev.txt`
+- Install dev requirements: `pip install -r requirements.txt`
 - Run tests: `./utils/test.sh`"""
 
 from .core import Spych

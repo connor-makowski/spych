@@ -12,7 +12,7 @@ echo "from .wake import SpychWake" >> spych/__init__.py
 
 
 # Specify versions for documentation purposes
-VERSION="2.0.0"
+VERSION="2.0.1"
 OLD_DOC_VERSIONS="1.0.0"
 export version_options="$VERSION $OLD_DOC_VERSIONS"
 
