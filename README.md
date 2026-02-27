@@ -216,5 +216,5 @@ Contributions are welcome! Please open an issue or submit a pull request.
 
 - Create a virtual environment: `python3.11 -m venv venv`
 - Activate: `source venv/bin/activate`
-- Install dev requirements: `pip install -r requirements/dev.txt`
+- Install dev requirements: `pip install -r requirements.txt`
 - Run tests: `./utils/test.sh`
