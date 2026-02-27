@@ -1,6 +1,10 @@
 from spych import SpychWake, Spych
 
-spych_object = Spych(whisper_model="base.en")
+spych_object = Spych(
+    whisper_model="base.en",
+    whisper_device="cuda",
+    whisper_compute_type="int8",
+)
 
 
 def on_wake():
@@ -13,6 +17,8 @@ def on_wake():
 wake_object = SpychWake(
     wake_word_map={"speech": on_wake},
     whisper_model="tiny.en",
+    whisper_device="cuda",
+    whisper_compute_type="int8",
     terminate_words=["terminate"]
 )
 

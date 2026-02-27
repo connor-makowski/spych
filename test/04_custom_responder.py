@@ -12,12 +12,10 @@ class MyResponder(BaseResponder):
         # Your custom logic here
         return "I am a custom responder and I heard: " + user_input
 
-spych_object = Spych(whisper_model="base.en", whisper_device="cuda", whisper_compute_type="int8")
+spych_object = Spych(whisper_model="base.en")
 wake_object = SpychWake(
     wake_word_map={"test": MyResponder(spych_object)},
     whisper_model="tiny.en",
-    whisper_device="cuda",
-    whisper_compute_type="int8",
     terminate_words=["terminate"]
 )
 print("Starting wake listener. Say 'test' to trigger the MyResponder function.")
