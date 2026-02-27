@@ -70,7 +70,13 @@ def get_wake_object(wake_word_map, whisper_device, terminate_words=None):
     )
 
 
-def claude_code_cli(whisper_device="cpu", wake_words=["claude"], terminate_words=["terminate"], listen_duration=5, continue_conversation=True):
+def claude_code_cli(
+    whisper_device="cpu",
+    wake_words=["claude"],
+    terminate_words=["terminate"],
+    listen_duration=5,
+    continue_conversation=True,
+):
     """
     Usage:
 
@@ -97,7 +103,7 @@ def claude_code_cli(whisper_device="cpu", wake_words=["claude"], terminate_words
         - Default: ["terminate"]
         - Note: All terminate words in this list map to the same LocalClaudeCodeCLIResponder
           instance, sharing conversation history across triggers
-        
+
     - `listen_duration`:
         - Type: int | float
         - What: The number of seconds to listen for after the wake word is detected
@@ -109,7 +115,11 @@ def claude_code_cli(whisper_device="cpu", wake_words=["claude"], terminate_words
         - Default: True
     """
     spych_object = get_spych_object(whisper_device=whisper_device)
-    responder = LocalClaudeCodeCLIResponder(spych_object, continue_conversation=continue_conversation, listen_duration=listen_duration)
+    responder = LocalClaudeCodeCLIResponder(
+        spych_object,
+        continue_conversation=continue_conversation,
+        listen_duration=listen_duration,
+    )
     wake_word_map = {word: responder for word in wake_words}
     wake_object = get_wake_object(
         wake_word_map=wake_word_map,
@@ -119,7 +129,15 @@ def claude_code_cli(whisper_device="cpu", wake_words=["claude"], terminate_words
     wake_object.start()
 
 
-def ollama(model="llama3.2:latest", whisper_device="cpu", wake_words=["llama", "ollama"], terminate_words=["terminate"], listen_duration=5, history_length=10, host="http://localhost:11434"):
+def ollama(
+    model="llama3.2:latest",
+    whisper_device="cpu",
+    wake_words=["llama", "ollama"],
+    terminate_words=["terminate"],
+    listen_duration=5,
+    history_length=10,
+    host="http://localhost:11434",
+):
     """
     Usage:
 
@@ -172,7 +190,13 @@ def ollama(model="llama3.2:latest", whisper_device="cpu", wake_words=["llama", "
         - Default: "http://localhost:11434"
     """
     spych_object = get_spych_object(whisper_device=whisper_device)
-    responder = OllamaResponder(spych_object=spych_object, model=model, listen_duration=listen_duration, history_length=history_length, host=host)
+    responder = OllamaResponder(
+        spych_object=spych_object,
+        model=model,
+        listen_duration=listen_duration,
+        history_length=history_length,
+        host=host,
+    )
     wake_object = get_wake_object(
         wake_word_map={word: responder for word in wake_words},
         whisper_device=whisper_device,

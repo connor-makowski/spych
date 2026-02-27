@@ -13,10 +13,12 @@ def on_wake():
 wake_object = SpychWake(
     wake_word_map={"speech": on_wake},
     whisper_model="tiny.en",
-    terminate_words=["terminate"]
+    terminate_words=["terminate"],
 )
 
 wake_object.verbose = True  # Enable verbose notifications for testing
 
-print("Starting wake listener. Say 'Spych' (pronounced Speech) to trigger the on_wake function.")
+print(
+    "Starting wake listener. Say 'Spych' (pronounced Speech) to trigger the on_wake function."
+)
 wake_object.start()

@@ -38,7 +38,7 @@ ollama(model="llama3.2:latest", whisper_device="cuda")
 
 ### Claude Code CLI
 
-Requires [Claude Code](https://docs.anthropic.com/en/docs/claude-code) to be installed in your **terminal** and authenticated. Verify with `claude --version` in your terminal. Fun side hint, you can run claude code with ollama if you want a fully offline experience. 
+Requires [Claude Code](https://docs.anthropic.com/en/docs/claude-code) to be installed in your **terminal** and authenticated. Verify with `claude --version` in your terminal. Fun side hint, you can run claude code with ollama if you want a fully offline experience.
 
 ```python
 from spych.agents import claude_code_cli
@@ -173,7 +173,7 @@ class MyResponder(BaseResponder):
         super().__init__(spych_object)
         # You can also customize the responder's name
         self.name = "Custom Responder"
-    
+
     def respond(self, user_input: str) -> str:
         # Your custom logic here
         return "I am a custom responder and I heard: " + user_input

@@ -193,14 +193,20 @@ class SpychWake(Notify):
         """
         self.wake_word_map = {k.lower(): v for k, v in wake_word_map.items()}
         # Handle Terminating Words
-        self.terminate_words = [w.lower() for w in terminate_words] if terminate_words else []
+        self.terminate_words = (
+            [w.lower() for w in terminate_words] if terminate_words else []
+        )
         for word in self.terminate_words:
             if word in self.wake_word_map:
-                raise ValueError(f"Terminate word '{word}' cannot also be a wake word.")
+                raise ValueError(
+                    f"Terminate word '{word}' cannot also be a wake word."
+                )
             self.wake_word_map[word] = self.stop
         self.wake_listener_count = wake_listener_count
         self.wake_listener_time = wake_listener_time
-        self.wake_listener_max_processing_time = wake_listener_max_processing_time
+        self.wake_listener_max_processing_time = (
+            wake_listener_max_processing_time
+        )
         self.device_index = device_index
         self.locked = False
         self.kill = False
@@ -241,7 +247,10 @@ class SpychWake(Notify):
                     if not self.locked:
                         threading.Thread(target=listener).start()
                     time.sleep(
-                        (self.wake_listener_time + self.wake_listener_max_processing_time)
+                        (
+                            self.wake_listener_time
+                            + self.wake_listener_max_processing_time
+                        )
                         / self.wake_listener_count
                     )
         except KeyboardInterrupt:

@@ -56,7 +56,7 @@ class BaseResponder(Notify):
         raise NotImplementedError(
             "Subclasses must implement the `respond` method"
         )
-    
+
     def on_listen_start(self):
         """
         Usage:
@@ -71,7 +71,7 @@ class BaseResponder(Notify):
         """
         print(f"Waiting {self.listen_duration}s for instructions...")
         return None
-    
+
     def on_user_input(self, user_input):
         """
         Usage:
@@ -105,7 +105,7 @@ class BaseResponder(Notify):
         - `response`:
             - Type: str
             - What: The generated response string
-            
+
         Returns:
         - `None` (default behavior does nothing)
         """
@@ -243,7 +243,9 @@ class OllamaResponder(BaseResponder):
 
 
 class LocalClaudeCodeCLIResponder(BaseResponder):
-    def __init__(self, spych_object, continue_conversation=True, listen_duration=5):
+    def __init__(
+        self, spych_object, continue_conversation=True, listen_duration=5
+    ):
         """
         Usage:
 
@@ -274,7 +276,9 @@ class LocalClaudeCodeCLIResponder(BaseResponder):
           all tool calls and returns only the final result, not intermediate tool call XML
         - Claude Code must be installed and authenticated before use
         """
-        super().__init__(spych_object=spych_object, listen_duration=listen_duration)
+        super().__init__(
+            spych_object=spych_object, listen_duration=listen_duration
+        )
         self.name = "Claude Code"
         self.continue_conversation = continue_conversation
         self.first_call = True
@@ -307,4 +311,3 @@ class LocalClaudeCodeCLIResponder(BaseResponder):
             return json.loads(result.stdout).get("result", "").strip()
         except json.JSONDecodeError:
             return result.stdout.strip()
-        
