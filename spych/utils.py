@@ -1,9 +1,10 @@
 import traceback, sys
 from pvrecorder import PvRecorder
 import numpy as np
+from typing import Union
 
 
-def record(device_index, duration, sample_rate=16000, frame_length=512):
+def record(device_index: int, duration: Union[int, float], sample_rate: int = 16000, frame_length: int = 512) -> list[int]:
     """
     Usage:
 
@@ -54,7 +55,7 @@ def record(device_index, duration, sample_rate=16000, frame_length=512):
     return buffer
 
 
-def get_clean_audio_buffer(buffer):
+def get_clean_audio_buffer(buffer: list[int]) -> np.ndarray:
     """
     Usage:
 
@@ -79,8 +80,8 @@ def get_clean_audio_buffer(buffer):
 
 class Notify:
     def notify(
-        self, message, notification_type="warning", depth=0, force=False
-    ):
+        self, message: str, notification_type: str = "warning", depth: int = 0, force: bool = False
+    ) -> None:
         """
         Usage:
 

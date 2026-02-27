@@ -11,24 +11,10 @@
       "Write(./scripts/**)"
     ],
     "deny": [
-      "Read(./keys/**)",
-      "Read(./.env)",
-      "Read(./.env.*)",
-      "Read(./secrets/**)",
       "Read(**/__pycache__/**)",
       "Read(venv/**)"
     ]
   },
-  "env": {
-    "ANTHROPIC_BASE_URL": "http://localhost:11434",
-    "ANTHROPIC_AUTH_TOKEN": "ollama",
-    "ANTHROPIC_MODEL": "qwen3-coder:latest",
-    "ANTHROPIC_SMALL_FAST_MODEL": "qwen3-coder:latest",
-    "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1",
-    "CLAUDE_CODE_ENABLE_TELEMETRY": "1"
-
-  },
-  "companyAnnouncements": [
-    "Let's make Spych the best offline wake word and transcription system out there! Focus on improving accuracy, reducing latency, and making it easy for developers to integrate into their projects. Every contribution counts, no matter how small. Let's do this!"
+  "companyAnnouncements": ["Spych:\n\n- Let's make Spych the best offline wake word and transcription system out there!\n- Focus on improving accuracy, reducing latency, and making it easy for developers to integrate into their projects. \n- Every contribution counts, no matter how small.\n\nLet's do this!"
   ]
 }
