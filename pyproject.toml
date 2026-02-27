@@ -26,4 +26,4 @@ dependencies = ["faster-whisper==1.2.1", "pvrecorder", "numpy"]
 [project.urls]
 "Homepage" = "https://github.com/connor-makowski/spych"
 "Bug Tracker" = "https://github.com/connor-makowski/spych/issues"
-"Documentation" = "https://connor-makowski.github.io/spych/spych/enforcer.html"
+"Documentation" = "https://connor-makowski.github.io/spych/spych/index.html"
