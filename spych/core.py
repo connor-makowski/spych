@@ -1,6 +1,6 @@
 from faster_whisper import WhisperModel
 from spych.utils import Notify, record, get_clean_audio_buffer
-from typing import Optional, Union
+from typing import Union
 
 
 class Spych(Notify):
@@ -43,7 +43,9 @@ class Spych(Notify):
             compute_type=whisper_compute_type,
         )
 
-    def listen(self, duration: Union[int, float] = 5, device_index: int = -1) -> str:
+    def listen(
+        self, duration: Union[int, float] = 5, device_index: int = -1
+    ) -> str:
         """
         Usage:
 

@@ -30,7 +30,7 @@ wake_object = SpychWake(
     wake_word="speech",
     whisper_model="tiny.en",
     whisper_device="cuda", # You can comment this out if you do not have a compatible GPU
-    whisper_compute_type="int8", 
+    whisper_compute_type="int8",
 )
 
 spych_object = Spych(
@@ -149,7 +149,7 @@ wake_object.stop()
 from spych import SpychWake, Spych
 
 wake_object = SpychWake(
-  wake_word="speech", 
+  wake_word="speech",
   whisper_model="tiny.en",  # any faster-whisper compatible model
   whisper_device="cuda",    # "cpu" or "cuda"
   whisper_compute_type="int8"

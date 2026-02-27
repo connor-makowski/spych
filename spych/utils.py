@@ -4,7 +4,12 @@ import numpy as np
 from typing import Union
 
 
-def record(device_index: int, duration: Union[int, float], sample_rate: int = 16000, frame_length: int = 512) -> list[int]:
+def record(
+    device_index: int,
+    duration: Union[int, float],
+    sample_rate: int = 16000,
+    frame_length: int = 512,
+) -> list[int]:
     """
     Usage:
 
@@ -80,7 +85,11 @@ def get_clean_audio_buffer(buffer: list[int]) -> np.ndarray:
 
 class Notify:
     def notify(
-        self, message: str, notification_type: str = "warning", depth: int = 0, force: bool = False
+        self,
+        message: str,
+        notification_type: str = "warning",
+        depth: int = 0,
+        force: bool = False,
     ) -> None:
         """
         Usage:

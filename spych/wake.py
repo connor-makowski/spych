@@ -15,7 +15,8 @@ class SpychWakeListener(Notify):
         - `spych_wake_object`:
             - Type: SpychWake
             - What: The parent SpychWake instance that owns this listener
-            - Note: Used to access shared state such as `locked`, `wake_word`, and `device_index`
+            - Note: Used to access shared state such as `locked`, `wake_word_map`,
+              and `device_index`
         """
         self.spych_wake_object = spych_wake_object
         self.locked = False
@@ -56,14 +57,16 @@ class SpychWakeListener(Notify):
         Usage:
 
         - Executes one full listen-and-detect cycle when this listener is invoked as a thread target
-        - Records audio, transcribes it, and triggers a wake event if the wake word is detected
+        - Records audio, transcribes it, and triggers a wake event if any wake word is detected
 
         Notes:
 
         - Skips execution silently if this listener is already locked (i.e. mid-cycle)
         - Checks `should_stop` at each major step to allow early exit without blocking
         - Uses `beam_size=2` for fast transcription appropriate for short wake word clips
-        - The `initial_prompt` biases the model toward the wake word to reduce false negatives
+        - The `initial_prompt` biases the model toward all registered wake words to reduce
+          false negatives
+        - If multiple wake words are present in a single segment, the first match wins
         """
         if self.locked:
             self.notify(
@@ -82,17 +85,22 @@ class SpychWakeListener(Notify):
         audio_buffer = get_clean_audio_buffer(buffer)
         if self.should_stop():
             return
+        wake_words = list(self.spych_wake_object.wake_word_map.keys())
         segments, _ = self.spych_wake_object.wake_model.transcribe(
             audio_buffer,
             beam_size=2,
-            initial_prompt=f"You are listening for a wake word. Only respond with the wake word '{self.spych_wake_object.wake_word}' if you hear it. Otherwise, respond with an empty string.",
+            initial_prompt=f"You are listening for wake words: {', '.join(wake_words)}.",
         )
         for segment in segments:
             if self.should_stop():
                 return
-            if self.spych_wake_object.wake_word in segment.text.lower():
-                self.spych_wake_object.wake()
-                break
+            text = segment.text.lower()
+            for wake_word in wake_words:
+                if wake_word in text:
+                    self.spych_wake_object.wake(wake_word)
+                    self.locked = False
+                    self.kill = False
+                    return
         self.locked = False
         self.kill = False
 
@@ -100,7 +108,8 @@ class SpychWakeListener(Notify):
 class SpychWake(Notify):
     def __init__(
         self,
-        wake_word,
+        wake_word_map,
+        terminate_words=None,
         wake_listener_count=3,
         wake_listener_time=2,
         wake_listener_max_processing_time=0.5,
@@ -114,21 +123,36 @@ class SpychWake(Notify):
 
         - Initializes a wake word detection system using overlapping listener threads
           and faster-whisper for offline transcription
+        - Supports multiple wake words, each mapped to a different callback function
 
         Requires:
 
-        - `wake_word`:
-            - Type: str
-            - What: The word to listen for
-            - Note: Stored and matched in lowercase
+        - `wake_word_map`:
+            - Type: dict[str, callable]
+            - What: A dictionary mapping wake words to their corresponding no-argument
+              callback functions
+            - Note: Keys are stored and matched in lowercase
+            - Example:
+                {
+                    "jarvis": on_jarvis_wake,
+                    "computer": on_computer_wake,
+                }
 
         Optional:
+
+        - `terminate_words`:
+            - Type: list[str]
+            - What: A list of words that, if detected in the wake listener's transcription,
+              will immediately terminate the entire SpychWake system
+            - Note: Use with caution, as any false positive on a terminate word will stop
+              the wake system until it is manually restarted
+            - default: None (disabled)
 
         - `wake_listener_count`:
             - Type: int
             - What: The number of concurrent listener threads to run
             - Default: 3
-            - Note: More listeners reduce the chance of missing the wake word between
+            - Note: More listeners reduce the chance of missing a wake word between
               recording windows; at least 3 is recommended for continuous coverage
 
         - `wake_listener_time`:
@@ -167,12 +191,16 @@ class SpychWake(Notify):
             - Default: "int8"
             - Note: "int8" offers a good balance of speed and accuracy on both CPU and GPU
         """
-        self.wake_word = wake_word.lower()
+        self.wake_word_map = {k.lower(): v for k, v in wake_word_map.items()}
+        # Handle Terminating Words
+        self.terminate_words = [w.lower() for w in terminate_words] if terminate_words else []
+        for word in self.terminate_words:
+            if word in self.wake_word_map:
+                raise ValueError(f"Terminate word '{word}' cannot also be a wake word.")
+            self.wake_word_map[word] = self.stop
         self.wake_listener_count = wake_listener_count
         self.wake_listener_time = wake_listener_time
-        self.wake_listener_max_processing_time = (
-            wake_listener_max_processing_time
-        )
+        self.wake_listener_max_processing_time = wake_listener_max_processing_time
         self.device_index = device_index
         self.locked = False
         self.kill = False
@@ -185,33 +213,25 @@ class SpychWake(Notify):
             SpychWakeListener(self) for _ in range(self.wake_listener_count)
         ]
 
-    def start(self, on_wake_fn):
+    def start(self):
         """
         Usage:
 
         - Starts the wake word detection loop using overlapping listener threads
         - Blocks until a KeyboardInterrupt is received or `stop()` is called
 
-        Requires:
-
-        - `on_wake_fn`:
-            - Type: callable
-            - What: A no-argument callable that is executed each time the wake word is detected
-            - Note: Execution is serialized — subsequent detections are ignored until
-              `on_wake_fn` returns
-
         Notes:
 
+        - Callbacks are defined in `wake_word_map` at init time rather than passed to `start`
         - Listener threads are staggered by `(wake_listener_time + wake_listener_max_processing_time)
           / wake_listener_count` seconds to ensure continuous audio coverage
         - New threads are only launched when the system is not locked (i.e. not currently
           processing a wake event)
         """
         self.notify(
-            f"Listening for wake word: '{self.wake_word}'...",
+            f"Listening for wake words: {list(self.wake_word_map.keys())}...",
             notification_type="verbose",
         )
-        self.on_wake_fn = on_wake_fn
         try:
             while True:
                 for listener in self.wake_listeners:
@@ -221,10 +241,7 @@ class SpychWake(Notify):
                     if not self.locked:
                         threading.Thread(target=listener).start()
                     time.sleep(
-                        (
-                            self.wake_listener_time
-                            + self.wake_listener_max_processing_time
-                        )
+                        (self.wake_listener_time + self.wake_listener_max_processing_time)
                         / self.wake_listener_count
                     )
         except KeyboardInterrupt:
@@ -250,29 +267,38 @@ class SpychWake(Notify):
         self.stop_listeners()
         self.kill = True
 
-    def wake(self):
+    def wake(self, wake_word):
         """
         Usage:
 
-        - Called internally when the wake word is detected
-        - Stops all listeners, locks the system, executes `on_wake_fn`, then unlocks
+        - Called internally when a wake word is detected
+        - Stops all listeners, locks the system, executes the mapped callback for the
+          detected wake word, then unlocks
+
+        Requires:
+
+        - `wake_word`:
+            - Type: str
+            - What: The detected wake word, used to look up the correct callback in
+              `wake_word_map`
 
         Notes:
 
         - If the system is already locked when `wake` is called, the call is a no-op
           to prevent concurrent wake executions
-        - Any exception raised by `on_wake_fn` is caught and re-raised as a spych exception
-        - The system is always unlocked in the `finally` block, even if `on_wake_fn` raises
+        - Any exception raised by the callback is caught and re-raised as a spych exception
+        - The system is always unlocked in the `finally` block, even if the callback raises
         """
         self.stop_listeners()
         if self.locked:
             return
         self.locked = True
         try:
-            self.on_wake_fn()
+            self.wake_word_map[wake_word]()
         except Exception as e:
             self.notify(
-                f"Error in on_wake_fn: {e}", notification_type="exception"
+                f"Error in on_wake_fn for '{wake_word}': {e}",
+                notification_type="exception",
             )
         finally:
             self.locked = False
