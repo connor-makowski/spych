@@ -21,7 +21,7 @@ classifiers = [
     'License :: OSI Approved :: MIT License',
     "Operating System :: OS Independent",
 ]
-dependencies = ["faster-whisper==1.2.1"]
+dependencies = ["faster-whisper==1.2.1", "pvrecorder", "numpy"]
 
 [project.urls]
 "Homepage" = "https://github.com/connor-makowski/spych"

@@ -1,4 +1,4 @@
-Most relevant development code for this repo can be found in the `spycg`, `test`, directory.
+Most relevant development code for this repo can be found in the `spych`, `test`, directory.
 
 Linting:
 
