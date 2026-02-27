@@ -89,7 +89,7 @@ class SpychWakeListener(Notify):
         segments, _ = self.spych_wake_object.wake_model.transcribe(
             audio_buffer,
             beam_size=2,
-            initial_prompt=f"You are listening for wake words: {', '.join(wake_words)}.",
+            initial_prompt=f"You are listening for wake words: {str(wake_words)}. Do not transcribe anything else. You should be quite sure you hear these words before you return them.",
         )
         for segment in segments:
             if self.should_stop():
