@@ -1,0 +1,34 @@
+
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "allow": [
+      "Bash(./run.sh prettify)",
+      "Bash(./run.sh test)",
+      "Edit(./spych/**)",
+      "Edit(./scripts/**)",
+      "Write(./spych/**)",
+      "Write(./scripts/**)"
+    ],
+    "deny": [
+      "Read(./keys/**)",
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Read(./secrets/**)",
+      "Read(**/__pycache__/**)",
+      "Read(venv/**)"
+    ]
+  },
+  "env": {
+    "ANTHROPIC_BASE_URL": "http://localhost:11434",
+    "ANTHROPIC_AUTH_TOKEN": "ollama",
+    "ANTHROPIC_MODEL": "qwen3-coder:latest",
+    "ANTHROPIC_SMALL_FAST_MODEL": "qwen3-coder:latest",
+    "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1",
+    "CLAUDE_CODE_ENABLE_TELEMETRY": "1"
+
+  },
+  "companyAnnouncements": [
+    "Lets make the MITx MM program the best it can be!"
+  ]
+}
