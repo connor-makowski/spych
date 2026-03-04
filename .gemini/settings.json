@@ -4,6 +4,6 @@
         "defaultApprovalMode": "auto_edit"
     },
     "tools": {
-        "allowed": ["run_shell_command"]
+        "allowed": ["run_shell_command(./run.sh)"]
     }
 }
