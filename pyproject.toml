@@ -28,6 +28,11 @@ dependencies = [
     "requests>=2.32.5,<3.0.0"
 ]
 
+[project.optional-dependencies]
+claude = [
+    "claude_agent_sdk>=0.1.45,<1.0.0",
+]
+
 [project.urls]
 "Homepage" = "https://github.com/connor-makowski/spych"
 "Bug Tracker" = "https://github.com/connor-makowski/spych/issues"

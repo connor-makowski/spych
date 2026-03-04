@@ -93,6 +93,10 @@ class SpychWakeListener(Notify):
             initial_prompt=f"""Here are some wake words: {wake_string}. Only return what you understood was said, but place extra weight on those words if there is a tie.""",
         )
         for segment in segments:
+            # Skip segments with high no_speech_prob to reduce false positives on silence/background noise;
+            # the threshold can be adjusted based on testing and environment
+            if segment.no_speech_prob > self.spych_wake_object.no_speech_threshold:
+                continue
             if self.should_stop():
                 return
             text = segment.text.lower()
@@ -118,6 +122,8 @@ class SpychWake(Notify):
         whisper_model="tiny.en",
         whisper_device="cpu",
         whisper_compute_type="int8",
+        no_speech_threshold=0.3,
+        on_terminate=None,
     ):
         """
         Usage:
@@ -191,6 +197,18 @@ class SpychWake(Notify):
             - What: The compute type to use for the whisper model
             - Default: "int8"
             - Note: "int8" offers a good balance of speed and accuracy on both CPU and GPU
+
+        - `no_speech_threshold`:
+            - Type: float
+            - What: The threshold for the `no_speech_prob` returned by faster-whisper
+            - Default: 0.3
+            - Note: Segments with a `no_speech_prob` above this threshold will be ignored to reduce false positives from silence or background noise
+
+        - `on_terminate`:
+            - Type: callable
+            - What: A no-argument callback function to execute when a terminate word is detected
+            - Default: None (disabled)
+            - Note: If provided, this callback will be executed before the system is stopped when a terminate word is detected
         """
         self.wake_word_map = {k.lower(): v for k, v in wake_word_map.items()}
         # Handle Terminating Words
@@ -203,6 +221,8 @@ class SpychWake(Notify):
                     f"Terminate word '{word}' cannot also be a wake word."
                 )
             self.wake_word_map[word] = self.stop
+        self.no_speech_threshold = no_speech_threshold
+        self.on_terminate = on_terminate
         self.wake_listener_count = wake_listener_count
         self.wake_listener_time = wake_listener_time
         self.wake_listener_max_processing_time = (
@@ -235,10 +255,6 @@ class SpychWake(Notify):
         - New threads are only launched when the system is not locked (i.e. not currently
           processing a wake event)
         """
-        self.notify(
-            f"Listening for wake words: {list(self.wake_word_map.keys())}...",
-            notification_type="verbose",
-        )
         try:
             while True:
                 for listener in self.wake_listeners:
@@ -255,7 +271,7 @@ class SpychWake(Notify):
                         / self.wake_listener_count
                     )
         except KeyboardInterrupt:
-            self.notify("Stopping.", notification_type="verbose")
+            self.stop()
 
     def stop_listeners(self):
         """
@@ -276,6 +292,15 @@ class SpychWake(Notify):
         """
         self.stop_listeners()
         self.kill = True
+        if self.on_terminate:
+            try:
+                self.on_terminate()
+            except Exception as e:
+                self.notify(
+                    f"Error in on_terminate callback: {e}",
+                    notification_type="exception",
+                )
+
 
     def wake(self, wake_word):
         """
