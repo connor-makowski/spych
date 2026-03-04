@@ -4,221 +4,212 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![PyPI Downloads](https://img.shields.io/pypi/dm/spych.svg?label=PyPI%20downloads)](https://pypi.org/project/spych/)
 
-Spych (pronounced "speech") — a lightweight, fully offline Python speech-to-text toolkit for wake word detection, audio transcription and AI integrations. Built on [faster-whisper](https://github.com/SYSTRAN/faster-whisper) and [PvRecorder](https://github.com/Picovoice/pvrecorder).
+**Spych** (pronounced "speech"): talk to your computer like its your personal assistant without sending your voice to the cloud.
 
-- Fully offline -> no API keys, no cloud calls, no internet required
-- Multi-threaded wake word detection that rarely misses a trigger between recording windows
-- Multiple wake words, each mapped to a different action
-- Built-in agents for
-    - [Ollama](https://ollama.com)
-    - [Claude Code](https://docs.anthropic.com/en/docs/claude-code)
+A lightweight, fully offline Python toolkit for wake word detection, audio transcription, and AI integrations. Built on [faster-whisper](https://github.com/SYSTRAN/faster-whisper) and [PvRecorder](https://github.com/Picovoice/pvrecorder).
+
+- **Fully offline**: no API keys, no cloud calls, no eavesdropping
+- **Multi-threaded wake word detection**: overlapping listener windows so you rarely miss a trigger
+- **Multiple wake words**: map different words to different actions in one listener
+- **Built-in agents**: for [Ollama](https://ollama.com) and [Claude Code](https://docs.anthropic.com/en/docs/claude-code)
+
+---
 
 # Setup
 
-Make sure you have Python 3.11.x (or higher) installed on your system. You can download it [here](https://www.python.org/downloads/).
+Requires Python 3.11+. Download it [here](https://www.python.org/downloads/) if needed.
 
 ## Installation
-
 ```
 pip install spych
 ```
 
-## Quick Start: Voice Agents
+---
 
-The fastest way to get started is via `spych.agents`. These one-liners handle everything — wake word detection, transcription, and passing your speech to the target agent.
+# Quick Start: Voice Agents
 
-### Ollama
+The fastest path from zero to voice-controlled AI. These one-liners handle everything: wake word detection, transcription, and routing your speech to the target agent.
 
-Requires [Ollama](https://ollama.com) to be installed and running locally.
-For this example, pull the model first with `ollama pull llama3.2:latest`.
+## Ollama
 
+Talk to a local LLM entirely offline. Requires [Ollama](https://ollama.com) installed and running.
+
+For this example, we'll use the free `llama3.2:latest` model, but any Ollama model will work. For this example run: `ollama pull llama3.2:latest`.
 ```python
 from spych.agents import ollama
 
-# Say "llama" or "ollama" to trigger
-# Hint: I find saying "Hey Llama" works better than just "Llama" or "Ollama"
+# Pull the model first: ollama pull llama3.2:latest
+# Then say "hey llama" to trigger
 ollama(model="llama3.2:latest")
 ```
 
-### Claude Code CLI
+## Claude Code CLI
 
-Requires [Claude Code](https://docs.anthropic.com/en/docs/claude-code) to be installed in your **terminal** and authenticated.
-- Verify with `claude --version` in your terminal.
-- Fun side hint, you can run claude code with ollama if you want a fully offline experience.
+Voice-control Claude Code directly from your voice.
 
 ```python
 from spych.agents import claude_code_cli
 
-# Say "claude" to trigger
-# Hint: I find saying "Hey Claude" works better than just "Claude"
+# Say "hey claude" to trigger
 claude_code_cli()
 ```
 
-Both agents support a `terminate_words` list (default: `["terminate"]`) — saying a terminate word will stop the listener cleanly.
+> 💡 **Pro tip:** Saying "Hey Llama" or "Hey Claude" tends to trigger more reliably than just the bare wake word.
+
+Both agents accept a `terminate_words` list (default: `["terminate"]`). Say the word or use `ctrl+c` to stop the listener cleanly.
+
+### Agent Parameters
 
 | Parameter | `ollama` default | `claude_code_cli` default | Description |
 |---|---|---|---|
-| `wake_words` | `["llama", "ollama"]` | `["claude"]` | Words that trigger the agent |
+| `wake_words` | `["llama", "ollama", "lama"]` | `["claude", "clod", "cloud", "clawed"]` | Words that trigger the agent |
 | `terminate_words` | `["terminate"]` | `["terminate"]` | Words that stop the listener |
-| `model` | `"llama3.2:latest"` | — | Ollama model name |
-| `listen_duration` | `5` | `5` | Seconds to listen for after wake word |
-| `continue_conversation` | — | `True` | Whether to reuse the most recent session in Claude CLI |
-| `history_length` | `10` | — | Number of past interactions to include in the prompt sent to Ollama |
-| `host` | `"http://localhost:11434"` | — | URL of the Ollama instance to connect to |
-| `spych_kwargs` | — | — | Additional keyword arguments to pass to the Spych constructor |
-| `spych_wake_kwargs` | — | — | Additional keyword arguments to pass to the SpychWake constructor |
-
-### Want a different agent?
-No problem! You can build your own custom agent by subclassing `BaseResponder` and passing an instance to `SpychWake`. See the API reference below for details.
-
-Think others would find your agent useful? Open a PR or make a feature request via a git issue.
----
-
-# Wake Word Detection + Transcription
-
-If you want more control, use `SpychWake` and `Spych` directly.
-
-## Listen and Transcribe
-
-`Spych` records from the microphone and returns a transcription string.
-
-```python
-from spych import Spych
-
-spych_object = Spych(
-    whisper_model="base.en", # We default to the english-only base.en, but all faster-whisper models are supported (tiny, base, small, medium, large)
-    whisper_device="cpu",  # or "cuda" for faster performance if you have an Nvidia GPU with CUDA support
-)
-
-transcription = spych_object.listen(duration=5)
-print(transcription)
-```
-See: https://connor-makowski.github.io/spych/spych/core.html
-
-
-## Wake Word Detection
-
-`SpychWake` listens continuously for one or more wake words and fires a callback when detected.
-
-```python
-from spych import SpychWake, Spych
-
-spych_object = Spych(whisper_model="base.en", whisper_device="cpu")
-
-def on_wake():
-    print("Wake word heard! Listening for 5 seconds...")
-    print(spych_object.listen(duration=5))
-
-wake_object = SpychWake(
-    wake_word_map={"speech": on_wake},
-    whisper_model="tiny.en",
-    whisper_device="cpu", # or "cuda" for faster performance if you have an Nvidia GPU with CUDA support
-)
-
-wake_object.start()
-```
-See: https://connor-makowski.github.io/spych/spych/wake.html
-
-## Multiple Wake Words
-
-Map different wake words to different callbacks in a single listener.
-
-```python
-from spych import SpychWake, Spych
-from spych.agents import OllamaResponder, LocalClaudeCodeCLIResponder
-
-spych_object = Spych(whisper_model="base.en", whisper_device="cpu")
-wake_object = SpychWake(
-    wake_word_map={
-        "llama": OllamaResponder(spych_object, model="llama3.2:latest"),
-        "claude": LocalClaudeCodeCLIResponder(spych_object),
-    },
-    whisper_model="tiny.en",
-    terminate_words=["terminate"]
-)
-wake_object.start()
-```
-See: https://connor-makowski.github.io/spych/spych/wake.html
+| `model` | `"llama3.2:latest"` | - | Ollama model name |
+| `listen_duration` | `5` | `5` | Seconds to listen after wake word |
+| `continue_conversation` | - | `True` | Resume the most recent Claude session |
+| `history_length` | `10` | - | Past interactions to include in Ollama context |
+| `host` | `"http://localhost:11434"` | - | Ollama instance URL |
+| `spych_kwargs` | - | - | Extra kwargs passed to `Spych` |
+| `spych_wake_kwargs` | - | - | Extra kwargs passed to `SpychWake` |
 
 ---
 
-# API Reference
+# Building Your Own Agent
 
-## For a full API reference, including all parameters and methods,
-See: https://connor-makowski.github.io/spych/spych.html
-
-## Responders
-
-Responders need additional explanations. Responders handle the listen-transcribe-respond cycle and are callable, making them suitable as `wake_word_map` values. All responders inherit from `BaseResponder`.
-
-### `BaseResponder`
-
-Subclass this to build a custom integration. Only `respond` needs to be implemented.
-
+Not using Ollama or Claude? No problem. Subclass `BaseResponder`, implement `respond`, and you're done. Spych handles the rest: listening, transcription, spinner UI, timing, error handling, all of it.
 ```python
 from spych.responders import BaseResponder
 
 class MyResponder(BaseResponder):
     def respond(self, user_input: str) -> str:
-        # Your custom logic here
-        # For exmample, you may pass this to an API, run some code, or trigger a local action
-        return "response"
+        return f"'{self.name}' heard: {user_input}"
 ```
 
-A full implementation that uses `test` as a wake word would look like:
-
+A complete working example with a custom wake word:
 ```python
 from spych.responders import BaseResponder
 from spych import Spych, SpychWake
 
 class MyResponder(BaseResponder):
-    # A custom init function to set up any necessary variables or connections for your responder
-    def __init__(self, spych_object, name="Custom Responder"):
-        super().__init__(spych_object, name=name)
-
     def respond(self, user_input: str) -> str:
-        # Your custom logic here
-        return f"I am a custom responder named '{self.name}' and I heard: {user_input}"
+        return f"'{self.name}' heard: {user_input}"
+
+my_responder = MyResponder(
+    spych_object = Spych(whisper_model="base.en"),
+    listen_duration=5,
+    name="TestResponder"
+)
 
 wake_object = SpychWake(
-    wake_word_map={"test": MyResponder(Spych(whisper_model="base.en"))},
+    wake_word_map={"test": my_responder},
+    whisper_model="tiny.en",
+    terminate_words=["terminate"]
+)
+my_responder.ready_message(wake_words = ["test"], terminate_words = ["terminate"])
+wake_object.start()
+```
+
+Think your agent would be useful to others? Open a PR or file a feature request via a GitHub issue. Contributions are very welcome.
+
+---
+
+# Lower-Level API
+
+Need more control? Use `SpychWake` and `Spych` directly.
+
+## Listen and Transcribe
+
+`Spych` records from the mic and returns a transcription string.
+```python
+from spych import Spych
+
+spych = Spych(
+    whisper_model="base.en",  # or tiny, small, medium, large -> all faster-whisper models work
+    whisper_device="cpu",     # use "cuda" if you have an Nvidia GPU
+)
+
+print(spych.listen(duration=5))
+```
+
+See: https://connor-makowski.github.io/spych/spych/core.html
+
+## Wake Word Detection
+
+`SpychWake` runs multiple overlapping listener threads and fires a callback when a wake word is detected.
+```python
+from spych import SpychWake, Spych
+
+spych = Spych(whisper_model="base.en", whisper_device="cpu")
+
+def on_wake():
+    print("Wake word detected! Listening...")
+    print(spych.listen(duration=5))
+
+wake = SpychWake(
+    wake_word_map={"speech": on_wake},
+    whisper_model="tiny.en",
+    whisper_device="cpu",
+)
+
+wake.start()
+```
+
+See: https://connor-makowski.github.io/spych/spych/wake.html
+
+<!-- ## Multiple Wake Words
+
+Map different words to different callbacks all in one listener.
+```python
+from spych import SpychWake, Spych
+from spych.agents import OllamaResponder, LocalClaudeCodeCLIResponder
+
+spych = Spych(whisper_model="base.en", whisper_device="cpu")
+
+wake = SpychWake(
+    wake_word_map={
+        "llama": OllamaResponder(spych, model="llama3.2:latest"),
+        "claude": LocalClaudeCodeCLIResponder(spych),
+    },
     whisper_model="tiny.en",
     terminate_words=["terminate"]
 )
 
-print("Starting wake listener. Say 'test' to trigger the MyResponder function.")
-wake_object.start()
+wake.start()
 ```
+
+See: https://connor-makowski.github.io/spych/spych/wake.html -->
+
+---
+
+# API Reference
+
+Full docs including all parameters and methods: https://connor-makowski.github.io/spych/spych.html
+
+---
 
 # Support
 
-## Bug Reports and Feature Requests
+Found a bug or want a new feature? [Open an issue on GitHub](https://github.com/connor-makowski/spych/issues).
 
-If you find a bug or are looking for a new feature, please open an issue on GitHub.
-
-## Need Help?
-
-If you need help, please open an issue on GitHub.
+---
 
 # Contributing
 
-Contributions are welcome! Please open an issue or submit a pull request.
+Contributions are welcome!
 
-## Making Changes
+1. Fork the repo and clone it locally.
+2. Make your changes.
+3. Run tests and make sure they pass.
+4. Commit atomically with clear messages.
+5. Submit a pull request.
 
-1) Fork the repo and clone it locally.
-2) Make your modifications.
-3) Run tests and make sure they pass.
-4) Only commit relevant changes and add clear commit messages.
-    - Atomic commits are preferred.
-5) Submit a pull request.
-
-## Virtual Environment
-
-- Create a virtual environment: `python3.11 -m venv venv`
-- Activate: `source venv/bin/activate`
-- Install dev requirements: `pip install -r requirements.txt`
-- Run tests: `./utils/test.sh`"""
+**Virtual environment setup:**
+```bash
+python3.11 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+./utils/test.sh
+```"""
 
 from .core import Spych
 from .wake import SpychWake

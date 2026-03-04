@@ -3,7 +3,9 @@ from spych.core import Spych
 from spych.wake import SpychWake
 from spych.responders import BaseResponder
 
-WORKER_PATH = importlib.util.find_spec("spych.agents.sdk_workers.claude_sdk_worker").origin
+WORKER_PATH = importlib.util.find_spec(
+    "spych.agents.sdk_workers.claude_sdk_worker"
+).origin
 
 
 class LocalClaudeCodeCLIResponder(BaseResponder):
@@ -74,13 +76,15 @@ class LocalClaudeCodeCLIResponder(BaseResponder):
         is_first = self._first_call
         self._first_call = False
 
-        payload = json.dumps({
-            "user_input": user_input,
-            "is_first": is_first,
-            "continue_conversation": self.continue_conversation,
-            "last_session_id": self._last_session_id,
-            "setting_sources": self.setting_sources,
-        })
+        payload = json.dumps(
+            {
+                "user_input": user_input,
+                "is_first": is_first,
+                "continue_conversation": self.continue_conversation,
+                "last_session_id": self._last_session_id,
+                "setting_sources": self.setting_sources,
+            }
+        )
 
         # print(payload)
 
@@ -120,7 +124,7 @@ class LocalClaudeCodeCLIResponder(BaseResponder):
                 pass
 
             elif etype == "tool_start":
-                tool_id   = event["id"]
+                tool_id = event["id"]
                 tool_name = event["name"]
                 tool_input = json.dumps(event.get("input", {}))
                 # print(f"Tool '{tool_name}' started with input: {tool_input}")
@@ -134,7 +138,9 @@ class LocalClaudeCodeCLIResponder(BaseResponder):
                     tool_name, start = active_tools.pop(tool_id)
                     elapsed = time.time() - start
                     if self.show_tool_events:
-                        self.tool_event(tool_name, "done", is_running=False, elapsed=elapsed)
+                        self.tool_event(
+                            tool_name, "done", is_running=False, elapsed=elapsed
+                        )
 
             elif etype == "result":
                 final_result = event.get("text", "")
@@ -226,10 +232,12 @@ def claude_code_cli(
         "on_terminate": responder.on_terminate,
         "wake_word_map": {word: responder for word in wake_words},
         "terminate_words": terminate_words,
-        **(spych_wake_kwargs or {})
+        **(spych_wake_kwargs or {}),
     }
     spych_wake_object = SpychWake(**spych_wake_kwargs)
 
     # Fire ready message and start wake listener
-    responder.ready_message(wake_words, terminate_words)
+    responder.ready_message(
+        wake_words=wake_words, terminate_words=terminate_words
+    )
     spych_wake_object.start()

@@ -64,6 +64,42 @@
             </ul>
 
 
+<footer>
+<select id="version-selector">
+    <option value="latest">latest</option>
+        <option value="3.1.0">3.1.0</option>
+        <option value="3.0.0">3.0.0</option>
+        <option value="2.0.2">2.0.2</option>
+        <option value="1.0.0">1.0.0</option>
+</select>
+<script>
+    var split_at = "/docs/";
+    if (window.location.href.includes('github.io')) {
+        split_at = "github.io/spych/";
+    }
+    // Set the currently selected option to be equivalent to that of the url version.
+    var version = 'latest';
+    var version_path = window.location.href.split(split_at)[1];
+    if (version_path.includes('/')) {
+        if (version_path.split('/')[0].match(/^\d+\.\d+\.\d+$/)) {
+            version = version_path.split('/')[0];
+        }
+    }
+    document.getElementById('version-selector').value = version;
+
+    document.getElementById('version-selector').onchange = function() {
+        var version = this.value;
+        if (version == 'latest') {
+            var new_url = '';
+        } else {
+            var new_url = version + '/';
+        }
+        var url = window.location.href.split(split_at)[0] + split_at + new_url + 'index.html';
+        console.log(url);
+        window.location.href = url;
+    }
+</script>
+</footer>
 
         <a class="attribution" title="pdoc: Python API documentation generator" href="https://pdoc.dev" target="_blank">
             built with <span class="visually-hidden">pdoc</span><img
@@ -89,9 +125,9 @@ spych    </h1>
 <li>Fully offline -> no API keys, no cloud calls, no internet required</li>
 <li>Multi-threaded wake word detection that rarely misses a trigger between recording windows</li>
 <li>Multiple wake words, each mapped to a different action</li>
-<li>Built-in agents for 
+<li>Built-in agents for
 <ul>
-<li><a href="https://ollama.com">Ollama</a> </li>
+<li><a href="https://ollama.com">Ollama</a></li>
 <li><a href="https://docs.anthropic.com/en/docs/claude-code">Claude Code</a></li>
 </ul></li>
 </ul>
@@ -111,7 +147,7 @@ spych    </h1>
 
 <h3 id="ollama">Ollama</h3>
 
-<p>Requires <a href="https://ollama.com">Ollama</a> to be installed and running locally. 
+<p>Requires <a href="https://ollama.com">Ollama</a> to be installed and running locally.
 For this example, pull the model first with <code>ollama pull llama3.2:latest</code>.</p>
 
 <div class="pdoc-code codehilite">
@@ -388,8 +424,8 @@ For this example, pull the model first with <code>ollama pull llama3.2:latest</c
 </span><span id="L-9"><a href="#L-9"><span class="linenos">  9</span></a><span class="sd">- Fully offline -&gt; no API keys, no cloud calls, no internet required</span>
 </span><span id="L-10"><a href="#L-10"><span class="linenos"> 10</span></a><span class="sd">- Multi-threaded wake word detection that rarely misses a trigger between recording windows</span>
 </span><span id="L-11"><a href="#L-11"><span class="linenos"> 11</span></a><span class="sd">- Multiple wake words, each mapped to a different action</span>
-</span><span id="L-12"><a href="#L-12"><span class="linenos"> 12</span></a><span class="sd">- Built-in agents for </span>
-</span><span id="L-13"><a href="#L-13"><span class="linenos"> 13</span></a><span class="sd">    - [Ollama](https://ollama.com) </span>
+</span><span id="L-12"><a href="#L-12"><span class="linenos"> 12</span></a><span class="sd">- Built-in agents for</span>
+</span><span id="L-13"><a href="#L-13"><span class="linenos"> 13</span></a><span class="sd">    - [Ollama](https://ollama.com)</span>
 </span><span id="L-14"><a href="#L-14"><span class="linenos"> 14</span></a><span class="sd">    - [Claude Code](https://docs.anthropic.com/en/docs/claude-code)</span>
 </span><span id="L-15"><a href="#L-15"><span class="linenos"> 15</span></a>
 </span><span id="L-16"><a href="#L-16"><span class="linenos"> 16</span></a><span class="sd"># Setup</span>
@@ -408,7 +444,7 @@ For this example, pull the model first with <code>ollama pull llama3.2:latest</c
 </span><span id="L-29"><a href="#L-29"><span class="linenos"> 29</span></a>
 </span><span id="L-30"><a href="#L-30"><span class="linenos"> 30</span></a><span class="sd">### Ollama</span>
 </span><span id="L-31"><a href="#L-31"><span class="linenos"> 31</span></a>
-</span><span id="L-32"><a href="#L-32"><span class="linenos"> 32</span></a><span class="sd">Requires [Ollama](https://ollama.com) to be installed and running locally. </span>
+</span><span id="L-32"><a href="#L-32"><span class="linenos"> 32</span></a><span class="sd">Requires [Ollama](https://ollama.com) to be installed and running locally.</span>
 </span><span id="L-33"><a href="#L-33"><span class="linenos"> 33</span></a><span class="sd">For this example, pull the model first with `ollama pull llama3.2:latest`.</span>
 </span><span id="L-34"><a href="#L-34"><span class="linenos"> 34</span></a>
 </span><span id="L-35"><a href="#L-35"><span class="linenos"> 35</span></a><span class="sd">```python</span>
@@ -554,7 +590,7 @@ For this example, pull the model first with <code>ollama pull llama3.2:latest</c
 </span><span id="L-175"><a href="#L-175"><span class="linenos">175</span></a><span class="sd">    # A custom init function to set up any necessary variables or connections for your responder</span>
 </span><span id="L-176"><a href="#L-176"><span class="linenos">176</span></a><span class="sd">    def __init__(self, spych_object, name=&quot;Custom Responder&quot;):</span>
 </span><span id="L-177"><a href="#L-177"><span class="linenos">177</span></a><span class="sd">        super().__init__(spych_object, name=name)</span>
-</span><span id="L-178"><a href="#L-178"><span class="linenos">178</span></a><span class="sd">    </span>
+</span><span id="L-178"><a href="#L-178"><span class="linenos">178</span></a>
 </span><span id="L-179"><a href="#L-179"><span class="linenos">179</span></a><span class="sd">    def respond(self, user_input: str) -&gt; str:</span>
 </span><span id="L-180"><a href="#L-180"><span class="linenos">180</span></a><span class="sd">        # Your custom logic here</span>
 </span><span id="L-181"><a href="#L-181"><span class="linenos">181</span></a><span class="sd">        return f&quot;I am a custom responder named &#39;{self.name}&#39; and I heard: {user_input}&quot;</span>

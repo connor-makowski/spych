@@ -85,4 +85,10 @@ class Spych(Notify):
         buffer = record(device_index=device_index, duration=duration)
         audio_buffer = get_clean_audio_buffer(buffer)
         segments, _ = self.wake_model.transcribe(audio_buffer, beam_size=2)
-        return " ".join([segment.text for segment in segments if segment.no_speech_prob <= self.no_speech_threshold])
+        return " ".join(
+            [
+                segment.text
+                for segment in segments
+                if segment.no_speech_prob <= self.no_speech_threshold
+            ]
+        )

@@ -34,7 +34,9 @@ def emit(obj: dict) -> None:
     print(json.dumps(obj), flush=True)
 
 
-async def process_messages(client: ClaudeSDKClient, pending_tools: set[str]) -> tuple[bool, str | None]:
+async def process_messages(
+    client: ClaudeSDKClient, pending_tools: set[str]
+) -> tuple[bool, str | None]:
     """
     Drain receive_messages() for one query() turn.
 
@@ -54,12 +56,14 @@ async def process_messages(client: ClaudeSDKClient, pending_tools: set[str]) -> 
             for block in message.content:
                 if isinstance(block, ToolUseBlock):
                     pending_tools.add(block.id)
-                    emit({
-                        "type": "tool_start",
-                        "name": block.name,
-                        "id": block.id,
-                        "input": block.input,
-                    })
+                    emit(
+                        {
+                            "type": "tool_start",
+                            "name": block.name,
+                            "id": block.id,
+                            "input": block.input,
+                        }
+                    )
 
         elif isinstance(message, UserMessage):
             for block in message.content:
@@ -88,14 +92,16 @@ async def process_messages(client: ClaudeSDKClient, pending_tools: set[str]) -> 
 async def main() -> None:
     payload = json.loads(sys.stdin.readline())
 
-    user_input: str       = payload["user_input"]
-    is_first: bool        = payload["is_first"]
-    continue_conv: bool   = payload["continue_conversation"]
-    last_session_id       = payload.get("last_session_id")
+    user_input: str = payload["user_input"]
+    is_first: bool = payload["is_first"]
+    continue_conv: bool = payload["continue_conversation"]
+    last_session_id = payload.get("last_session_id")
     setting_sources: list = payload["setting_sources"]
 
     options = ClaudeAgentOptions(
-        continue_conversation=(continue_conv and not is_first and last_session_id is None),
+        continue_conversation=(
+            continue_conv and not is_first and last_session_id is None
+        ),
         resume=(None if is_first or not continue_conv else last_session_id),
         setting_sources=setting_sources,
     )
@@ -110,7 +116,9 @@ async def main() -> None:
             # feed it back into the same session so the agent loop executes it.
             # A well-behaved turn emits no <tool_call> and exits the loop.
             while True:
-                needs_continuation, tool_call_text = await process_messages(client, pending_tools)
+                needs_continuation, tool_call_text = await process_messages(
+                    client, pending_tools
+                )
                 if not needs_continuation:
                     break
                 # Re-submit the raw tool-call text within the same session.

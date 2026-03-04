@@ -102,7 +102,7 @@ class OllamaResponder(BaseResponder):
 
         response = output.json().get("response", "").strip()
         self.history.append({"role": "assistant", "content": response})
-        self.history = self.history[-self.history_length * 2:]
+        self.history = self.history[-self.history_length * 2 :]
         return response
 
 
@@ -183,7 +183,7 @@ def ollama(
         model=model,
         listen_duration=listen_duration,
         history_length=history_length,
-        host=host
+        host=host,
     )
 
     # SpychWake Object
@@ -192,10 +192,12 @@ def ollama(
         "on_terminate": responder.on_terminate,
         "wake_word_map": {word: responder for word in wake_words},
         "terminate_words": terminate_words,
-        **(spych_wake_kwargs or {})
+        **(spych_wake_kwargs or {}),
     }
     spych_wake_object = SpychWake(**spych_wake_kwargs)
 
     # Fire ready message and start wake listener
-    responder.ready_message(wake_words, terminate_words)
+    responder.ready_message(
+        wake_words=wake_words, terminate_words=terminate_words
+    )
     spych_wake_object.start()

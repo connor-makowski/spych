@@ -95,7 +95,10 @@ class SpychWakeListener(Notify):
         for segment in segments:
             # Skip segments with high no_speech_prob to reduce false positives on silence/background noise;
             # the threshold can be adjusted based on testing and environment
-            if segment.no_speech_prob > self.spych_wake_object.no_speech_threshold:
+            if (
+                segment.no_speech_prob
+                > self.spych_wake_object.no_speech_threshold
+            ):
                 continue
             if self.should_stop():
                 return
@@ -300,7 +303,6 @@ class SpychWake(Notify):
                     f"Error in on_terminate callback: {e}",
                     notification_type="exception",
                 )
-
 
     def wake(self, wake_word):
         """

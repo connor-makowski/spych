@@ -1,29 +1,30 @@
 import sys, time, threading, re, random
 
-
 # Helper to strip ANSI escape codes before measuring string length,
 # so box-drawing alignment is based on visible characters only.
 _ANSI_ESCAPE_RE = re.compile(r"\033\[[0-9;]*m")
 
+
 def _visible_len(text: str) -> int:
     return len(_ANSI_ESCAPE_RE.sub("", text))
 
+
 class CliColor:
-    RESET   = "\033[0m"
-    BOLD    = "\033[1m"
-    DIM     = "\033[2m"
-    ITALIC  = "\033[3m"
+    RESET = "\033[0m"
+    BOLD = "\033[1m"
+    DIM = "\033[2m"
+    ITALIC = "\033[3m"
 
     # Foreground
-    WHITE   = "\033[97m"
-    GRAY    = "\033[90m"
-    CYAN    = "\033[96m"
-    BLUE    = "\033[94m"
+    WHITE = "\033[97m"
+    GRAY = "\033[90m"
+    CYAN = "\033[96m"
+    BLUE = "\033[94m"
     MAGENTA = "\033[95m"
-    YELLOW  = "\033[93m"
-    GREEN   = "\033[92m"
-    RED     = "\033[91m"
-    ORANGE  = "\033[38;5;208m"
+    YELLOW = "\033[93m"
+    GREEN = "\033[92m"
+    RED = "\033[91m"
+    ORANGE = "\033[38;5;208m"
 
     @staticmethod
     def fg(hex_or_256: int) -> str:
@@ -132,7 +133,7 @@ class CliSpinner:
         def _get_random_message():
             idx = random.randrange(len(verbs))
             return f"{name} is {verbs[idx]}"
-        
+
         self.start(_get_random_message())
 
         def _verb_cycle() -> None:
@@ -162,7 +163,6 @@ class CliSpinner:
         if final_message:
             print(final_message)
         return was_running
-        
 
     def _spin(self) -> None:
         frame_idx = 0
@@ -171,7 +171,7 @@ class CliSpinner:
         while not self._stop_event.is_set():
             frame = self.FRAMES[frame_idx % len(self.FRAMES)]
             color = self.COLORS[color_idx % len(self.COLORS)]
-            dots  = "." * (dot_count % 4)
+            dots = "." * (dot_count % 4)
 
             visible_content = f"  {frame}  {self._message}{dots:<3}"
             padding = max(0, 60 - _visible_len(visible_content)) * " "
@@ -193,7 +193,9 @@ class CliSpinner:
 
 class CliPrinter:
     @staticmethod
-    def divider(char: str = "─", width: int = 60, color: str = CliColor.GRAY) -> None:
+    def divider(
+        char: str = "─", width: int = 60, color: str = CliColor.GRAY
+    ) -> None:
         print(f"{color}{char * width}{CliColor.RESET}")
 
     @staticmethod
@@ -215,18 +217,33 @@ class CliPrinter:
     @staticmethod
     def kwarg_inputs(**kwargs) -> None:
         for key, value in kwargs.items():
-            print(f"  {CliColor.GRAY}{key}{CliColor.RESET}: {CliColor.WHITE}{value}{CliColor.RESET}")
+            print(
+                f"  {CliColor.GRAY}{key}{CliColor.RESET}: {CliColor.WHITE}{value}{CliColor.RESET}"
+            )
 
     @staticmethod
     def label(tag: str, text: str, color: str = CliColor.CYAN) -> None:
-        print(f"  {color}{CliColor.BOLD}{tag}{CliColor.RESET} {CliColor.WHITE}{text}{CliColor.RESET}")
+        print(
+            f"  {color}{CliColor.BOLD}{tag}{CliColor.RESET} {CliColor.WHITE}{text}{CliColor.RESET}"
+        )
 
     @staticmethod
-    def tool_event(tool_name: str, status: str, is_running: bool = False, elapsed: float | None = None) -> None:
-        icon  = "⚙" if is_running else "✓"
+    def tool_event(
+        tool_name: str,
+        status: str,
+        is_running: bool = False,
+        elapsed: float | None = None,
+    ) -> None:
+        icon = "⚙" if is_running else "✓"
         color = CliColor.YELLOW if is_running else CliColor.GREEN
-        elapsed_str = f" {CliColor.GRAY}({elapsed:.2f}s){CliColor.RESET}" if elapsed else ""
-        print(f"  {color}{icon}{CliColor.RESET}  {CliColor.DIM}tool:{CliColor.RESET} {CliColor.ITALIC}{tool_name}{CliColor.RESET} -> {CliColor.GRAY}{status}{elapsed_str}")
+        elapsed_str = (
+            f" {CliColor.GRAY}({elapsed:.2f}s){CliColor.RESET}"
+            if elapsed
+            else ""
+        )
+        print(
+            f"  {color}{icon}{CliColor.RESET}  {CliColor.DIM}tool:{CliColor.RESET} {CliColor.ITALIC}{tool_name}{CliColor.RESET} -> {CliColor.GRAY}{status}{elapsed_str}"
+        )
 
     @staticmethod
     def info(message: str, color: str = CliColor.CYAN) -> None:
@@ -249,7 +266,9 @@ class CliPrinter:
             - What: ANSI color code for the message
             - Default: CliColor.CYAN
         """
-        print(f"  {color}{CliColor.BOLD}i{CliColor.RESET}  {CliColor.WHITE}{message}{CliColor.RESET}")
+        print(
+            f"  {color}{CliColor.BOLD}i{CliColor.RESET}  {CliColor.WHITE}{message}{CliColor.RESET}"
+        )
 
     @staticmethod
     def typewrite(text: str, delay: float = 0.008) -> None:
@@ -271,4 +290,6 @@ class CliPrinter:
     def print_status(name: str, success: bool, elapsed: float) -> None:
         icon = "✓" if success else "✗"
         color = CliColor.GREEN if success else CliColor.RED
-        print(f"\n  {color}{icon}{CliColor.RESET} {CliColor.DIM}{name} {elapsed:.2f}s{CliColor.RESET}")
+        print(
+            f"\n  {color}{icon}{CliColor.RESET} {CliColor.DIM}{name} {elapsed:.2f}s{CliColor.RESET}"
+        )
