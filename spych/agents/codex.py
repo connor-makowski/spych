@@ -2,7 +2,7 @@ from spych.core import Spych
 from spych.wake import SpychWake
 from spych.responders import BaseResponder
 from typing import Optional, Any
-import subprocess, json, re, time
+import subprocess, json, time
 
 
 class LocalCodexCLIResponder(BaseResponder):
@@ -47,11 +47,11 @@ class LocalCodexCLIResponder(BaseResponder):
         Notes:
 
         - Uses `--json` to stream newline-delimited JSON events
-        - Codex has two tool-call modes:
-            1. Native: emits `command_execution` items with item.started/item.completed
-            2. Fallback: emits raw `<function=...></tool_call>` XML inside an
-               `agent_message`. When this happens the raw text is re-submitted on
-               the same session so the agent loop can execute the tool and continue.
+        - Native tool calls are handled automatically by the CLI via `command_execution`
+          items with item.started/item.completed events
+        - Session continuation uses `resume --last --json` (flag order matters — placing
+          `--json` before `resume --last` triggers a known Codex CLI bug where the prompt
+          is parsed as SESSION_ID, causing an argument conflict error)
         - Codex CLI must be installed and authenticated before use
         """
         super().__init__(
@@ -64,48 +64,42 @@ class LocalCodexCLIResponder(BaseResponder):
         self.first_call = True
         self._last_session_id: Optional[str] = None
 
-        # Strips inline tool call XML that Codex sometimes embeds in agent_message text:
-        # <function=ToolName>\n<parameter=x>val</parameter>\n</function>\n</tool_call>
-        self.TOOL_CALL_RE = re.compile(
-            r"<function=\w+>.*?(?:</function>|</tool_call>)",
-            re.DOTALL,
-        )
-
-    def __strip_tool_calls__(self, text: str) -> str:
-        """Strip inline tool-call XML from agent_message text, return clean prose only."""
-        return self.TOOL_CALL_RE.sub("", text).strip()
-
     def __run_turn__(
         self,
         user_input: str,
         is_first: bool,
         active_tools: dict[str, tuple[str, float]],
-        print_assistant: bool,
-    ) -> tuple[bool, str]:
+    ) -> str:
         """
-        Run one `codex exec --json` subprocess turn.
+        Run one `codex exec` subprocess turn and return the final response text.
 
         Args:
-            user_input:      Prompt to send to the CLI.
-            is_first:        True only on the very first ever call (skips --continue).
-            active_tools:    Shared dict of item_id -> (tool_name, start_time).
-            print_assistant: If True, print intermediate clean assistant text live.
-                             Set False on the final turn to avoid double-printing.
+            user_input:   Prompt to send to the CLI.
+            is_first:     True only on the very first ever call (skips resume).
+            active_tools: Shared dict of item_id -> (tool_name, start_time).
 
         Returns:
-            (needs_continuation, result_text)
-            - needs_continuation=True means the agent_message contained raw
-              <tool_call> XML and should be re-submitted on the same session.
-            - result_text is either the raw tool-call text (to re-submit) or
-              the clean final answer.
-        """
-        cmd = ["codex", "exec", "--json", user_input]
+            The clean final answer string from the agent.
 
-        if self.continue_conversation:
+        Notes:
+            Command order for session continuation matters due to a known Codex CLI bug
+            (github.com/openai/codex/issues/6717): `--json` must come AFTER
+            `resume --last` / `resume <session_id>`, not before. Placing `--json`
+            before `resume --last` causes Clap to treat the prompt as SESSION_ID and
+            error with "the argument '--last' cannot be used with '[SESSION_ID]'".
+
+            Correct forms:
+                codex exec --json "first prompt"
+                codex exec resume --last --json "follow-up"
+                codex exec resume <session_id> --json "follow-up"
+        """
+        if self.continue_conversation and not is_first:
             if self._last_session_id:
-                cmd.extend(["--session", self._last_session_id])
-            elif not is_first:
-                cmd.append("--continue")
+                cmd = ["codex", "exec", "resume", self._last_session_id, "--json", user_input]
+            else:
+                cmd = ["codex", "exec", "resume", "--last", "--json", user_input]
+        else:
+            cmd = ["codex", "exec", "--json", user_input]
 
         proc = subprocess.Popen(
             cmd,
@@ -135,7 +129,6 @@ class LocalCodexCLIResponder(BaseResponder):
                 item = event.get("item", {})
                 item_id = item.get("id", "")
 
-                # Native tool: fire tool_start when the command begins executing
                 if item.get("type") == "command_execution":
                     tool_name = "command_execution"
                     explanation = item.get("command", "")
@@ -149,7 +142,6 @@ class LocalCodexCLIResponder(BaseResponder):
                 item_id = item.get("id", "")
 
                 if itype == "command_execution":
-                    # Native tool completed — close the tool event
                     if item_id in active_tools:
                         tool_name, start = active_tools.pop(item_id)
                         elapsed = time.time() - start
@@ -157,28 +149,7 @@ class LocalCodexCLIResponder(BaseResponder):
                             self.tool_event(tool_name, "done", is_running=False, elapsed=elapsed)
 
                 elif itype == "agent_message":
-                    raw_text = item.get("text", "")
-
-                    # Fallback mode: inline tool-call XML embedded in the message.
-                    # Fire tool events for each call found, signal re-submission.
-                    if "</tool_call>" in raw_text:
-                        if self.show_tool_events:
-                            for m in re.finditer(r"<function=(\w+)>", raw_text):
-                                tool_name = m.group(1)
-                                preceding = raw_text[: m.start()]
-                                explanation = self.__strip_tool_calls__(preceding).strip()
-                                synthetic_id = f"fallback_{tool_name}_{item_id}"
-                                active_tools[synthetic_id] = (tool_name, time.time())
-                                self.tool_event(tool_name, explanation, is_running=True)
-                        proc.wait()
-                        return True, raw_text
-
-                    # Normal agent message — this is the final answer
-                    final_text = raw_text
-                    if print_assistant:
-                        clean = self.__strip_tool_calls__(raw_text)
-                        if clean:
-                            self.print_response(self.name, clean)
+                    final_text = item.get("text", "")
 
                 elif itype == "error":
                     msg = item.get("message", "unknown error")
@@ -189,48 +160,25 @@ class LocalCodexCLIResponder(BaseResponder):
 
         proc.wait()
 
-        # Clean final turn — close any still-open tool events
+        # Close any still-open tool events
         for item_id, (tool_name, start) in list(active_tools.items()):
             elapsed = time.time() - start
             if self.show_tool_events:
                 self.tool_event(tool_name, "done", is_running=False, elapsed=elapsed)
         active_tools.clear()
 
-        return False, self.__strip_tool_calls__(final_text).strip()
+        return final_text.strip()
 
     def respond(self, user_input: str) -> str:
         """
-        Runs one or more `codex exec --json` subprocess turns until a clean
-        (non-tool-call) result is received. The final answer is returned for
-        the base class to print, preventing double-printing.
+        Runs a single `codex exec` subprocess turn and returns the final answer.
+        Tool calls are handled natively by the CLI — no manual re-submission needed.
         """
         is_first = self.first_call
         self.first_call = False
 
         active_tools: dict[str, tuple[str, float]] = {}
-        current_input = user_input
-
-        while True:
-            needs_continuation, result_text = self.__run_turn__(
-                current_input,
-                is_first=is_first,
-                active_tools=active_tools,
-                # Never print directly — return value is printed once by the base class
-                print_assistant=False,
-            )
-            is_first = False
-
-            if not needs_continuation:
-                return result_text
-
-            # Close fallback tool events before re-submitting
-            for item_id in [k for k in active_tools if k.startswith("fallback_")]:
-                tool_name, start = active_tools.pop(item_id)
-                elapsed = time.time() - start
-                if self.show_tool_events:
-                    self.tool_event(tool_name, "done", is_running=False, elapsed=elapsed)
-
-            current_input = result_text
+        return self.__run_turn__(user_input, is_first=is_first, active_tools=active_tools)
 
 
 def codex_cli(
@@ -268,7 +216,7 @@ def codex_cli(
 
     - `continue_conversation`:
         - Type: bool
-        - What: Whether to pass `--continue` / `--session` to reuse the most recent session
+        - What: Whether to use `resume --last` / `resume <session_id>` to reuse the most recent session
         - Default: True
 
     - `show_tool_events`:
