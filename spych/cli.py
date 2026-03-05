@@ -1,295 +1,231 @@
-import sys, time, threading, re, random
+"""
+spych CLI entry point.
 
-# Helper to strip ANSI escape codes before measuring string length,
-# so box-drawing alignment is based on visible characters only.
-_ANSI_ESCAPE_RE = re.compile(r"\033\[[0-9;]*m")
+Usage:
+    spych <agent> [options]
 
+Examples:
+    spych ollama --model llama3.2:latest
+    spych claude_code_cli
+    spych claude_code_sdk --setting-sources user project local
+    spych codex_cli --listen-duration 8
+    spych gemini_cli
+    spych opencode_cli --model anthropic/claude-sonnet-4-5
+"""
 
-def _visible_len(text: str) -> int:
-    return len(_ANSI_ESCAPE_RE.sub("", text))
-
-
-class CliColor:
-    RESET = "\033[0m"
-    BOLD = "\033[1m"
-    DIM = "\033[2m"
-    ITALIC = "\033[3m"
-
-    # Foreground
-    WHITE = "\033[97m"
-    GRAY = "\033[90m"
-    CYAN = "\033[96m"
-    BLUE = "\033[94m"
-    MAGENTA = "\033[95m"
-    YELLOW = "\033[93m"
-    GREEN = "\033[92m"
-    RED = "\033[91m"
-    ORANGE = "\033[38;5;208m"
-
-    @staticmethod
-    def fg(hex_or_256: int) -> str:
-        return f"\033[38;5;{hex_or_256}m"
+import argparse
+import sys
 
 
-class CliSpinner:
-    """
-    Animated terminal spinner that runs on a background thread.
-    Call .start(message) and .stop() around blocking work.
-    """
-
-    FRAMES = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
-    COLORS = [CliColor.CYAN, CliColor.BLUE, CliColor.MAGENTA, CliColor.CYAN]
-
-    DEFAULT_VERBS = [
-        "thinking",
-        "vibing",
-        "pontificating",
-        "contemplating",
-        "deliberating",
-        "cogitating",
-        "ruminating",
-        "musing",
-        "ideating",
-        "postulating",
-        "hypothesizing",
-        "extrapolating",
-        "philosophizing",
-        "noodling",
-        "percolating",
-        "marinating",
-        "stewing",
-        "scheming",
-        "conniving",
-        "divining",
-        "spelunking",
-        "ratiocinating",
-        "cerebrating",
-        "woolgathering",
-        "daydreaming",
-        "lucubrating",
-        "excogitating",
-        "thinkulating",
-        "brainwaving",
-        "cogitronning",
-        "synapsing",
-        "thoughtcrafting",
-        "mindweaving",
-        "intellectualizing",
-        "computating",
-        "ponderizing",
-        "mentalating",
-        "brainbrewing",
-    ]
-
-    def __init__(self) -> None:
-        self._thread: threading.Thread | None = None
-        self._stop_event = threading.Event()
-        self._message = ""
-        self._verb_thread: threading.Thread | None = None
-        self._running = False
-
-    def start(self, message: str | None = None) -> None:
-        # Stop any existing spinner before starting a new one,
-        # preventing leaked threads from double start() calls.
-        if self._thread and self._thread.is_alive():
-            self.stop()
-        self._running = True
-        self._stop_event.clear()
-        if message:
-            self._message = message
-        self._thread = threading.Thread(target=self._spin, daemon=True)
-        self._thread.start()
-
-    def start_with_verbs(
-        self,
-        name: str,
-        verbs: list[str] | None = None,
-        interval: float = 10.0,
-    ) -> None:
-        """
-        Start the spinner with a cycling verb message: "<name> is <verb>".
-        The verb rotates through `verbs` every `interval` seconds.
-
-        Requires:
-
-        - `name`:
-            - Type: str
-            - What: The subject displayed before the verb (e.g. "Claude")
-
-        Optional:
-
-        - `verbs`:
-            - Type: list[str] | None
-            - What: Verbs to cycle through. Defaults to CliSpinner.DEFAULT_VERBS
-            - Default: None
-
-        - `interval`:
-            - Type: float
-            - What: Seconds between each verb swap
-            - Default: 10.0
-        """
-        verbs = verbs if verbs is not None else self.DEFAULT_VERBS
-
-        def _get_random_message():
-            idx = random.randrange(len(verbs))
-            return f"{name} is {verbs[idx]}"
-
-        self.start(_get_random_message())
-
-        def _verb_cycle() -> None:
-            while not self._stop_event.wait(timeout=interval):
-                self.update(_get_random_message())
-
-        self._verb_thread = threading.Thread(target=_verb_cycle, daemon=True)
-        self._verb_thread.start()
-
-    def update(self, message: str) -> None:
-        self._message = message
-
-    def stop(self, final_message: str | None = None) -> None:
-        was_running = self._running
-        self._running = False
-        self._stop_event.set()
-        # Guard join() so it's only called when the thread actually ran.
-        if self._thread and self._thread.is_alive():
-            self._thread.join()
-        self._thread = None
-        if self._verb_thread and self._verb_thread.is_alive():
-            self._verb_thread.join()
-        self._verb_thread = None
-        # Clear the spinner line
-        sys.stdout.write("\r\033[2K")
-        sys.stdout.flush()
-        if final_message:
-            print(final_message)
-        return was_running
-
-    def _spin(self) -> None:
-        frame_idx = 0
-        color_idx = 0
-        dot_count = 0
-        while not self._stop_event.is_set():
-            frame = self.FRAMES[frame_idx % len(self.FRAMES)]
-            color = self.COLORS[color_idx % len(self.COLORS)]
-            dots = "." * (dot_count % 4)
-
-            visible_content = f"  {frame}  {self._message}{dots:<3}"
-            padding = max(0, 60 - _visible_len(visible_content)) * " "
-            line = (
-                f"\r  {color}{CliColor.BOLD}{frame}{CliColor.RESET}  "
-                f"{CliColor.WHITE}{self._message}{CliColor.GRAY}{dots:<3}{CliColor.RESET}"
-                f"{padding}"
-            )
-            sys.stdout.write(line)
-            sys.stdout.flush()
-
-            time.sleep(0.08)
-            frame_idx += 1
-            if frame_idx % 5 == 0:
-                dot_count += 1
-            if frame_idx % 20 == 0:
-                color_idx += 1
+def _parse_bool(value: str) -> bool:
+    if value.lower() in ("true", "1", "yes"):
+        return True
+    if value.lower() in ("false", "0", "no"):
+        return False
+    raise argparse.ArgumentTypeError(f"Boolean value expected, got: {value!r}")
 
 
-class CliPrinter:
-    @staticmethod
-    def divider(
-        char: str = "─", width: int = 60, color: str = CliColor.GRAY
-    ) -> None:
-        print(f"{color}{char * width}{CliColor.RESET}")
+def _add_shared_args(parser: argparse.ArgumentParser) -> None:
+    """Args shared by all agents."""
+    parser.add_argument(
+        "--wake-words",
+        nargs="+",
+        metavar="WORD",
+        help="One or more wake words that trigger the agent",
+    )
+    parser.add_argument(
+        "--terminate-words",
+        nargs="+",
+        metavar="WORD",
+        default=["terminate"],
+        help="Words that stop the listener (default: terminate)",
+    )
+    parser.add_argument(
+        "--listen-duration",
+        type=float,
+        metavar="SECONDS",
+        help="Seconds to listen after wake word (default: 5)",
+    )
 
-    @staticmethod
-    def empty_line() -> None:
-        """Create an empty line for spacing."""
-        print()
 
-    @staticmethod
-    def header(label: str) -> None:
-        inner = f"  {CliColor.CYAN}{CliColor.BOLD}Spych{CliColor.RESET}: {CliColor.WHITE}{label}{CliColor.RESET}"
-        pad = max(0, 58 - _visible_len(inner))
-        print(
-            f"\n{CliColor.GRAY}┌{'─' * 58}┐{CliColor.RESET}\n"
-            f"{CliColor.GRAY}│{CliColor.RESET}{inner}{CliColor.RESET}"
-            f"{' ' * pad}{CliColor.GRAY}│{CliColor.RESET}\n"
-            f"{CliColor.GRAY}└{'─' * 58}┘{CliColor.RESET}"
-        )
+def _add_agent_args(parser: argparse.ArgumentParser) -> None:
+    """Args shared by all coding agents (non-Ollama)."""
+    parser.add_argument(
+        "--continue-conversation",
+        type=_parse_bool,
+        metavar="BOOL",
+        default=True,
+        help="Resume the most recent session (default: true)",
+    )
+    parser.add_argument(
+        "--show-tool-events",
+        type=_parse_bool,
+        metavar="BOOL",
+        default=True,
+        help="Print live tool start/end events (default: true)",
+    )
 
-    @staticmethod
-    def kwarg_inputs(**kwargs) -> None:
-        for key, value in kwargs.items():
-            print(
-                f"  {CliColor.GRAY}{key}{CliColor.RESET}: {CliColor.WHITE}{value}{CliColor.RESET}"
-            )
 
-    @staticmethod
-    def label(tag: str, text: str, color: str = CliColor.CYAN) -> None:
-        print(
-            f"  {color}{CliColor.BOLD}{tag}{CliColor.RESET} {CliColor.WHITE}{text}{CliColor.RESET}"
-        )
+def _build_shared_kwargs(args: argparse.Namespace) -> dict:
+    kwargs = {}
+    if args.wake_words:
+        kwargs["wake_words"] = args.wake_words
+    if args.terminate_words:
+        kwargs["terminate_words"] = args.terminate_words
+    if args.listen_duration is not None:
+        kwargs["listen_duration"] = args.listen_duration
+    return kwargs
 
-    @staticmethod
-    def tool_event(
-        tool_name: str,
-        status: str,
-        is_running: bool = False,
-        elapsed: float | None = None,
-    ) -> None:
-        icon = "⚙" if is_running else "✓"
-        color = CliColor.YELLOW if is_running else CliColor.GREEN
-        elapsed_str = (
-            f" {CliColor.GRAY}({elapsed:.2f}s){CliColor.RESET}"
-            if elapsed
-            else ""
-        )
-        print(
-            f"  {color}{icon}{CliColor.RESET}  {CliColor.DIM}tool:{CliColor.RESET} {CliColor.ITALIC}{tool_name}{CliColor.RESET} -> {CliColor.GRAY}{status}{elapsed_str}"
-        )
 
-    @staticmethod
-    def info(message: str, color: str = CliColor.CYAN) -> None:
-        """
-        Usage:
+def _build_agent_kwargs(args: argparse.Namespace) -> dict:
+    kwargs = _build_shared_kwargs(args)
+    kwargs["continue_conversation"] = args.continue_conversation
+    kwargs["show_tool_events"] = args.show_tool_events
+    return kwargs
 
-        - Print a single informational line. Useful from inside respond() to
-          surface status updates without touching the spinner directly.
 
-        Requires:
+def main():
+    parser = argparse.ArgumentParser(
+        prog="spych",
+        description="Launch a voice agent from the terminal.",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog=__doc__,
+    )
 
-        - `message`:
-            - Type: str
-            - What: The message to print
+    subparsers = parser.add_subparsers(dest="agent", metavar="agent")
+    subparsers.required = True
 
-        Optional:
+    # ------------------------------------------------------------------ #
+    # ollama                                                               #
+    # ------------------------------------------------------------------ #
+    p_ollama = subparsers.add_parser("ollama", help="Talk to a local Ollama model")
+    _add_shared_args(p_ollama)
+    p_ollama.add_argument(
+        "--model",
+        default="llama3.2:latest",
+        metavar="MODEL",
+        help="Ollama model name (default: llama3.2:latest)",
+    )
+    p_ollama.add_argument(
+        "--history-length",
+        type=int,
+        default=10,
+        metavar="N",
+        help="Past interactions to include in context (default: 10)",
+    )
+    p_ollama.add_argument(
+        "--host",
+        default="http://localhost:11434",
+        metavar="URL",
+        help="Ollama instance URL (default: http://localhost:11434)",
+    )
 
-        - `color`:
-            - Type: str (CliColor constant)
-            - What: ANSI color code for the message
-            - Default: CliColor.CYAN
-        """
-        print(
-            f"  {color}{CliColor.BOLD}i{CliColor.RESET}  {CliColor.WHITE}{message}{CliColor.RESET}"
-        )
+    # ------------------------------------------------------------------ #
+    # claude_code_cli                                                      #
+    # ------------------------------------------------------------------ #
+    p_claude_cli = subparsers.add_parser(
+        "claude_code_cli", help="Voice-control Claude Code via the CLI"
+    )
+    _add_shared_args(p_claude_cli)
+    _add_agent_args(p_claude_cli)
 
-    @staticmethod
-    def typewrite(text: str, delay: float = 0.008) -> None:
-        """Print text with a subtle typewriter effect."""
-        for ch in text:
-            sys.stdout.write(ch)
-            sys.stdout.flush()
-            time.sleep(delay)
-        print()
+    # ------------------------------------------------------------------ #
+    # claude_code_sdk                                                      #
+    # ------------------------------------------------------------------ #
+    p_claude_sdk = subparsers.add_parser(
+        "claude_code_sdk", help="Voice-control Claude Code via the Agent SDK"
+    )
+    _add_shared_args(p_claude_sdk)
+    _add_agent_args(p_claude_sdk)
+    p_claude_sdk.add_argument(
+        "--setting-sources",
+        nargs="+",
+        metavar="SOURCE",
+        default=["user", "project", "local"],
+        help="Claude Code settings sources to load (default: user project local)",
+    )
 
-    @staticmethod
-    def print_response(name: str, text: str) -> None:
-        """Render the final response with light formatting."""
-        print(f"  {CliColor.MAGENTA}{CliColor.BOLD}{name}:{CliColor.RESET}")
-        print()
-        print(text)
+    # ------------------------------------------------------------------ #
+    # codex_cli                                                            #
+    # ------------------------------------------------------------------ #
+    p_codex = subparsers.add_parser(
+        "codex_cli", help="Voice-control the OpenAI Codex agent"
+    )
+    _add_shared_args(p_codex)
+    _add_agent_args(p_codex)
 
-    @staticmethod
-    def print_status(name: str, success: bool, elapsed: float) -> None:
-        icon = "✓" if success else "✗"
-        color = CliColor.GREEN if success else CliColor.RED
-        print(
-            f"\n  {color}{icon}{CliColor.RESET} {CliColor.DIM}{name} {elapsed:.2f}s{CliColor.RESET}"
-        )
+    # ------------------------------------------------------------------ #
+    # gemini_cli                                                           #
+    # ------------------------------------------------------------------ #
+    p_gemini = subparsers.add_parser(
+        "gemini_cli", help="Voice-control the Google Gemini agent"
+    )
+    _add_shared_args(p_gemini)
+    _add_agent_args(p_gemini)
+
+    # ------------------------------------------------------------------ #
+    # opencode_cli                                                         #
+    # ------------------------------------------------------------------ #
+    p_opencode = subparsers.add_parser(
+        "opencode_cli", help="Voice-control the OpenCode agent"
+    )
+    _add_shared_args(p_opencode)
+    _add_agent_args(p_opencode)
+    p_opencode.add_argument(
+        "--model",
+        default=None,
+        metavar="MODEL",
+        help="Model in provider/model format, e.g. anthropic/claude-sonnet-4-5",
+    )
+
+    # ------------------------------------------------------------------ #
+    # Dispatch                                                             #
+    # ------------------------------------------------------------------ #
+    args = parser.parse_args()
+
+    if args.agent == "ollama":
+        from spych.agents import ollama
+
+        kwargs = _build_shared_kwargs(args)
+        kwargs["model"] = args.model
+        kwargs["history_length"] = args.history_length
+        kwargs["host"] = args.host
+        ollama(**kwargs)
+
+    elif args.agent == "claude_code_cli":
+        from spych.agents import claude_code_cli
+
+        claude_code_cli(**_build_agent_kwargs(args))
+
+    elif args.agent == "claude_code_sdk":
+        from spych.agents import claude_code_sdk
+
+        kwargs = _build_agent_kwargs(args)
+        kwargs["setting_sources"] = args.setting_sources
+        claude_code_sdk(**kwargs)
+
+    elif args.agent == "codex_cli":
+        from spych.agents import codex_cli
+
+        codex_cli(**_build_agent_kwargs(args))
+
+    elif args.agent == "gemini_cli":
+        from spych.agents import gemini_cli
+
+        gemini_cli(**_build_agent_kwargs(args))
+
+    elif args.agent == "opencode_cli":
+        from spych.agents import opencode_cli
+
+        kwargs = _build_agent_kwargs(args)
+        if args.model is not None:
+            kwargs["model"] = args.model
+        opencode_cli(**kwargs)
+
+    else:
+        parser.print_help()
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()

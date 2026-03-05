@@ -25,6 +25,29 @@ pip install spych
 
 ---
 
+# CLI
+
+Once installed, `spych` is available as a command anywhere on your machine. You will still need to set up your respective agents before using them. See the docs below for setup instructions. Navigate to your project directory and launch any agent directly:
+
+```bash
+cd ~/my_project
+spych claude_code_cli
+```
+
+All agents and their parameters are supported as flags:
+
+```bash
+spych ollama --model llama3.2:latest
+spych claude_code_sdk --setting-sources user project local
+spych codex_cli --listen-duration 8
+spych opencode_cli --model anthropic/claude-sonnet-4-5
+spych gemini_cli --wake-words gemini "hey gemini"
+```
+
+Run `spych --help` or `spych <agent> --help` to see all available options.
+
+---
+
 # Quick Start: Voice Agents
 
 The fastest path from zero to voice-controlled AI. These one-liners handle everything: wake word detection, transcription, and routing your speech to the target agent.

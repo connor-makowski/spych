@@ -1,5 +1,5 @@
 from spych.utils import Notify
-from spych.cli import CliColor, CliSpinner, CliPrinter
+from spych.cli_tools import CliColor, CliSpinner, CliPrinter
 from typing import Optional
 import time
 
