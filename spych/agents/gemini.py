@@ -1,0 +1,250 @@
+from spych.core import Spych
+from spych.wake import SpychWake
+from spych.responders import BaseResponder
+from spych.cli import CliColor, CliPrinter
+from typing import Optional, Any
+import subprocess
+import json
+import time
+
+
+class LocalGeminiCLIResponder(BaseResponder):
+    def __init__(
+        self,
+        spych_object: "Spych",
+        continue_conversation: bool = True,
+        listen_duration: int | float = 5,
+        name: Optional[str] = "Gemini",
+        show_tool_events: bool = True,
+    ) -> None:
+        """
+        Usage:
+
+        - A responder that pipes transcribed audio into the Gemini CLI (`gemini -p`)
+          via a subprocess and returns the final response string.
+          Fires live tool-call events as the subprocess streams them.
+
+        Requires:
+
+        - `spych_object`:
+            - Type: Spych
+            - What: An initialized Spych instance used to record and transcribe audio
+
+        Optional:
+
+        - `continue_conversation`:
+            - Type: bool
+            - What: Whether to pass `--resume` to reuse the most recent session
+            - Default: True
+
+        - `listen_duration`:
+            - Type: int | float
+            - What: The number of seconds to listen for after the wake word is detected
+            - Default: 5
+
+        - `name`:
+            - Type: str
+            - What: A custom name for the responder to use in printed messages
+            - Default: "Gemini"
+
+        - `show_tool_events`:
+            - Type: bool
+            - What: Whether to print tool start/end events in the CLI as they arrive from the subprocess
+            - Default: True
+
+        Notes:
+
+        - Uses `--output-format stream-json` to stream intermediate tool call events
+        - Gemini CLI must be installed and authenticated before use
+        """
+        super().__init__(
+            spych_object=spych_object,
+            listen_duration=listen_duration,
+            name=name,
+        )
+        self.continue_conversation = continue_conversation
+        self.show_tool_events = show_tool_events
+        self.first_call = True
+        self._last_session_id: Optional[str] = None
+        self._prev_message: str = ""
+        self._prev_role: str = ""
+
+    def respond(self, user_input: str) -> str:
+        """
+        Usage:
+
+        - Pipes the transcribed user input into `gemini -p` with `stream-json`
+          and returns the final response after all tool calls have completed.
+          Fires tool events live as they arrive.
+
+        Requires:
+
+        - `user_input`:
+            - Type: str
+            - What: The transcribed text from the user's audio input
+
+        Returns:
+
+        - `response`:
+            - Type: str
+            - What: The final response string from Gemini CLI
+        """
+        is_first = self.first_call
+        self.first_call = False
+
+        cmd = ["gemini", "-p", user_input, "--output-format", "stream-json"]
+
+        if self.continue_conversation:
+            if self._last_session_id:
+                cmd.extend(["--resume", self._last_session_id])
+            elif not is_first:
+                cmd.extend(["--resume", "latest"])
+
+        proc = subprocess.Popen(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
+
+        final_result = ""
+        # tool_id -> (name, start_time)
+        active_tools: dict[str, tuple[str, float]] = {}
+
+        for raw_line in proc.stdout:
+            raw_line = raw_line.strip()
+            if not raw_line:
+                continue
+
+            try:
+                event = json.loads(raw_line)
+            except json.JSONDecodeError:
+                continue
+
+            etype = event.get("type")
+
+            if (
+                len(self._prev_message) > 0
+                and event.get("role", -1) != self._prev_role
+                and etype != "result"
+            ):
+                role = self.name if self._prev_role == "assistant" else self._prev_role
+                self.print_response(role, self._prev_message)
+                self._prev_message = ""
+                self._prev_role = ""
+
+            if etype == "message" and event.get("role") != "user":
+                self._prev_message += event.get("content", "")
+                self._prev_role = event.get("role")
+
+            elif etype == "init":
+                self._last_session_id = event.get("sessionId")
+
+            elif etype == "tool_use":
+                tool_id = event.get("tool_id", event.get("tool_name"))
+                tool_name = event.get("tool_name")
+                tool_input = json.dumps(event.get("parameters", {}))
+                active_tools[tool_id] = (tool_name, time.time())
+                if self.show_tool_events:
+                    self.tool_event(tool_name, tool_input, is_running=True)
+
+            elif etype == "tool_result":
+                tool_id = event.get("tool_id", event.get("tool_name"))
+                if tool_id in active_tools:
+                    tool_name, start = active_tools.pop(tool_id)
+                    elapsed = time.time() - start
+                    if self.show_tool_events:
+                        self.tool_event(tool_name, "done", is_running=False, elapsed=elapsed)
+
+            elif etype == "result":
+                final_result = self._prev_message
+                self._prev_message = ""
+                self._prev_role = ""
+
+            elif etype == "error":
+                final_result = f"Error: {event.get('message', 'unknown error')}"
+
+        proc.wait()
+        return final_result
+
+
+def gemini_cli(
+    wake_words: list[str] = ["gemini"],
+    terminate_words: list[str] = ["terminate"],
+    listen_duration: int | float = 5,
+    continue_conversation: bool = True,
+    show_tool_events: bool = True,
+    spych_kwargs: Optional[dict[str, Any]] = None,
+    spych_wake_kwargs: Optional[dict[str, Any]] = None,
+) -> None:
+    """
+    Usage:
+
+    - Starts a wake word listener that pipes detected speech into the Gemini CLI
+
+    Optional:
+
+    - `wake_words`:
+        - Type: list[str]
+        - What: A list of wake words that each trigger the Gemini CLI responder
+        - Default: ["gemini"]
+        - Note: All wake words in this list map to the same LocalGeminiCLIResponder
+          instance, sharing conversation history across triggers
+
+    - `terminate_words`:
+        - Type: list[str]
+        - What: A list of terminate words that each trigger the termination of the Gemini CLI responder
+        - Default: ["terminate"]
+        - Note: All terminate words in this list map to the same LocalGeminiCLIResponder
+          instance, sharing conversation history across triggers
+
+    - `listen_duration`:
+        - Type: int | float
+        - What: The number of seconds to listen for after the wake word is detected
+        - Default: 5
+
+    - `continue_conversation`:
+        - Type: bool
+        - What: Whether to pass `--resume` to reuse the most recent session in Gemini CLI
+        - Default: True
+
+    - `show_tool_events`:
+        - Type: bool
+        - What: Whether to print tool start/end events in the CLI as they arrive from the subprocess
+        - Default: True
+
+    - `spych_kwargs`:
+        - Type: dict
+        - What: Additional keyword arguments to pass to the Spych constructor
+        - Default: None
+
+    - `spych_wake_kwargs`:
+        - Type: dict
+        - What: Additional keyword arguments to pass to the SpychWake constructor
+        - Default: None
+    """
+    # Spych Object
+    spych_kwargs = {"whisper_model": "base.en", **(spych_kwargs or {})}
+    spych_object = Spych(**spych_kwargs)
+
+    # Responder Object
+    responder = LocalGeminiCLIResponder(
+        spych_object=spych_object,
+        continue_conversation=continue_conversation,
+        listen_duration=listen_duration,
+        show_tool_events=show_tool_events,
+    )
+
+    # SpychWake Object
+    spych_wake_kwargs = {
+        "whisper_model": "base.en",
+        "on_terminate": responder.on_terminate,
+        "wake_word_map": {word: responder for word in wake_words},
+        "terminate_words": terminate_words,
+        **(spych_wake_kwargs or {}),
+    }
+    spych_wake_object = SpychWake(**spych_wake_kwargs)
+
+    # Fire ready message and start wake listener
+    responder.ready_message(wake_words=wake_words, terminate_words=terminate_words)
+    spych_wake_object.start()

@@ -126,6 +126,13 @@ class BaseResponder(Notify):
         if was_running:
             self.spinner.start()
 
+    def print_response(self, name: str, message: str) -> None:
+        was_running = self.spinner.stop()
+        CliPrinter.print_response(name, message)
+        if was_running:
+            self.spinner.start()
+
+
     # ------------------------------------------------------------------ #
     #  Extension hooks — override in subclasses for custom behaviour      #
     # ------------------------------------------------------------------ #
