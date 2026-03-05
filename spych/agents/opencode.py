@@ -2,9 +2,7 @@ from spych.core import Spych
 from spych.wake import SpychWake
 from spych.responders import BaseResponder
 from typing import Optional, Any
-import subprocess
-import json
-import time
+import subprocess, json, re, time
 
 
 class LocalOpenCodeCLIResponder(BaseResponder):
@@ -35,7 +33,7 @@ class LocalOpenCodeCLIResponder(BaseResponder):
 
         - `continue_conversation`:
             - Type: bool
-            - What: Whether to pass `--continue` to reuse the most recent session
+            - What: Whether to pass `--session` / `--continue` to reuse the most recent session
             - Default: True
 
         - `listen_duration`:
@@ -60,8 +58,18 @@ class LocalOpenCodeCLIResponder(BaseResponder):
 
         Notes:
 
-        - Uses `--format json` to stream newline-delimited JSON events
-        - OpenCode CLI must be installed and authenticated before use
+        - Uses `opencode run --format json` to stream newline-delimited JSON events
+        - Event format (observed from real CLI output):
+            - "step_start"  - model turn beginning; carries sessionID
+            - "text"        - streaming text delta; part.text accumulates the response.
+                              May contain inline tool XML: <function=Name>...</function></tool_call>
+                              These are stripped from the final answer.
+            - "step_finish" - turn done; part.reason == "stop" signals the final turn.
+                              Intermediate steps (tool turns) have reason != "stop".
+        - Tool calls appear as inline XML within "text" events, not as separate event types.
+          They are extracted for display, then stripped from the final answer text.
+        - Session continuation uses --session <id> when available, else --continue.
+        - OpenCode CLI must be installed and authenticated before use.
         """
         super().__init__(
             spych_object=spych_object,
@@ -74,13 +82,24 @@ class LocalOpenCodeCLIResponder(BaseResponder):
         self.first_call = True
         self._last_session_id: Optional[str] = None
 
+        # Matches inline tool-call XML embedded in text deltas:
+        # <function=ToolName>\n<parameter=x>val</parameter>\n</function>\n</tool_call>
+        self.TOOL_CALL_RE = re.compile(
+            r"<function=(\w+)>(.*?)(?:</function>|</tool_call>)",
+            re.DOTALL,
+        )
+
+    def __strip_tool_calls__(self, text: str) -> str:
+        """Strip inline tool-call XML from text, return clean prose only."""
+        return self.TOOL_CALL_RE.sub("", text).strip()
+
     def respond(self, user_input: str) -> str:
         """
         Usage:
 
         - Pipes the transcribed user input into `opencode run --format json`
           and returns the final response after all tool calls have completed.
-          Fires tool events live as they arrive.
+          Fires tool events live as they arrive from text deltas.
 
         Requires:
 
@@ -92,12 +111,13 @@ class LocalOpenCodeCLIResponder(BaseResponder):
 
         - `response`:
             - Type: str
-            - What: The final response string from OpenCode CLI
+            - What: The final clean response string (inline tool XML stripped)
         """
         is_first = self.first_call
         self.first_call = False
 
-        cmd = ["opencode", "run", "--format", "json", user_input]
+        # Build command — prompt goes last as positional arg
+        cmd = ["opencode", "run", "--format", "json"]
 
         if self.continue_conversation:
             if self._last_session_id:
@@ -108,6 +128,8 @@ class LocalOpenCodeCLIResponder(BaseResponder):
         if self.model:
             cmd.extend(["--model", self.model])
 
+        cmd.append(user_input)
+
         proc = subprocess.Popen(
             cmd,
             stdout=subprocess.PIPE,
@@ -115,9 +137,13 @@ class LocalOpenCodeCLIResponder(BaseResponder):
             text=True,
         )
 
-        final_result = ""
-        # callID -> (tool_name, start_time)
-        active_tools: dict[str, tuple[str, float]] = {}
+        # Accumulates the full streamed text for the current step.
+        # Resets on each intermediate step_finish (tool turn), kept on final stop.
+        accumulated_text = ""
+
+        # Tracks tool calls seen in the current step: name -> start_time.
+        # Keyed by tool name since inline XML has no unique call ID.
+        active_tools: dict[str, float] = {}
 
         for raw_line in proc.stdout:
             raw_line = raw_line.strip()
@@ -130,50 +156,60 @@ class LocalOpenCodeCLIResponder(BaseResponder):
                 continue
 
             etype = event.get("type")
-            part = event.get("part", {})
 
             # Capture session ID from any event for conversation continuity
             session_id = event.get("sessionID")
             if session_id:
                 self._last_session_id = session_id
 
-            # --- OpenCode stream event types ---
-            # "step_start"  – model turn beginning
-            # "tool_use"    – tool invocation; part.state.status == "completed" means done
-            #                   part.callID, part.tool, part.state.input / part.state.output
-            # "text"        – assistant text delta (part.text); last one before stop is final answer
-            # "step_finish" – turn done; part.reason == "stop" signals final turn
-
-            if etype == "tool_use":
-                call_id = part.get("callID", "")
-                tool_name = part.get("tool", "unknown_tool")
-                state = part.get("state", {})
-                status = state.get("status")
-
-                if status == "completed":
-                    if call_id in active_tools:
-                        _, start = active_tools.pop(call_id)
-                        elapsed = time.time() - start
-                        if self.show_tool_events:
-                            self.tool_event(tool_name, "done", is_running=False, elapsed=elapsed)
-                else:
-                    tool_input = json.dumps(state.get("input", {}))
-                    active_tools[call_id] = (tool_name, time.time())
-                    if self.show_tool_events:
-                        self.tool_event(tool_name, tool_input, is_running=True)
+            if etype == "step_start":
+                # New model turn beginning — reset accumulator for this step
+                accumulated_text = ""
 
             elif etype == "text":
-                text = part.get("text", "")
-                if text:
-                    final_result = text
+                delta = event.get("part", {}).get("text", "")
+                if not delta:
+                    continue
+
+                # Check for new tool calls appearing in this delta
+                if self.show_tool_events:
+                    for match in self.TOOL_CALL_RE.finditer(delta):
+                        tool_name = match.group(1)
+                        if tool_name not in active_tools:
+                            # Extract any prose before the tool call as explanation
+                            preceding = delta[: match.start()]
+                            explanation = self.__strip_tool_calls__(preceding).strip()
+                            active_tools[tool_name] = time.time()
+                            self.tool_event(tool_name, explanation, is_running=True)
+
+                accumulated_text = delta  # opencode sends full text each delta, not incremental
 
             elif etype == "step_finish":
-                if part.get("reason") != "stop":
-                    # Intermediate step — clear accumulated text, more turns coming
-                    final_result = ""
+                reason = event.get("part", {}).get("reason", "")
+
+                # Close all open tool events for this step
+                if self.show_tool_events:
+                    for tool_name, start in list(active_tools.items()):
+                        elapsed = time.time() - start
+                        self.tool_event(tool_name, "done", is_running=False, elapsed=elapsed)
+                active_tools.clear()
+
+                if reason != "stop":
+                    # Intermediate turn (tool execution step) — reset and continue
+                    accumulated_text = ""
+
+                # On reason == "stop", keep accumulated_text as the final answer
 
         proc.wait()
-        return final_result
+
+        # Close any still-open tool events (e.g. if process ended unexpectedly)
+        for tool_name, start in list(active_tools.items()):
+            elapsed = time.time() - start
+            if self.show_tool_events:
+                self.tool_event(tool_name, "done", is_running=False, elapsed=elapsed)
+        active_tools.clear()
+
+        return self.__strip_tool_calls__(accumulated_text)
 
 
 def opencode_cli(
@@ -212,7 +248,7 @@ def opencode_cli(
 
     - `continue_conversation`:
         - Type: bool
-        - What: Whether to pass `--continue` / `--session` to reuse the most recent session
+        - What: Whether to pass `--session` / `--continue` to reuse the most recent session
         - Default: True
 
     - `show_tool_events`:
