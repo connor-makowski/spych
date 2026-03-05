@@ -11,7 +11,7 @@ A lightweight, fully offline Python toolkit for wake word detection, audio trans
 - **Fully offline**: no API keys, no cloud calls, no eavesdropping
 - **Multi-threaded wake word detection**: overlapping listener windows so you rarely miss a trigger
 - **Multiple wake words**: map different words to different actions in one listener
-- **Built-in agents**: for [Ollama](https://ollama.com) and [Claude Code](https://docs.anthropic.com/en/docs/claude-code)
+- **Built-in agents**: for [Ollama](https://ollama.com), [Claude Code](https://docs.anthropic.com/en/docs/claude-code), [Codex](https://github.com/openai/codex), [Gemini CLI](https://github.com/google-gemini/gemini-cli), and [OpenCode](https://opencode.ai)
 
 ---
 
@@ -45,7 +45,10 @@ ollama(model="llama3.2:latest")
 
 ## Claude Code CLI
 
-Voice-control Claude Code directly from your voice.
+Voice-control Claude Code directly from your terminal. Requires [Claude Code](https://docs.anthropic.com/en/docs/claude-code) installed and authenticated. See: https://code.claude.com/docs/en/quickstart. Make sure you can run `claude code` commands in your terminal before trying this. 
+
+Note: This can pull from your `.claude` folder in your user directory or from the project directory, so you can have different settings for different projects if you like.
+
 
 ```python
 from spych.agents import claude_code_cli
@@ -54,29 +57,88 @@ from spych.agents import claude_code_cli
 claude_code_cli()
 ```
 
+## Claude Code SDK
+
+Same as above but uses the Claude Agent SDK via a subprocess worker instead of the CLI. This is great for a lightweight setup with better tool call feedback loops, but you will still need to be authenticated with the SDK and have your tools set up. See: https://platform.claude.com/docs/en/agent-sdk/overview for setup instructions. 
+
+Note: This can pull from your `.claude` folder in your user directory or from the project directory, so you can have different settings for different projects if you like.
+
+```python
+from spych.agents import claude_code_sdk
+
+# Say "hey claude" to trigger
+claude_code_sdk()
+```
+
+## Codex CLI
+
+Voice-control OpenAI's Codex agent. Requires [Codex CLI](https://github.com/openai/codex) installed and authenticated. Make sure you can run `codex` commands in your terminal before trying this.
+
+```python
+from spych.agents import codex_cli
+
+# Say "hey codex" to trigger
+codex_cli()
+```
+
+## Gemini CLI
+
+Voice-control Google's Gemini agent. Requires [Gemini CLI](https://github.com/google-gemini/gemini-cli) installed and authenticated. Make sure you can run `gemini` commands in your terminal before trying this.
+
+```python
+from spych.agents import gemini_cli
+
+# Say "hey gemini" to trigger
+gemini_cli()
+```
+
+## OpenCode CLI
+
+Voice-control the OpenCode agent. Requires [OpenCode](https://opencode.ai) installed and authenticated. Make sure you can run `opencode` commands in your terminal before trying this.
+
+```python
+from spych.agents import opencode_cli
+
+# Say "hey opencode" to trigger
+opencode_cli()
+```
+
 > 💡 **Pro tip:** Saying "Hey Llama" or "Hey Claude" tends to trigger more reliably than just the bare wake word.
 
-Both agents accept a `terminate_words` list (default: `["terminate"]`). Say the word or use `ctrl+c` to stop the listener cleanly.
+All agents accept a `terminate_words` list (default: `["terminate"]`). Say the word or use `ctrl+c` to stop the listener cleanly.
 
-### Agent Parameters
+### Coding Agent Parameters
 
-| Parameter | `ollama` default | `claude_code_cli` default | Description |
-|---|---|---|---|
-| `wake_words` | `["llama", "ollama", "lama"]` | `["claude", "clod", "cloud", "clawed"]` | Words that trigger the agent |
-| `terminate_words` | `["terminate"]` | `["terminate"]` | Words that stop the listener |
-| `model` | `"llama3.2:latest"` | - | Ollama model name |
-| `listen_duration` | `5` | `5` | Seconds to listen after wake word |
-| `continue_conversation` | - | `True` | Resume the most recent Claude session |
-| `history_length` | `10` | - | Past interactions to include in Ollama context |
-| `host` | `"http://localhost:11434"` | - | Ollama instance URL |
-| `spych_kwargs` | - | - | Extra kwargs passed to `Spych` |
-| `spych_wake_kwargs` | - | - | Extra kwargs passed to `SpychWake` |
+| Parameter | `claude_code_cli` | `claude_code_sdk` | `codex_cli` | `gemini_cli` | `opencode_cli` | Description |
+|---|---|---|---|---|---|---|
+| `wake_words` | `["claude", "clod", "cloud", "clawed"]` | `["claude", "clod", "cloud", "clawed"]` | `["codex"]` | `["gemini"]` | `["opencode", "open code"]` | Words that trigger the agent |
+| `terminate_words` | `["terminate"]` | `["terminate"]` | `["terminate"]` | `["terminate"]` | `["terminate"]` | Words that stop the listener |
+| `model` | - | - | - | - | `None` | Model in `provider/model` format |
+| `listen_duration` | `5` | `5` | `5` | `5` | `5` | Seconds to listen after wake word |
+| `continue_conversation` | `True` | `True` | `True` | `True` | `True` | Resume the most recent session |
+| `setting_sources` | - | `["user", "project", "local"]` | - | - | - | Claude Code local settings to load |
+| `show_tool_events` | `True` | `True` | `True` | `True` | `True` | Print live tool start/end events |
+| `spych_kwargs` | - | - | - | - | - | Extra kwargs passed to `Spych` |
+| `spych_wake_kwargs` | - | - | - | - | - | Extra kwargs passed to `SpychWake` |
+
+### Ollama Parameters
+
+| Parameter | Default | Description |
+|---|---|---|
+| `wake_words` | `["llama", "ollama", "lama"]` | Words that trigger the agent |
+| `terminate_words` | `["terminate"]` | Words that stop the listener |
+| `model` | `"llama3.2:latest"` | Ollama model name |
+| `listen_duration` | `5` | Seconds to listen after wake word |
+| `history_length` | `10` | Past interactions to include in context |
+| `host` | `"http://localhost:11434"` | Ollama instance URL |
+| `spych_kwargs` | `None` | Extra kwargs passed to `Spych` |
+| `spych_wake_kwargs` | `None` | Extra kwargs passed to `SpychWake` |
 
 ---
 
 # Building Your Own Agent
 
-Not using Ollama or Claude? No problem. Subclass `BaseResponder`, implement `respond`, and you're done. Spych handles the rest: listening, transcription, spinner UI, timing, error handling, all of it.
+Not using any of the above? No problem. Subclass `BaseResponder`, implement `respond`, and you're done. Spych handles the rest: listening, transcription, spinner UI, timing, error handling, all of it.
 ```python
 from spych.responders import BaseResponder
 
@@ -155,29 +217,6 @@ wake.start()
 ```
 
 See: https://connor-makowski.github.io/spych/spych/wake.html
-
-<!-- ## Multiple Wake Words
-
-Map different words to different callbacks all in one listener.
-```python
-from spych import SpychWake, Spych
-from spych.agents import OllamaResponder, LocalClaudeCodeCLIResponder
-
-spych = Spych(whisper_model="base.en", whisper_device="cpu")
-
-wake = SpychWake(
-    wake_word_map={
-        "llama": OllamaResponder(spych, model="llama3.2:latest"),
-        "claude": LocalClaudeCodeCLIResponder(spych),
-    },
-    whisper_model="tiny.en",
-    terminate_words=["terminate"]
-)
-
-wake.start()
-```
-
-See: https://connor-makowski.github.io/spych/spych/wake.html -->
 
 ---
 

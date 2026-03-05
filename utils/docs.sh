@@ -24,7 +24,7 @@ function generate_docs() {
             pip install "./dist/spych-$INPUT_VERSION.tar.gz"
         fi
     fi
-    pdoc -o ./docs/$INPUT_VERSION -t ./doc_template spych !spych.geographs
+    pdoc -o ./docs/$INPUT_VERSION -t ./doc_template spych !spych.agents.sdk_workers
 }
 
 # Generate the docs for the current version
