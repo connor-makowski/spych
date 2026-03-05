@@ -98,7 +98,9 @@ def main():
     # ------------------------------------------------------------------ #
     # ollama                                                               #
     # ------------------------------------------------------------------ #
-    p_ollama = subparsers.add_parser("ollama", help="Talk to a local Ollama model")
+    p_ollama = subparsers.add_parser(
+        "ollama", help="Talk to a local Ollama model"
+    )
     _add_shared_args(p_ollama)
     p_ollama.add_argument(
         "--model",
