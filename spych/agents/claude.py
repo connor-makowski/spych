@@ -342,8 +342,11 @@ class LocalClaudeCodeCLIResponder(BaseResponder):
               the clean final answer.
         """
         cmd = [
-            "claude", "-p", user_input,
-            "--output-format", "stream-json",
+            "claude",
+            "-p",
+            user_input,
+            "--output-format",
+            "stream-json",
             "--verbose",
         ]
 
@@ -392,8 +395,12 @@ class LocalClaudeCodeCLIResponder(BaseResponder):
                             if tool_name not in active_tools:
                                 active_tools[tool_name] = time.time()
                                 preceding = raw_text[: m.start()]
-                                explanation = self.__strip_tool_calls__(preceding).strip()
-                                self.tool_event(tool_name, explanation, is_running=True)
+                                explanation = self.__strip_tool_calls__(
+                                    preceding
+                                ).strip()
+                                self.tool_event(
+                                    tool_name, explanation, is_running=True
+                                )
 
                     # Only print live on intermediate (tool-call) turns.
                     # On the final turn the base class prints the return value.
@@ -409,7 +416,8 @@ class LocalClaudeCodeCLIResponder(BaseResponder):
                     for tool_name, start in list(active_tools.items()):
                         if self.show_tool_events:
                             self.tool_event(
-                                tool_name, "done",
+                                tool_name,
+                                "done",
                                 is_running=False,
                                 elapsed=time.time() - start,
                             )
@@ -427,7 +435,9 @@ class LocalClaudeCodeCLIResponder(BaseResponder):
         for tool_name, start in list(active_tools.items()):
             elapsed = time.time() - start
             if self.show_tool_events:
-                self.tool_event(tool_name, "done", is_running=False, elapsed=elapsed)
+                self.tool_event(
+                    tool_name, "done", is_running=False, elapsed=elapsed
+                )
         active_tools.clear()
 
         return False, self.__strip_tool_calls__(result_text).strip()
@@ -460,6 +470,7 @@ class LocalClaudeCodeCLIResponder(BaseResponder):
                 return result_text
 
             current_input = result_text
+
 
 def claude_code_cli(
     wake_words: list[str] = ["claude", "clod", "cloud", "clawed"],
@@ -524,5 +535,7 @@ def claude_code_cli(
     }
     spych_wake_object = SpychWake(**spych_wake_kwargs)
 
-    responder.ready_message(wake_words=wake_words, terminate_words=terminate_words)
+    responder.ready_message(
+        wake_words=wake_words, terminate_words=terminate_words
+    )
     spych_wake_object.start()

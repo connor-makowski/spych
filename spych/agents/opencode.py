@@ -178,9 +178,13 @@ class LocalOpenCodeCLIResponder(BaseResponder):
                         if tool_name not in active_tools:
                             # Extract any prose before the tool call as explanation
                             preceding = delta[: match.start()]
-                            explanation = self.__strip_tool_calls__(preceding).strip()
+                            explanation = self.__strip_tool_calls__(
+                                preceding
+                            ).strip()
                             active_tools[tool_name] = time.time()
-                            self.tool_event(tool_name, explanation, is_running=True)
+                            self.tool_event(
+                                tool_name, explanation, is_running=True
+                            )
 
                 accumulated_text = delta  # opencode sends full text each delta, not incremental
 
@@ -191,7 +195,9 @@ class LocalOpenCodeCLIResponder(BaseResponder):
                 if self.show_tool_events:
                     for tool_name, start in list(active_tools.items()):
                         elapsed = time.time() - start
-                        self.tool_event(tool_name, "done", is_running=False, elapsed=elapsed)
+                        self.tool_event(
+                            tool_name, "done", is_running=False, elapsed=elapsed
+                        )
                 active_tools.clear()
 
                 if reason != "stop":
@@ -206,7 +212,9 @@ class LocalOpenCodeCLIResponder(BaseResponder):
         for tool_name, start in list(active_tools.items()):
             elapsed = time.time() - start
             if self.show_tool_events:
-                self.tool_event(tool_name, "done", is_running=False, elapsed=elapsed)
+                self.tool_event(
+                    tool_name, "done", is_running=False, elapsed=elapsed
+                )
         active_tools.clear()
 
         return self.__strip_tool_calls__(accumulated_text)
@@ -295,5 +303,7 @@ def opencode_cli(
     spych_wake_object = SpychWake(**spych_wake_kwargs)
 
     # Fire ready message and start wake listener
-    responder.ready_message(wake_words=wake_words, terminate_words=terminate_words)
+    responder.ready_message(
+        wake_words=wake_words, terminate_words=terminate_words
+    )
     spych_wake_object.start()

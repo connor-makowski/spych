@@ -132,7 +132,6 @@ class BaseResponder(Notify):
         if was_running:
             self.spinner.start()
 
-
     # ------------------------------------------------------------------ #
     #  Extension hooks — override in subclasses for custom behaviour      #
     # ------------------------------------------------------------------ #

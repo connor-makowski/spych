@@ -95,9 +95,23 @@ class LocalCodexCLIResponder(BaseResponder):
         """
         if self.continue_conversation and not is_first:
             if self._last_session_id:
-                cmd = ["codex", "exec", "resume", self._last_session_id, "--json", user_input]
+                cmd = [
+                    "codex",
+                    "exec",
+                    "resume",
+                    self._last_session_id,
+                    "--json",
+                    user_input,
+                ]
             else:
-                cmd = ["codex", "exec", "resume", "--last", "--json", user_input]
+                cmd = [
+                    "codex",
+                    "exec",
+                    "resume",
+                    "--last",
+                    "--json",
+                    user_input,
+                ]
         else:
             cmd = ["codex", "exec", "--json", user_input]
 
@@ -146,7 +160,12 @@ class LocalCodexCLIResponder(BaseResponder):
                         tool_name, start = active_tools.pop(item_id)
                         elapsed = time.time() - start
                         if self.show_tool_events:
-                            self.tool_event(tool_name, "done", is_running=False, elapsed=elapsed)
+                            self.tool_event(
+                                tool_name,
+                                "done",
+                                is_running=False,
+                                elapsed=elapsed,
+                            )
 
                 elif itype == "agent_message":
                     final_text = item.get("text", "")
@@ -164,7 +183,9 @@ class LocalCodexCLIResponder(BaseResponder):
         for item_id, (tool_name, start) in list(active_tools.items()):
             elapsed = time.time() - start
             if self.show_tool_events:
-                self.tool_event(tool_name, "done", is_running=False, elapsed=elapsed)
+                self.tool_event(
+                    tool_name, "done", is_running=False, elapsed=elapsed
+                )
         active_tools.clear()
 
         return final_text.strip()
@@ -178,7 +199,9 @@ class LocalCodexCLIResponder(BaseResponder):
         self.first_call = False
 
         active_tools: dict[str, tuple[str, float]] = {}
-        return self.__run_turn__(user_input, is_first=is_first, active_tools=active_tools)
+        return self.__run_turn__(
+            user_input, is_first=is_first, active_tools=active_tools
+        )
 
 
 def codex_cli(
@@ -257,5 +280,7 @@ def codex_cli(
     spych_wake_object = SpychWake(**spych_wake_kwargs)
 
     # Fire ready message and start wake listener
-    responder.ready_message(wake_words=wake_words, terminate_words=terminate_words)
+    responder.ready_message(
+        wake_words=wake_words, terminate_words=terminate_words
+    )
     spych_wake_object.start()

@@ -1,7 +1,6 @@
 from spych.core import Spych
 from spych.wake import SpychWake
 from spych.responders import BaseResponder
-from spych.cli import CliColor, CliPrinter
 from typing import Optional, Any
 import subprocess
 import json
@@ -128,7 +127,11 @@ class LocalGeminiCLIResponder(BaseResponder):
                 and event.get("role", -1) != self._prev_role
                 and etype != "result"
             ):
-                role = self.name if self._prev_role == "assistant" else self._prev_role
+                role = (
+                    self.name
+                    if self._prev_role == "assistant"
+                    else self._prev_role
+                )
                 self.print_response(role, self._prev_message)
                 self._prev_message = ""
                 self._prev_role = ""
@@ -154,7 +157,9 @@ class LocalGeminiCLIResponder(BaseResponder):
                     tool_name, start = active_tools.pop(tool_id)
                     elapsed = time.time() - start
                     if self.show_tool_events:
-                        self.tool_event(tool_name, "done", is_running=False, elapsed=elapsed)
+                        self.tool_event(
+                            tool_name, "done", is_running=False, elapsed=elapsed
+                        )
 
             elif etype == "result":
                 final_result = self._prev_message
@@ -246,5 +251,7 @@ def gemini_cli(
     spych_wake_object = SpychWake(**spych_wake_kwargs)
 
     # Fire ready message and start wake listener
-    responder.ready_message(wake_words=wake_words, terminate_words=terminate_words)
+    responder.ready_message(
+        wake_words=wake_words, terminate_words=terminate_words
+    )
     spych_wake_object.start()
