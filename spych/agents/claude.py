@@ -1,14 +1,15 @@
-import sys, json, time, subprocess, importlib
+import sys, json, time, subprocess, importlib, re
 from spych.core import Spych
 from spych.wake import SpychWake
 from spych.responders import BaseResponder
+from typing import Optional, Any
 
-WORKER_PATH = importlib.util.find_spec(
+CLAUDE_SDK_WORKER_PATH = importlib.util.find_spec(
     "spych.agents.sdk_workers.claude_sdk_worker"
 ).origin
 
 
-class LocalClaudeCodeCLIResponder(BaseResponder):
+class LocalClaudeCodeSDKResponder(BaseResponder):
     def __init__(
         self,
         spych_object: "Spych",
@@ -90,7 +91,7 @@ class LocalClaudeCodeCLIResponder(BaseResponder):
 
         # The worker is at spych/agents/claude_sdk_worker.py relative to the spych package root
         proc = subprocess.Popen(
-            [sys.executable, str(WORKER_PATH)],
+            [sys.executable, str(CLAUDE_SDK_WORKER_PATH)],
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
@@ -151,7 +152,7 @@ class LocalClaudeCodeCLIResponder(BaseResponder):
         return final_result
 
 
-def claude_code_cli(
+def claude_code_sdk(
     wake_words: list[str] = ["claude", "clod", "cloud", "clawed"],
     terminate_words: list[str] = ["terminate"],
     listen_duration: int | float = 5,
@@ -218,7 +219,7 @@ def claude_code_cli(
     spych_object = Spych(**spych_kwargs)
 
     # Responder Object
-    responder = LocalClaudeCodeCLIResponder(
+    responder = LocalClaudeCodeSDKResponder(
         spych_object=spych_object,
         continue_conversation=continue_conversation,
         listen_duration=listen_duration,
@@ -240,4 +241,288 @@ def claude_code_cli(
     responder.ready_message(
         wake_words=wake_words, terminate_words=terminate_words
     )
+    spych_wake_object.start()
+
+
+class LocalClaudeCodeCLIResponder(BaseResponder):
+    def __init__(
+        self,
+        spych_object: "Spych",
+        continue_conversation: bool = True,
+        listen_duration: int | float = 5,
+        name: Optional[str] = "Claude",
+        show_tool_events: bool = True,
+    ) -> None:
+        """
+        Usage:
+
+        - A responder that pipes transcribed audio into the Claude Code CLI (`claude -p`)
+          via a subprocess and returns the final response string.
+
+        Requires:
+
+        - `spych_object`:
+            - Type: Spych
+            - What: An initialized Spych instance used to record and transcribe audio
+
+        Optional:
+
+        - `continue_conversation`:
+            - Type: bool
+            - Default: True
+
+        - `listen_duration`:
+            - Type: int | float
+            - Default: 5
+
+        - `name`:
+            - Type: str
+            - Default: "Claude"
+
+        - `show_tool_events`:
+            - Type: bool
+            - Default: True
+
+        Notes:
+
+        - Uses `--output-format stream-json --verbose`
+        - The CLI may emit tool calls as raw XML inside the `result` field instead
+          of executing them via the normal agent loop. When this happens, the raw
+          result is re-submitted as a new `--resume` query on the same session,
+          mirroring the re-query loop in claude_sdk_worker.py.
+        - Intermediate assistant text (printed during tool-call turns) is printed
+          live. The final clean answer is returned to the base class for printing,
+          never printed directly, to avoid double-printing.
+        - Claude Code CLI must be installed: npm install -g @anthropic-ai/claude-code
+        """
+        super().__init__(
+            spych_object=spych_object,
+            listen_duration=listen_duration,
+            name=name,
+        )
+        self.continue_conversation = continue_conversation
+        self.show_tool_events = show_tool_events
+        self.first_call = True
+        self._last_session_id: Optional[str] = None
+
+        # Strips inline tool call XML that the CLI embeds in assistant text blocks:
+        # <function=ToolName>\n<parameter=x>val</parameter>\n</function>\n</tool_call>
+        self.TOOL_CALL_RE = re.compile(
+            r"<function=\w+>.*?(?:</function>|</tool_call>)",
+            re.DOTALL,
+        )
+
+    def __strip_tool_calls__(self, text: str) -> str:
+        """Strip inline tool-call XML from assistant text, return clean prose only."""
+        return self.TOOL_CALL_RE.sub("", text).strip()
+
+    def __run_turn__(
+        self,
+        user_input: str,
+        is_first: bool,
+        active_tools: dict[str, float],
+        print_assistant: bool,
+    ) -> tuple[bool, str]:
+        """
+        Run one `claude -p` subprocess turn.
+
+        Args:
+            user_input:      Prompt to send to the CLI.
+            is_first:        True only on the very first ever call (skips --resume).
+            active_tools:    Shared dict of tool_name -> start_time across turns.
+            print_assistant: If True, print intermediate assistant text live.
+                             Set False on the final turn to avoid double-printing
+                             (the base class prints the return value of respond()).
+
+        Returns:
+            (needs_continuation, result_text)
+            - needs_continuation=True means the result contained a raw
+              <tool_call> block and should be re-submitted on the same session.
+            - result_text is either the raw tool-call text (to re-submit) or
+              the clean final answer.
+        """
+        cmd = [
+            "claude", "-p", user_input,
+            "--output-format", "stream-json",
+            "--verbose",
+        ]
+
+        if self.continue_conversation:
+            if self._last_session_id:
+                cmd.extend(["--resume", self._last_session_id])
+            elif not is_first:
+                cmd.extend(["--resume", "latest"])
+
+        proc = subprocess.Popen(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
+
+        result_text = ""
+
+        for raw_line in proc.stdout:
+            raw_line = raw_line.strip()
+            if not raw_line:
+                continue
+
+            try:
+                event = json.loads(raw_line)
+            except json.JSONDecodeError:
+                continue
+
+            etype = event.get("type")
+
+            if etype == "system" and event.get("subtype") == "init":
+                self._last_session_id = event.get("session_id")
+
+            elif etype == "assistant":
+                content_blocks = event.get("message", {}).get("content", [])
+                for block in content_blocks:
+                    if block.get("type") != "text":
+                        continue
+
+                    raw_text = block.get("text", "")
+
+                    # Fire a tool_start event for each new tool call seen
+                    if self.show_tool_events:
+                        for m in re.finditer(r"<function=(\w+)>", raw_text):
+                            tool_name = m.group(1)
+                            if tool_name not in active_tools:
+                                active_tools[tool_name] = time.time()
+                                preceding = raw_text[: m.start()]
+                                explanation = self.__strip_tool_calls__(preceding).strip()
+                                self.tool_event(tool_name, explanation, is_running=True)
+
+                    # Only print live on intermediate (tool-call) turns.
+                    # On the final turn the base class prints the return value.
+                    if print_assistant:
+                        clean = self.__strip_tool_calls__(raw_text)
+                        if clean:
+                            self.print_response(self.name, clean)
+
+            elif etype == "result":
+                result_text = event.get("result", "")
+
+                if event.get("is_error") or event.get("subtype") == "error":
+                    for tool_name, start in list(active_tools.items()):
+                        if self.show_tool_events:
+                            self.tool_event(
+                                tool_name, "done",
+                                is_running=False,
+                                elapsed=time.time() - start,
+                            )
+                    active_tools.clear()
+                    proc.wait()
+                    return False, f"Error: {result_text}"
+
+        proc.wait()
+
+        # Mirror sdk_worker: if the result contains a raw <tool_call>, re-submit
+        if "</tool_call>" in result_text:
+            return True, result_text
+
+        # Clean final turn — close all open tool events
+        for tool_name, start in list(active_tools.items()):
+            elapsed = time.time() - start
+            if self.show_tool_events:
+                self.tool_event(tool_name, "done", is_running=False, elapsed=elapsed)
+        active_tools.clear()
+
+        return False, self.__strip_tool_calls__(result_text).strip()
+
+    def respond(self, user_input: str) -> str:
+        """
+        Runs one or more `claude -p` subprocess turns until a clean result is
+        received. Intermediate turns (where tool calls are in flight) print
+        assistant text live. The final answer is returned for the base class
+        to print, preventing double-printing.
+        """
+        is_first = self.first_call
+        self.first_call = False
+
+        active_tools: dict[str, float] = {}
+        current_input = user_input
+
+        while True:
+            needs_continuation, result_text = self.__run_turn__(
+                current_input,
+                is_first=is_first,
+                active_tools=active_tools,
+                # Print assistant text live only on continuation turns.
+                # The final turn returns its text; the base class prints it once.
+                print_assistant=False,
+            )
+            is_first = False
+
+            if not needs_continuation:
+                return result_text
+
+            current_input = result_text
+
+def claude_code_cli(
+    wake_words: list[str] = ["claude", "clod", "cloud", "clawed"],
+    terminate_words: list[str] = ["terminate"],
+    listen_duration: int | float = 5,
+    continue_conversation: bool = True,
+    show_tool_events: bool = True,
+    spych_kwargs: Optional[dict[str, Any]] = None,
+    spych_wake_kwargs: Optional[dict[str, Any]] = None,
+) -> None:
+    """
+    Usage:
+
+    - Starts a wake word listener that pipes detected speech into the Claude Code CLI
+
+    Optional:
+
+    - `wake_words`:
+        - Type: list[str]
+        - Default: ["claude"]
+
+    - `terminate_words`:
+        - Type: list[str]
+        - Default: ["terminate"]
+
+    - `listen_duration`:
+        - Type: int | float
+        - Default: 5
+
+    - `continue_conversation`:
+        - Type: bool
+        - Default: True
+
+    - `show_tool_events`:
+        - Type: bool
+        - Default: True
+
+    - `spych_kwargs`:
+        - Type: dict
+        - Default: None
+
+    - `spych_wake_kwargs`:
+        - Type: dict
+        - Default: None
+    """
+    spych_kwargs = {"whisper_model": "base.en", **(spych_kwargs or {})}
+    spych_object = Spych(**spych_kwargs)
+
+    responder = LocalClaudeCodeCLIResponder(
+        spych_object=spych_object,
+        continue_conversation=continue_conversation,
+        listen_duration=listen_duration,
+        show_tool_events=show_tool_events,
+    )
+
+    spych_wake_kwargs = {
+        "whisper_model": "base.en",
+        "on_terminate": responder.on_terminate,
+        "wake_word_map": {word: responder for word in wake_words},
+        "terminate_words": terminate_words,
+        **(spych_wake_kwargs or {}),
+    }
+    spych_wake_object = SpychWake(**spych_wake_kwargs)
+
+    responder.ready_message(wake_words=wake_words, terminate_words=terminate_words)
     spych_wake_object.start()

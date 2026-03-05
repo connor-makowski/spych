@@ -1,11 +1,8 @@
 from spych.core import Spych
 from spych.wake import SpychWake
 from spych.responders import BaseResponder
-from spych.cli import CliColor, CliPrinter
 from typing import Optional, Any
-import subprocess
-import json
-import time
+import subprocess, json, re, time
 
 
 class LocalCodexCLIResponder(BaseResponder):
@@ -20,9 +17,8 @@ class LocalCodexCLIResponder(BaseResponder):
         """
         Usage:
 
-        - A responder that pipes transcribed audio into the Codex CLI (`codex`)
+        - A responder that pipes transcribed audio into the Codex CLI (`codex exec`)
           via a subprocess and returns the final response string.
-          Fires live tool-call events as the subprocess streams them.
 
         Requires:
 
@@ -34,29 +30,29 @@ class LocalCodexCLIResponder(BaseResponder):
 
         - `continue_conversation`:
             - Type: bool
-            - What: Whether to pass `--continue` to reuse the most recent session
             - Default: True
 
         - `listen_duration`:
             - Type: int | float
-            - What: The number of seconds to listen for after the wake word is detected
             - Default: 5
 
         - `name`:
             - Type: str
-            - What: A custom name for the responder to use in printed messages
             - Default: "Codex"
 
         - `show_tool_events`:
             - Type: bool
-            - What: Whether to print tool start/end events in the CLI as they arrive from the subprocess
             - Default: True
 
         Notes:
 
-        - Uses `--json` to stream intermediate tool call events
+        - Uses `--json` to stream newline-delimited JSON events
+        - Codex has two tool-call modes:
+            1. Native: emits `command_execution` items with item.started/item.completed
+            2. Fallback: emits raw `<function=...></tool_call>` XML inside an
+               `agent_message`. When this happens the raw text is re-submitted on
+               the same session so the agent loop can execute the tool and continue.
         - Codex CLI must be installed and authenticated before use
-          (run `codex` once interactively to complete OAuth / API-key setup)
         """
         super().__init__(
             spych_object=spych_object,
@@ -68,31 +64,41 @@ class LocalCodexCLIResponder(BaseResponder):
         self.first_call = True
         self._last_session_id: Optional[str] = None
 
-    def respond(self, user_input: str) -> str:
+        # Strips inline tool call XML that Codex sometimes embeds in agent_message text:
+        # <function=ToolName>\n<parameter=x>val</parameter>\n</function>\n</tool_call>
+        self.TOOL_CALL_RE = re.compile(
+            r"<function=\w+>.*?(?:</function>|</tool_call>)",
+            re.DOTALL,
+        )
+
+    def __strip_tool_calls__(self, text: str) -> str:
+        """Strip inline tool-call XML from agent_message text, return clean prose only."""
+        return self.TOOL_CALL_RE.sub("", text).strip()
+
+    def __run_turn__(
+        self,
+        user_input: str,
+        is_first: bool,
+        active_tools: dict[str, tuple[str, float]],
+        print_assistant: bool,
+    ) -> tuple[bool, str]:
         """
-        Usage:
+        Run one `codex exec --json` subprocess turn.
 
-        - Pipes the transcribed user input into `codex` with `--json`
-          and returns the final response after all tool calls have completed.
-          Fires tool events live as they arrive.
-
-        Requires:
-
-        - `user_input`:
-            - Type: str
-            - What: The transcribed text from the user's audio input
+        Args:
+            user_input:      Prompt to send to the CLI.
+            is_first:        True only on the very first ever call (skips --continue).
+            active_tools:    Shared dict of item_id -> (tool_name, start_time).
+            print_assistant: If True, print intermediate clean assistant text live.
+                             Set False on the final turn to avoid double-printing.
 
         Returns:
-
-        - `response`:
-            - Type: str
-            - What: The final response string from Codex CLI
+            (needs_continuation, result_text)
+            - needs_continuation=True means the agent_message contained raw
+              <tool_call> XML and should be re-submitted on the same session.
+            - result_text is either the raw tool-call text (to re-submit) or
+              the clean final answer.
         """
-        is_first = self.first_call
-        self.first_call = False
-
-        # `codex --json -q <prompt>` runs non-interactively and streams JSON events.
-        # `-q` / `--quiet` suppresses the spinner so stdout is clean JSON lines.
         cmd = ["codex", "exec", "--json", user_input]
 
         if self.continue_conversation:
@@ -108,9 +114,7 @@ class LocalCodexCLIResponder(BaseResponder):
             text=True,
         )
 
-        final_result = ""
-        # item_id -> (tool_name, start_time)  for function-call items
-        active_tools: dict[str, tuple[str, float]] = {}
+        final_text = ""
 
         for raw_line in proc.stdout:
             raw_line = raw_line.strip()
@@ -124,58 +128,109 @@ class LocalCodexCLIResponder(BaseResponder):
 
             etype = event.get("type")
 
-            # --- Real Codex stream event types ---
-            # "thread.started"   – new thread; carries thread_id
-            # "turn.started"     – model turn beginning
-            # "item.completed"   – one discrete item finished; item.type can be:
-            #                        "agent_message"  – assistant text (item.text)
-            #                        "function_call"  – tool invocation (item.name / item.arguments)
-            #                        "function_output"– tool result    (item.name / item.output)
-            #                        "error"          – error message  (item.message)
-            # "turn.completed"   – turn done; carries usage stats
-
             if etype == "thread.started":
                 self._last_session_id = event.get("thread_id")
+
+            elif etype == "item.started":
+                item = event.get("item", {})
+                item_id = item.get("id", "")
+
+                # Native tool: fire tool_start when the command begins executing
+                if item.get("type") == "command_execution":
+                    tool_name = "command_execution"
+                    explanation = item.get("command", "")
+                    active_tools[item_id] = (tool_name, time.time())
+                    if self.show_tool_events:
+                        self.tool_event(tool_name, explanation, is_running=True)
 
             elif etype == "item.completed":
                 item = event.get("item", {})
                 itype = item.get("type")
                 item_id = item.get("id", "")
 
-                if itype == "agent_message":
-                    text = item.get("text", "")
-                    if text:
-                        final_result = text
-
-                elif itype == "function_call":
-                    tool_name = item.get("name", "unknown_tool")
-                    tool_input = item.get("arguments", "{}")
-                    active_tools[item_id] = (tool_name, time.time())
-                    if self.show_tool_events:
-                        self.tool_event(tool_name, tool_input, is_running=True)
-
-                elif itype == "function_output":
-                    tool_name = item.get("name", "")
-                    # Match by name when id isn't available
-                    matched_id = item_id
-                    if matched_id not in active_tools:
-                        matched_id = next(
-                            (k for k, (n, _) in active_tools.items() if n == tool_name),
-                            None,
-                        )
-                    if matched_id and matched_id in active_tools:
-                        _, start = active_tools.pop(matched_id)
+                if itype == "command_execution":
+                    # Native tool completed — close the tool event
+                    if item_id in active_tools:
+                        tool_name, start = active_tools.pop(item_id)
                         elapsed = time.time() - start
                         if self.show_tool_events:
                             self.tool_event(tool_name, "done", is_running=False, elapsed=elapsed)
 
-                elif itype == "error":
-                    final_result = f"Error: {item.get('message', 'unknown error')}"
+                elif itype == "agent_message":
+                    raw_text = item.get("text", "")
 
-            # turn.completed carries usage but no new text — nothing to handle
+                    # Fallback mode: inline tool-call XML embedded in the message.
+                    # Fire tool events for each call found, signal re-submission.
+                    if "</tool_call>" in raw_text:
+                        if self.show_tool_events:
+                            for m in re.finditer(r"<function=(\w+)>", raw_text):
+                                tool_name = m.group(1)
+                                preceding = raw_text[: m.start()]
+                                explanation = self.__strip_tool_calls__(preceding).strip()
+                                synthetic_id = f"fallback_{tool_name}_{item_id}"
+                                active_tools[synthetic_id] = (tool_name, time.time())
+                                self.tool_event(tool_name, explanation, is_running=True)
+                        proc.wait()
+                        return True, raw_text
+
+                    # Normal agent message — this is the final answer
+                    final_text = raw_text
+                    if print_assistant:
+                        clean = self.__strip_tool_calls__(raw_text)
+                        if clean:
+                            self.print_response(self.name, clean)
+
+                elif itype == "error":
+                    msg = item.get("message", "unknown error")
+                    # Non-fatal model metadata warnings — skip silently
+                    if "not found" in msg.lower() and "metadata" in msg.lower():
+                        continue
+                    final_text = f"Error: {msg}"
 
         proc.wait()
-        return final_result
+
+        # Clean final turn — close any still-open tool events
+        for item_id, (tool_name, start) in list(active_tools.items()):
+            elapsed = time.time() - start
+            if self.show_tool_events:
+                self.tool_event(tool_name, "done", is_running=False, elapsed=elapsed)
+        active_tools.clear()
+
+        return False, self.__strip_tool_calls__(final_text).strip()
+
+    def respond(self, user_input: str) -> str:
+        """
+        Runs one or more `codex exec --json` subprocess turns until a clean
+        (non-tool-call) result is received. The final answer is returned for
+        the base class to print, preventing double-printing.
+        """
+        is_first = self.first_call
+        self.first_call = False
+
+        active_tools: dict[str, tuple[str, float]] = {}
+        current_input = user_input
+
+        while True:
+            needs_continuation, result_text = self.__run_turn__(
+                current_input,
+                is_first=is_first,
+                active_tools=active_tools,
+                # Never print directly — return value is printed once by the base class
+                print_assistant=False,
+            )
+            is_first = False
+
+            if not needs_continuation:
+                return result_text
+
+            # Close fallback tool events before re-submitting
+            for item_id in [k for k in active_tools if k.startswith("fallback_")]:
+                tool_name, start = active_tools.pop(item_id)
+                elapsed = time.time() - start
+                if self.show_tool_events:
+                    self.tool_event(tool_name, "done", is_running=False, elapsed=elapsed)
+
+            current_input = result_text
 
 
 def codex_cli(
