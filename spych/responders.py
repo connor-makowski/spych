@@ -100,6 +100,35 @@ class BaseResponder(Notify):
         is_running: bool = False,
         elapsed: float | None = None,
     ) -> None:
+        """
+        Usage:
+
+        - Print a tool event message with the spinner paused and resumed automatically.
+          This method stops the spinner before printing the tool event and restarts it
+          afterwards to prevent interference with the output.
+
+        Requires:
+
+        - `tool_name`:
+            - Type: str
+            - What: The name of the tool being invoked
+
+        - `status`:
+            - Type: str
+            - What: The status of the tool (e.g., "starting", "running", "completed", "failed")
+
+        Optional:
+
+        - `is_running`:
+            - Type: bool
+            - What: Whether the tool is currently running
+            - Default: False
+
+        - `elapsed`:
+            - Type: float | None
+            - What: Elapsed time in seconds since the tool started (if available)
+            - Default: None
+        """
         was_running = self.spinner.stop()
         CliPrinter.tool_event(
             tool_name, status, is_running=is_running, elapsed=elapsed
@@ -134,6 +163,23 @@ class BaseResponder(Notify):
             self.spinner.start()
 
     def print_response(self, name: str, message: str) -> None:
+        """
+        Usage:
+
+        - Print a styled response message with the spinner paused and resumed automatically.
+          This method stops the spinner before printing the response and restarts it
+          afterwards to prevent interference with the output.
+
+        Requires:
+
+        - `name`:
+            - Type: str
+            - What: The name of the responder
+
+        - `message`:
+            - Type: str
+            - What: The response message to display
+        """
         was_running = self.spinner.stop()
         CliPrinter.print_response(name, message)
         if was_running:
@@ -213,17 +259,60 @@ class BaseResponder(Notify):
     # ------------------------------------------------------------------ #
 
     def on_listen_start(self) -> None:
+        """
+        Usage:
+
+        - Update the spinner message to indicate that the responder is listening for audio.
+
+        Notes:
+
+        - This method is called automatically at the start of each listen cycle.
+        - It updates the spinner label to show the responder name and listening duration.
+        """
         self.spinner.update(
             f"{CliColor.BOLD}{CliColor.MAGENTA}{self.name}{CliColor.RESET} "
             f"{CliColor.GREEN}is listening for {self.listen_duration}s{CliColor.RESET}"
         )
 
     def on_user_input(self, user_input: str) -> None:
+        """
+        Usage:
+
+        - Print the user input and start the spinner with verbs to indicate processing.
+
+        Requires:
+
+        - `user_input`:
+            - Type: str
+            - What: The transcribed text from the user
+
+        Notes:
+
+        - This method is called automatically when user input is received.
+        - It prints the user input label and starts the spinner with verb animation.
+        - The start time is recorded for timing purposes.
+        """
         CliPrinter.label("User:", user_input)
         self._start_time = time.time()
         self.spinner.start_with_verbs(self.name, interval=15)
 
     def on_response(self, response: str) -> None:
+        """
+        Usage:
+
+        - Print the final response and status information.
+
+        Requires:
+
+        - `response`:
+            - Type: str
+            - What: The response string returned by the respond method
+
+        Notes:
+
+        - This method is called automatically after processing is complete.
+        - It stops the spinner, prints the response, and shows success/failure status with elapsed time.
+        """
         elapsed = time.time() - self._start_time
         self.spinner.stop()
         if response:
@@ -233,10 +322,30 @@ class BaseResponder(Notify):
             CliPrinter.print_status(self.name, success=False, elapsed=elapsed)
 
     def on_terminate(self) -> None:
+        """
+        Usage:
+
+        - Print a termination message and stop the spinner.
+
+        Notes:
+
+        - This method is called when the responder is terminated.
+        - It stops the spinner and prints an informative message about the termination.
+        """
         self.spinner.stop()
         CliPrinter.info(f"{self.name} has been terminated.")
 
     def on_listen_end(self) -> None:
+        """
+        Usage:
+
+        - Stop the spinner after listening is complete.
+
+        Notes:
+
+        - This method is called automatically at the end of each listen cycle.
+        - It stops the spinner to indicate that listening has finished.
+        """
         self.spinner.stop()
 
     def __call__(self) -> str:

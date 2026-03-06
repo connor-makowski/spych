@@ -11,6 +11,10 @@ A lightweight, fully offline Python toolkit for wake word detection, audio trans
 - **Multi-threaded wake word detection**: overlapping listener windows so you rarely miss a trigger
 - **Multiple wake words**: map different words to different actions in one listener
 - **Built-in agents**: for [Ollama](https://ollama.com), [Claude Code](https://docs.anthropic.com/en/docs/claude-code), [Codex](https://github.com/openai/codex), [Gemini CLI](https://github.com/google-gemini/gemini-cli), and [OpenCode](https://opencode.ai)
+- **Multi-agent orchestration**: run several agents simultaneously under a single listener, each with its own wake words
+- **Extensible**: subclass `BaseResponder` to build your own agents with custom wake words and logic
+
+**API Docs**: https://connor-makowski.github.io/spych/spych.html
 
 ---
 

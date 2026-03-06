@@ -1,3 +1,19 @@
+"""
+Agent implementations for Spych.
+
+This package contains various AI agent implementations that can be used with Spych.
+Each agent provides different capabilities and interfaces for interacting with
+various language models and AI services.
+
+Agents are organized by the underlying AI service they interface with:
+- Claude agents (claude.py)
+- Ollama agents (ollama.py)
+- Gemini agents (gemini.py)
+- Codex agents (codex.py)
+- OpenCode agents (opencode.py)
+
+Each file may have multiple agent variants for different usage patterns.
+"""
 from spych.agents.claude import (
     claude_code_cli,
     LocalClaudeCodeCLIResponder,
