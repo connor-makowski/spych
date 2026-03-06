@@ -8,6 +8,7 @@ echo "\"\"\"" >> spych/__init__.py
 echo "" >> spych/__init__.py
 echo "from .core import Spych" >> spych/__init__.py
 echo "from .wake import SpychWake" >> spych/__init__.py
+echo "from .orchestrator import SpychOrchestrator" >> spych/__init__.py
 
 
 

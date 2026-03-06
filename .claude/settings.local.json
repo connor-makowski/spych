@@ -4,6 +4,7 @@
     "allow": [
       "Bash(./run.sh prettify)",
       "Bash(./run.sh test)",
+      "Edit(./README.md)",
       "Edit(./spych/**)",
       "Edit(./scripts/**)",
       "Write(./spych/**)",

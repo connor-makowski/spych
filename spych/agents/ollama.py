@@ -1,5 +1,5 @@
 from spych.core import Spych
-from spych.wake import SpychWake
+from spych.orchestrator import SpychOrchestrator
 from spych.responders import BaseResponder
 import requests
 
@@ -170,14 +170,12 @@ def ollama(
 
     - `spych_wake_kwargs`:
         - Type: str
-        - What: Additional keyword arguments to pass to the SpychWake constructor
+        - What: Additional keyword arguments to pass to SpychWake via SpychOrchestrator
         - Default: None
     """
-    # Spych Object
     spych_kwargs = {"whisper_model": "base.en", **(spych_kwargs or {})}
     spych_object = Spych(**spych_kwargs)
 
-    # Responder Object
     responder = OllamaResponder(
         spych_object=spych_object,
         model=model,
@@ -186,18 +184,13 @@ def ollama(
         host=host,
     )
 
-    # SpychWake Object
-    spych_wake_kwargs = {
-        "whisper_model": "base.en",
-        "on_terminate": responder.on_terminate,
-        "wake_word_map": {word: responder for word in wake_words},
-        "terminate_words": terminate_words,
-        **(spych_wake_kwargs or {}),
-    }
-    spych_wake_object = SpychWake(**spych_wake_kwargs)
-
-    # Fire ready message and start wake listener
-    responder.ready_message(
-        wake_words=wake_words, terminate_words=terminate_words
-    )
-    spych_wake_object.start()
+    SpychOrchestrator(
+        entries=[
+            {
+                "responder": responder,
+                "wake_words": wake_words,
+                "terminate_words": terminate_words,
+            }
+        ],
+        spych_wake_kwargs=spych_wake_kwargs,
+    ).start()

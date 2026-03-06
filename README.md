@@ -44,6 +44,12 @@ spych opencode_cli --model anthropic/claude-sonnet-4-5
 spych gemini_cli --wake-words gemini "hey gemini"
 ```
 
+Multi-agent mode is also available via the CLI. See the "Multi-agent" section below for more details.
+
+```bash
+spych multi --agents claude_code_sdk ollama --ollama-model llama3.2:latest --listen-duration 8
+```
+
 Run `spych --help` or `spych <agent> --help` to see all available options.
 
 ---
@@ -158,6 +164,82 @@ All agents accept a `terminate_words` list (default: `["terminate"]`). Say the w
 
 ---
 
+# Multi-agent
+
+Run several agents simultaneously under a single listener, each bound to its own wake words. Say "hey claude" to talk to Claude, "hey llama" to talk to Ollama — all in the same terminal session.
+
+## CLI
+
+```bash
+# Two agents, default wake words
+spych multi --agents claude_code_cli gemini_cli
+
+# Include Ollama with a specific model
+spych multi --agents claude_code_cli ollama --ollama-model llama3.2:latest
+
+# Tune listen duration across all agents
+spych multi --agents claude_code_sdk codex_cli --listen-duration 8
+```
+
+### Multi-agent CLI Parameters
+
+| Flag | Default | Description |
+|---|---|---|
+| `--agents` | *(required)* | One or more agent names to run: `claude_code_cli`, `claude_code_sdk`, `codex_cli`, `gemini_cli`, `opencode_cli`, `ollama` |
+| `--terminate-words` | `["terminate"]` | Words that stop all agents |
+| `--listen-duration` | `5` | Seconds to listen after a wake word |
+| `--continue-conversation` | `true` | Resume the most recent session for each coding agent |
+| `--show-tool-events` | `true` | Print live tool start/end events |
+| `--ollama-model` | `llama3.2:latest` | Ollama model. Only used when `ollama` is in `--agents` |
+| `--ollama-host` | `http://localhost:11434` | Ollama instance URL. Only used when `ollama` is in `--agents` |
+| `--ollama-history-length` | `10` | Ollama context history length. Only used when `ollama` is in `--agents` |
+| `--opencode-model` | `None` | OpenCode model in `provider/model` format. Only used when `opencode_cli` is in `--agents` |
+| `--setting-sources` | `["user", "project", "local"]` | Claude Code SDK setting sources. Only used when `claude_code_sdk` is in `--agents` |
+
+## Python
+
+Use `SpychOrchestrator` directly to mix any combination of responders with custom wake words.
+
+```python
+from spych.core import Spych
+from spych.orchestrator import SpychOrchestrator
+from spych.agents.claude import LocalClaudeCodeCLIResponder
+from spych.agents.ollama import OllamaResponder
+
+spych_object = Spych(whisper_model="base.en")
+
+SpychOrchestrator(
+    entries=[
+        {
+            "responder": LocalClaudeCodeCLIResponder(spych_object=spych_object),
+            "wake_words": ["claude", "clod", "cloud", "clawed"],
+            "terminate_words": ["terminate"],
+        },
+        {
+            "responder": OllamaResponder(spych_object=spych_object, model="llama3.2:latest"),
+            "wake_words": ["llama", "ollama", "lama"],
+        },
+    ]
+).start()
+```
+
+### `OrchestratorEntry` Keys
+
+| Key | Required | Default | Description |
+|---|---|---|---|
+| `responder` | ✓ | - | A `BaseResponder` instance |
+| `wake_words` | ✓ | - | Words that trigger this responder. Must be unique across all entries |
+| `terminate_words` | | `["terminate"]` | Words that stop the entire orchestrator. Merged across all entries |
+
+### `SpychOrchestrator` Parameters
+
+| Parameter | Default | Description |
+|---|---|---|
+| `entries` | *(required)* | List of `OrchestratorEntry` dicts — see table above |
+| `spych_wake_kwargs` | `None` | Extra kwargs forwarded to `SpychWake` (e.g. `whisper_model`, `wake_listener_count`) |
+
+---
+
 # Building Your Own Agent
 
 Not using any of the above? No problem. Subclass `BaseResponder`, implement `respond`, and you're done. Spych handles the rest: listening, transcription, spinner UI, timing, error handling, all of it.
@@ -171,27 +253,75 @@ class MyResponder(BaseResponder):
 
 A complete working example with a custom wake word:
 ```python
+from spych import Spych,SpychOrchestrator
 from spych.responders import BaseResponder
-from spych import Spych, SpychWake
 
 class MyResponder(BaseResponder):
     def respond(self, user_input: str) -> str:
         return f"'{self.name}' heard: {user_input}"
 
-my_responder = MyResponder(
-    spych_object = Spych(whisper_model="base.en"),
-    listen_duration=5,
-    name="TestResponder"
-)
-
-wake_object = SpychWake(
-    wake_word_map={"test": my_responder},
-    whisper_model="tiny.en",
-    terminate_words=["terminate"]
-)
-my_responder.ready_message(wake_words = ["test"], terminate_words = ["terminate"])
-wake_object.start()
+SpychOrchestrator(
+    entries=[
+        {
+            "responder": MyResponder(
+                spych_object=Spych(whisper_model="base.en"),
+                listen_duration=5,
+                name="TestResponder",
+            ),
+            "wake_words": ["test"],
+            "terminate_words": ["terminate"],
+        }
+    ]
+).start()
 ```
+
+The orchestrator can also handle multiple custom agents at once, each with their own wake words. For example, you can make a translation agent that listens for "Spanish" or "German" and routes to the appropriate responder:
+
+> Note: To run this example, you will need to have Ollama running and an Ollama model that can do translations. You can use `llama3.2:latest` or any other model you have set up for this purpose.
+
+```python
+from spych import Spych,SpychOrchestrator
+from spych.agents import OllamaResponder
+
+class Spanish(OllamaResponder):
+    def respond(self, user_input: str) -> str:
+        user_input = f"Translate the following text to Spanish and return only the translated text: '{user_input}'"
+        response = super().respond(user_input)
+        return response
+    
+class German(OllamaResponder):
+    def respond(self, user_input: str) -> str:
+        user_input = f"Translate the following text to German and return only the translated text: '{user_input}'"
+        response = super().respond(user_input)
+        return response
+
+SpychOrchestrator(
+    entries=[
+        {
+            "responder": Spanish(
+                spych_object=Spych(whisper_model="base.en"),
+                listen_duration=5,
+                name="SpanishTranslator",
+                model="llama3.2:latest",
+            ),
+            "wake_words": ["spanish"],
+            "terminate_words": ["terminate"],
+        },
+        {
+            "responder": German(
+                spych_object=Spych(whisper_model="base.en"),
+                listen_duration=5,
+                name="GermanTranslator",
+                model="llama3.2:latest",
+            ),
+            "wake_words": ["german"],
+            "terminate_words": ["terminate"],
+        }
+    ]
+).start()
+```
+
+## Custom Agent Contributions
 
 Think your agent would be useful to others? Open a PR or file a feature request via a GitHub issue. Contributions are very welcome.
 

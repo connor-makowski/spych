@@ -10,13 +10,14 @@ class BaseResponder(Notify):
         spych_object: "Spych",
         listen_duration: int | float = 5,
         name: Optional[str] = None,
+        spinner: Optional[CliSpinner] = None,
     ) -> None:
         """
         Usage:
 
         - Base class for all responders. Handles the listen-transcribe-respond cycle,
           provides a consistent interface for subclasses to implement, and includes
-          a rich terminal UI and animated spinner
+          a rich terminal UI and animated spinner.
 
         - Subclasses only need to implement `respond(user_input: str) -> str`.
           All CLI chrome (spinner, dividers, timing, response box) is handled here.
@@ -48,32 +49,38 @@ class BaseResponder(Notify):
             - What: A custom name for the responder to use in printed messages
             - Default: The class name of the responder (e.g., "Ollama")
 
+        - `spinner`:
+            - Type: CliSpinner | None
+            - What: An externally-owned spinner to share across multiple responders.
+              When provided (e.g. by SpychOrchestrator), all responders drive the same
+              spinner so their output never interleaves. When None, a private spinner is
+              created, preserving the original single-responder behaviour.
+            - Default: None
+
         Notes:
 
-        - Subclasses must implement the `respond` method
-        - The `__call__` method orchestrates the full listen -> transcribe -> respond
-          cycle; subclasses only need to handle the response logic
+        - Subclasses must implement the `respond` method.
+        - The `__call__` method orchestrates the full voice listen -> transcribe -> respond
+          cycle; use `text_input` for the typed equivalent.
         """
         self.spych_object = spych_object
-        self.listen_duration = max(
-            listen_duration, 3
-        )  # enforce a minimum listen duration of 3 seconds
+        self.listen_duration = max(listen_duration, 3)
         self.name = name if name else self.__class__.__name__
-        self.spinner = CliSpinner()
+        # Accept an injected shared spinner or create a private one.
+        self.spinner: CliSpinner = spinner if spinner is not None else CliSpinner()
         self._start_time: float = 0.0
 
     # ------------------------------------------------------------------ #
-    #  Public helper API — safe to call from inside respond()            #
+    #  Public helper API — safe to call from inside respond()             #
     # ------------------------------------------------------------------ #
 
     def wait_for_next_wake_word(self, divider: bool = True) -> None:
         """
         Usage:
 
-        - Call this to print a divider and reset the spinner after each complete cycle,
-        to indicate that the responder is waiting for the next wake word. This is called
-        by default at the end of `__call__`, but you can also call it manually if you want
-        to reset the UI state at any point (e.g. after an error).
+        - Print a divider and reset the spinner after each complete cycle to indicate
+          that the responder is waiting for the next wake word. Called automatically at
+          the end of `__call__` and `text_input`, but can also be called manually.
 
         Optional:
 
@@ -84,7 +91,7 @@ class BaseResponder(Notify):
         """
         if divider:
             CliPrinter.divider("─", 60, CliColor.GRAY)
-        self.spinner.start(f"Waiting for wake word")
+        self.spinner.start("Waiting for wake word")
 
     def tool_event(
         self,
@@ -140,9 +147,9 @@ class BaseResponder(Notify):
         """
         Usage:
 
-        - Called with the transcribed (and optionally clarified) user input.
-          Must return a response string. All CLI chrome is handled by the base
-          class; this method only needs to produce the response.
+        - Called with the transcribed (or typed) user input. Must return a response
+          string. All CLI chrome is handled by the base class; this method only needs
+          to produce the response.
 
         - Use the public helper methods for UI feedback inside this method:
 
@@ -155,7 +162,7 @@ class BaseResponder(Notify):
 
         - `user_input`:
             - Type: str
-            - What: The transcribed text from the user's audio input
+            - What: The transcribed or typed text from the user
 
         Returns:
 
@@ -206,10 +213,9 @@ class BaseResponder(Notify):
     # ------------------------------------------------------------------ #
 
     def on_listen_start(self) -> None:
-        # Start a spinner immediately to indicate we're processing the wake event and listening;
-        # this also gives a visual cue that the wake was detected successfully and the responder is active
         self.spinner.update(
-            f"{CliColor.BOLD}{CliColor.MAGENTA}{self.name}{CliColor.RESET} {CliColor.GREEN}is listening for {self.listen_duration}s{CliColor.RESET}"
+            f"{CliColor.BOLD}{CliColor.MAGENTA}{self.name}{CliColor.RESET} "
+            f"{CliColor.GREEN}is listening for {self.listen_duration}s{CliColor.RESET}"
         )
 
     def on_user_input(self, user_input: str) -> None:
@@ -265,21 +271,25 @@ class BaseResponder(Notify):
         self.wait_for_next_wake_word()
         return response
 
-    def ready_message(self, **kwargs) -> None:
+    def ready_message(self, show_wait_for_wake: bool = True, **kwargs) -> None:
         """
-        Formats and prints the ready message when the responder is initialized, showing the wake words and terminate words.
+        Formats and prints the ready message when the responder is initialized,
+        showing the wake words and terminate words.
 
-        Requires:
+        Optional:
 
-        - `wake_words`:
-            - Type: list[str]
-            - What: List of wake words that trigger the responder
+        - `show_wait_for_wake`:
+            - Type: bool
+            - What: Whether to include "Waiting for wake word" in the ready message
+            - Default: True
 
-        - `terminate_words`:
-            - Type: list[str]
-            - What: List of words that can be spoken to terminate the responder
+        - `**kwargs`:
+            - Type: dict
+            - What: Additional keyword arguments to display in the ready message
+        
         """
         CliPrinter.header(self.name)
         CliPrinter.kwarg_inputs(**kwargs)
         CliPrinter.empty_line()
-        self.wait_for_next_wake_word()
+        if show_wait_for_wake:
+            self.wait_for_next_wake_word()

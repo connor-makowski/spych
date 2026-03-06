@@ -11,6 +11,9 @@ Examples:
     spych codex_cli --listen-duration 8
     spych gemini_cli
     spych opencode_cli --model anthropic/claude-sonnet-4-5
+
+    # Multi-agent: run several agents under different wake words at once
+    spych multi --agents claude_code_sdk ollama --ollama-model llama3.2:latest
 """
 
 import argparse
@@ -181,10 +184,111 @@ def main():
     )
 
     # ------------------------------------------------------------------ #
+    # multi — run several agents under one orchestrator                   #
+    # ------------------------------------------------------------------ #
+    p_multi = subparsers.add_parser(
+        "multi",
+        help="Run multiple agents simultaneously under different wake words",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description=(
+            "Run several agents at once. Each agent uses its own default wake "
+            "words unless overridden.\n\n"
+            "Example:\n"
+            "  spych multi --agents claude_code_cli gemini_cli\n"
+            "  spych multi --agents claude_code_cli ollama --ollama-model llama3.2:latest\n"
+            "  spych multi --agents claude_code_sdk codex_cli --listen-duration 8"
+        ),
+    )
+    p_multi.add_argument(
+        "--agents",
+        nargs="+",
+        required=True,
+        metavar="AGENT",
+        choices=[
+            "claude_code_cli",
+            "claude_code_sdk",
+            "codex_cli",
+            "gemini_cli",
+            "opencode_cli",
+            "ollama",
+        ],
+        help=(
+            "Agents to run. Choices: claude_code_cli, claude_code_sdk, "
+            "codex_cli, gemini_cli, opencode_cli, ollama"
+        ),
+    )
+    p_multi.add_argument(
+        "--terminate-words",
+        nargs="+",
+        metavar="WORD",
+        default=["terminate"],
+        help="Words that stop all agents (default: terminate)",
+    )
+    p_multi.add_argument(
+        "--listen-duration",
+        type=float,
+        default=5,
+        metavar="SECONDS",
+        help="Seconds to listen after a wake word (default: 5)",
+    )
+    p_multi.add_argument(
+        "--continue-conversation",
+        type=_parse_bool,
+        default=True,
+        metavar="BOOL",
+        help="Resume most recent session for each coding agent (default: true)",
+    )
+    p_multi.add_argument(
+        "--show-tool-events",
+        type=_parse_bool,
+        default=True,
+        metavar="BOOL",
+        help="Print live tool start/end events (default: true)",
+    )
+    # ollama-specific flags (only used when 'ollama' is in --agents)
+    p_multi.add_argument(
+        "--ollama-model",
+        default="llama3.2:latest",
+        metavar="MODEL",
+        help="Ollama model (default: llama3.2:latest). Only used when ollama is in --agents.",
+    )
+    p_multi.add_argument(
+        "--ollama-host",
+        default="http://localhost:11434",
+        metavar="URL",
+        help="Ollama instance URL (default: http://localhost:11434). Only used when ollama is in --agents.",
+    )
+    p_multi.add_argument(
+        "--ollama-history-length",
+        type=int,
+        default=10,
+        metavar="N",
+        help="Ollama context history length (default: 10). Only used when ollama is in --agents.",
+    )
+    # opencode-specific flag
+    p_multi.add_argument(
+        "--opencode-model",
+        default=None,
+        metavar="MODEL",
+        help="OpenCode model in provider/model format. Only used when opencode_cli is in --agents.",
+    )
+    # claude_code_sdk-specific flag
+    p_multi.add_argument(
+        "--setting-sources",
+        nargs="+",
+        metavar="SOURCE",
+        default=["user", "project", "local"],
+        help="Claude Code SDK setting sources (default: user project local). Only used when claude_code_sdk is in --agents.",
+    )
+
+    # ------------------------------------------------------------------ #
     # Dispatch                                                             #
     # ------------------------------------------------------------------ #
     args = parser.parse_args()
 
+    # ------------------------------------------------------------------ #
+    # Single-agent dispatch                                                #
+    # ------------------------------------------------------------------ #
     if args.agent == "ollama":
         from spych.agents import ollama
 
@@ -223,6 +327,108 @@ def main():
         if args.model is not None:
             kwargs["model"] = args.model
         opencode_cli(**kwargs)
+
+    # ------------------------------------------------------------------ #
+    # Multi-agent dispatch                                                 #
+    # ------------------------------------------------------------------ #
+    elif args.agent == "multi":
+        from spych.core import Spych
+        from spych.orchestrator import SpychOrchestrator
+
+        # A single Spych transcription object shared by all responders.
+        spych_object = Spych(whisper_model="base.en")
+
+        entries = []
+
+        for agent_name in args.agents:
+            if agent_name == "claude_code_cli":
+                from spych.agents.claude import LocalClaudeCodeCLIResponder
+
+                entries.append({
+                    "responder": LocalClaudeCodeCLIResponder(
+                        spych_object=spych_object,
+                        continue_conversation=args.continue_conversation,
+                        listen_duration=args.listen_duration,
+                        show_tool_events=args.show_tool_events,
+                    ),
+                    "wake_words": ["claude", "clod", "cloud", "clawed"],
+                    "terminate_words": args.terminate_words,
+                })
+
+            elif agent_name == "claude_code_sdk":
+                from spych.agents.claude import LocalClaudeCodeSDKResponder
+
+                entries.append({
+                    "responder": LocalClaudeCodeSDKResponder(
+                        spych_object=spych_object,
+                        continue_conversation=args.continue_conversation,
+                        listen_duration=args.listen_duration,
+                        setting_sources=args.setting_sources,
+                        show_tool_events=args.show_tool_events,
+                    ),
+                    "wake_words": ["claude", "clod", "cloud", "clawed"],
+                    "terminate_words": args.terminate_words,
+                })
+
+            elif agent_name == "codex_cli":
+                from spych.agents.codex import LocalCodexCLIResponder
+
+                entries.append({
+                    "responder": LocalCodexCLIResponder(
+                        spych_object=spych_object,
+                        continue_conversation=args.continue_conversation,
+                        listen_duration=args.listen_duration,
+                        show_tool_events=args.show_tool_events,
+                    ),
+                    "wake_words": ["codex"],
+                    "terminate_words": args.terminate_words,
+                })
+
+            elif agent_name == "gemini_cli":
+                from spych.agents.gemini import LocalGeminiCLIResponder
+
+                entries.append({
+                    "responder": LocalGeminiCLIResponder(
+                        spych_object=spych_object,
+                        continue_conversation=args.continue_conversation,
+                        listen_duration=args.listen_duration,
+                        show_tool_events=args.show_tool_events,
+                    ),
+                    "wake_words": ["gemini"],
+                    "terminate_words": args.terminate_words,
+                })
+
+            elif agent_name == "opencode_cli":
+                from spych.agents.opencode import LocalOpenCodeCLIResponder
+
+                entries.append({
+                    "responder": LocalOpenCodeCLIResponder(
+                        spych_object=spych_object,
+                        continue_conversation=args.continue_conversation,
+                        listen_duration=args.listen_duration,
+                        show_tool_events=args.show_tool_events,
+                        model=args.opencode_model,
+                    ),
+                    "wake_words": ["opencode", "open code"],
+                    "terminate_words": args.terminate_words,
+                })
+
+            elif agent_name == "ollama":
+                from spych.agents.ollama import OllamaResponder
+
+                entries.append({
+                    "responder": OllamaResponder(
+                        spych_object=spych_object,
+                        model=args.ollama_model,
+                        history_length=args.ollama_history_length,
+                        host=args.ollama_host,
+                        listen_duration=args.listen_duration,
+                    ),
+                    "wake_words": ["llama", "ollama", "lama"],
+                    "terminate_words": args.terminate_words,
+                })
+
+        SpychOrchestrator(entries=entries).start()
 
     else:
         parser.print_help()

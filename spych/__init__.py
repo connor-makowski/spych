@@ -275,3 +275,5 @@ pip install -r requirements.txt
 
 from .core import Spych
 from .wake import SpychWake
+from .orchestrator import SpychOrchestrator
+
