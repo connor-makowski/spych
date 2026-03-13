@@ -12,6 +12,12 @@ Examples:
     spych gemini_cli
     spych opencode_cli --model anthropic/claude-sonnet-4-5
 
+    # Live transcription
+    spych live
+    spych live --output-path my_transcript --output-format srt
+    spych live --stop-key q --terminate-words "stop recording"
+    spych live --no-timestamps --whisper-model small.en
+
     # Multi-agent: run several agents under different wake words at once
     spych multi --agents claude_code_sdk ollama --ollama-model llama3.2:latest
 """
@@ -184,7 +190,126 @@ def main():
     )
 
     # ------------------------------------------------------------------ #
-    # multi — run several agents under one orchestrator                   #
+    # live — continuous transcription to file                             #
+    # ------------------------------------------------------------------ #
+    p_live = subparsers.add_parser(
+        "live",
+        help="Continuously transcribe speech to .txt and/or .srt files",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description=(
+            "Start a live transcription session. Records continuously using VAD\n"
+            "and writes output to disk in real time.\n\n"
+            "Stop by pressing the stop key (default: q + Enter), saying a\n"
+            "terminate word, or pressing Ctrl+C."
+        ),
+    )
+    p_live.add_argument(
+        "--output-path",
+        default="transcript",
+        metavar="PATH",
+        help="Base output file path without extension (default: transcript)",
+    )
+    p_live.add_argument(
+        "--output-format",
+        default="srt",
+        choices=["txt", "srt", "both"],
+        metavar="FORMAT",
+        help="Output format: txt, srt, or both (default: both)",
+    )
+    p_live.add_argument(
+        "--no-timestamps",
+        action="store_true",
+        help="Omit timestamps from terminal and .txt output",
+    )
+    p_live.add_argument(
+        "--stop-key",
+        default="q",
+        metavar="KEY",
+        help="Key to type (then Enter) to stop the session (default: q)",
+    )
+    p_live.add_argument(
+        "--terminate-words",
+        nargs="+",
+        metavar="WORD",
+        help="Spoken words that stop the session (e.g. 'stop recording')",
+    )
+    p_live.add_argument(
+        "--device-index",
+        type=int,
+        default=-1,
+        metavar="N",
+        help="Microphone device index; -1 uses system default (default: -1)",
+    )
+    p_live.add_argument(
+        "--whisper-model",
+        default="base.en",
+        metavar="MODEL",
+        help="faster-whisper model name (default: base.en)",
+    )
+    p_live.add_argument(
+        "--whisper-device",
+        default="cpu",
+        choices=["cpu", "cuda"],
+        metavar="DEVICE",
+        help="Device for whisper inference: cpu or cuda (default: cpu)",
+    )
+    p_live.add_argument(
+        "--whisper-compute-type",
+        default="int8",
+        choices=["int8", "float16", "float32"],
+        metavar="TYPE",
+        help="Compute type for whisper: int8, float16, float32 (default: int8)",
+    )
+    p_live.add_argument(
+        "--no-speech-threshold",
+        type=float,
+        default=0.3,
+        metavar="FLOAT",
+        help="Whisper no_speech_prob cutoff — segments above this are dropped (default: 0.3)",
+    )
+    p_live.add_argument(
+        "--speech-threshold",
+        type=float,
+        default=0.5,
+        metavar="FLOAT",
+        help="VAD speech onset probability (default: 0.5)",
+    )
+    p_live.add_argument(
+        "--silence-threshold",
+        type=float,
+        default=0.35,
+        metavar="FLOAT",
+        help="VAD silence probability during speech (default: 0.35)",
+    )
+    p_live.add_argument(
+        "--silence-frames",
+        type=int,
+        default=20,
+        metavar="N",
+        help="Consecutive silent frames required to end a segment (~32ms each, default: 20)",
+    )
+    p_live.add_argument(
+        "--speech-pad-frames",
+        type=int,
+        default=5,
+        metavar="N",
+        help="Pre-roll frames and onset confirmation count (default: 5)",
+    )
+    p_live.add_argument(
+        "--max-speech-duration",
+        type=float,
+        default=30.0,
+        metavar="SECONDS",
+        help="Hard cap on a single segment in seconds (default: 30.0)",
+    )
+    p_live.add_argument(
+        "--context-words",
+        type=int,
+        default=32,
+        metavar="N",
+        help="Trailing words passed as whisper initial_prompt for context (default: 32)",
+    )
+
     # ------------------------------------------------------------------ #
     p_multi = subparsers.add_parser(
         "multi",
@@ -327,6 +452,28 @@ def main():
         if args.model is not None:
             kwargs["model"] = args.model
         opencode_cli(**kwargs)
+
+    elif args.agent == "live":
+        from spych.live import SpychLive
+
+        SpychLive(
+            output_format=args.output_format,
+            output_path=args.output_path,
+            show_timestamps=not args.no_timestamps,
+            stop_key=args.stop_key,
+            terminate_words=args.terminate_words,
+            device_index=args.device_index,
+            whisper_model=args.whisper_model,
+            whisper_device=args.whisper_device,
+            whisper_compute_type=args.whisper_compute_type,
+            no_speech_threshold=args.no_speech_threshold,
+            speech_threshold=args.speech_threshold,
+            silence_threshold=args.silence_threshold,
+            silence_frames_threshold=args.silence_frames,
+            speech_pad_frames=args.speech_pad_frames,
+            max_speech_duration_s=args.max_speech_duration,
+            context_words=args.context_words,
+        ).start()
 
     # ------------------------------------------------------------------ #
     # Multi-agent dispatch                                                 #

@@ -10,11 +10,21 @@ A lightweight, fully offline Python toolkit for wake word detection, audio trans
 - **Fully offline**: no API keys, no cloud calls, no eavesdropping
 - **Multi-threaded wake word detection**: overlapping listener windows so you rarely miss a trigger
 - **Multiple wake words**: map different words to different actions in one listener
+- **Live transcription**: continuous VAD-gated transcription to `.txt` and/or `.srt` files
 - **Built-in agents**: for [Ollama](https://ollama.com), [Claude Code](https://docs.anthropic.com/en/docs/claude-code), [Codex](https://github.com/openai/codex), [Gemini CLI](https://github.com/google-gemini/gemini-cli), and [OpenCode](https://opencode.ai)
 - **Multi-agent orchestration**: run several agents simultaneously under a single listener, each with its own wake words
 - **Extensible**: subclass `BaseResponder` to build your own agents with custom wake words and logic
 
 **API Docs**: https://connor-makowski.github.io/spych/spych.html
+
+
+Quick hints:
+
+- Mac Notes:
+    - Make sure that your microphone is not set to remove background noise.
+        - This can cause the recorder to show permission issues.
+- General Notes: 
+    - If you are experience performance issues, try setting listen_time to some number instead of using auto. In general 5 seems to be a good balance.
 
 ---
 
@@ -46,6 +56,15 @@ spych claude_code_sdk --setting-sources user project local
 spych codex_cli --listen-duration 8
 spych opencode_cli --model anthropic/claude-sonnet-4-5
 spych gemini_cli --wake-words gemini "hey gemini"
+```
+
+Live transcription is also available via the CLI:
+
+```bash
+spych live
+spych live --output-path meeting --output-format srt
+spych live --terminate-words "stop recording"
+spych live --no-timestamps --whisper-model small.en
 ```
 
 Multi-agent mode is also available via the CLI. See the "Multi-agent" section below for more details.
@@ -146,7 +165,7 @@ All agents accept a `terminate_words` list (default: `["terminate"]`). Say the w
 | `wake_words` | `["claude", "clod", "cloud", "clawed"]` | `["claude", "clod", "cloud", "clawed"]` | `["codex"]` | `["gemini"]` | `["opencode", "open code"]` | Words that trigger the agent |
 | `terminate_words` | `["terminate"]` | `["terminate"]` | `["terminate"]` | `["terminate"]` | `["terminate"]` | Words that stop the listener |
 | `model` | - | - | - | - | `None` | Model in `provider/model` format |
-| `listen_duration` | `5` | `5` | `5` | `5` | `5` | Seconds to listen after wake word |
+| `listen_duration` | `0` | `0` | `0` | `0` | `0` | Seconds to listen after wake word (0 = VAD auto) |
 | `continue_conversation` | `True` | `True` | `True` | `True` | `True` | Resume the most recent session |
 | `setting_sources` | - | `["user", "project", "local"]` | - | - | - | Claude Code local settings to load |
 | `show_tool_events` | `True` | `True` | `True` | `True` | `True` | Print live tool start/end events |
@@ -160,11 +179,63 @@ All agents accept a `terminate_words` list (default: `["terminate"]`). Say the w
 | `wake_words` | `["llama", "ollama", "lama"]` | Words that trigger the agent |
 | `terminate_words` | `["terminate"]` | Words that stop the listener |
 | `model` | `"llama3.2:latest"` | Ollama model name |
-| `listen_duration` | `5` | Seconds to listen after wake word |
+| `listen_duration` | `0` | Seconds to listen after wake word (0 = VAD auto) |
 | `history_length` | `10` | Past interactions to include in context |
 | `host` | `"http://localhost:11434"` | Ollama instance URL |
 | `spych_kwargs` | `None` | Extra kwargs passed to `Spych` |
 | `spych_wake_kwargs` | `None` | Extra kwargs passed to `SpychWake` |
+
+---
+
+# Live Transcription
+
+`SpychLive` continuously records from the microphone using VAD and writes the transcript to disk in real time. No wake word required — it transcribes everything until stopped.
+
+## Python
+
+```python
+from spych.live import SpychLive
+
+live = SpychLive(
+    output_format="srt",         # "txt", "srt", or "both"
+    output_path="my_transcript", # written to my_transcript.srt
+    show_timestamps=True,
+    stop_key="q",                # type q + Enter to stop
+    terminate_words=["stop recording"],
+)
+live.start()
+```
+
+## CLI
+
+```bash
+spych live                                           # writes transcript.srt
+spych live --output-path meeting --output-format both
+spych live --terminate-words "stop recording"
+spych live --no-timestamps --whisper-model small.en
+```
+
+### `SpychLive` Parameters
+
+| Parameter | Default | Description |
+|---|---|---|
+| `output_format` | `"srt"` | Output format(s): `"txt"`, `"srt"`, or `"both"` |
+| `output_path` | `"transcript"` | Base path without extension; extensions are appended automatically |
+| `show_timestamps` | `True` | Prepend `[HH:MM:SS]` timestamps to terminal and `.txt` output |
+| `stop_key` | `"q"` | Key (then Enter) to stop the session |
+| `terminate_words` | `None` | Spoken words that stop the session (detected after transcription, ~1–3s latency) |
+| `on_terminate` | `None` | No-argument callback executed when a terminate word fires |
+| `device_index` | `-1` | Microphone device index; `-1` uses system default |
+| `whisper_model` | `"base.en"` | faster-whisper model name |
+| `whisper_device` | `"cpu"` | Device for inference: `"cpu"` or `"cuda"` |
+| `whisper_compute_type` | `"int8"` | Compute precision: `"int8"`, `"float16"`, or `"float32"` |
+| `no_speech_threshold` | `0.3` | Whisper segments with `no_speech_prob` above this are discarded |
+| `speech_threshold` | `0.5` | Silero VAD probability above which a frame is considered speech onset |
+| `silence_threshold` | `0.35` | Silero VAD probability below which a frame is considered silence during speech |
+| `silence_frames_threshold` | `20` | Consecutive silent frames (~32ms each) required to close a segment (~640ms) |
+| `speech_pad_frames` | `5` | Pre-roll frame count and onset confirmation threshold (~160ms) |
+| `max_speech_duration_s` | `30.0` | Hard cap on a single segment in seconds |
+| `context_words` | `32` | Trailing transcript words passed as `initial_prompt` for contextual accuracy |
 
 ---
 
@@ -191,7 +262,7 @@ spych multi --agents claude_code_sdk codex_cli --listen-duration 8
 |---|---|---|
 | `--agents` | *(required)* | One or more agent names to run: `claude_code_cli`, `claude_code_sdk`, `codex_cli`, `gemini_cli`, `opencode_cli`, `ollama` |
 | `--terminate-words` | `["terminate"]` | Words that stop all agents |
-| `--listen-duration` | `5` | Seconds to listen after a wake word |
+| `--listen-duration` | `0` | Seconds to listen after a wake word (0 = VAD auto) |
 | `--continue-conversation` | `true` | Resume the most recent session for each coding agent |
 | `--show-tool-events` | `true` | Print live tool start/end events |
 | `--ollama-model` | `llama3.2:latest` | Ollama model. Only used when `ollama` is in `--agents` |

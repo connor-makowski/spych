@@ -11,7 +11,7 @@ class OllamaResponder(BaseResponder):
         model: str,
         history_length: int = 10,
         host: str = "http://localhost:11434",
-        listen_duration: int | float = 5,
+        listen_duration: int | float | str = 0,
         name: str | None = "Ollama",
     ) -> None:
         """
@@ -48,9 +48,13 @@ class OllamaResponder(BaseResponder):
             - Default: "http://localhost:11434"
 
         - `listen_duration`:
-            - Type: int | float
-            - What: The number of seconds to listen for after the wake word is detected
-            - Default: 5
+            - Type: int | float | str
+            - What: How long to listen for after the wake word is detected
+            - Default: 0 (Auto detect)
+            - Options:
+                - int | float : Record for exactly this many seconds
+                - "auto" or 0 : Use Silero VAD to detect a complete utterance and
+                                stop automatically when the speaker finishes
 
         - `name`:
             - Type: str
@@ -110,7 +114,7 @@ def ollama(
     model: str,
     wake_words: list[str] = ["llama", "ollama", "lama"],
     terminate_words: list[str] = ["terminate"],
-    listen_duration: int | float = 5,
+    listen_duration: int | float | str = 0,
     history_length: int = 10,
     host: str = "http://localhost:11434",
     spych_kwargs: dict[str, any] | None = None,
@@ -149,7 +153,7 @@ def ollama(
     - `listen_duration`:
         - Type: int | float
         - What: The number of seconds to listen for after the wake word is detected
-        - Default: 5
+        - Default: 0 (Auto detect)
 
     - `history_length`:
         - Type: int

@@ -8,7 +8,7 @@ class BaseResponder(Notify):
     def __init__(
         self,
         spych_object: "Spych",
-        listen_duration: int | float = 5,
+        listen_duration: int | float = 0,
         name: Optional[str] = None,
         spinner: Optional[CliSpinner] = None,
     ) -> None:
@@ -42,7 +42,7 @@ class BaseResponder(Notify):
         - `listen_duration`:
             - Type: int | float
             - What: The number of seconds to listen for after the wake word is detected
-            - Default: 5
+            - Default: 0 (listen indefinitely until silence is detected)
 
         - `name`:
             - Type: str
@@ -64,7 +64,7 @@ class BaseResponder(Notify):
           cycle; use `text_input` for the typed equivalent.
         """
         self.spych_object = spych_object
-        self.listen_duration = max(listen_duration, 3)
+        self.listen_duration = listen_duration
         self.name = name if name else self.__class__.__name__
         # Accept an injected shared spinner or create a private one.
         self.spinner: CliSpinner = spinner if spinner is not None else CliSpinner()
@@ -269,9 +269,10 @@ class BaseResponder(Notify):
         - This method is called automatically at the start of each listen cycle.
         - It updates the spinner label to show the responder name and listening duration.
         """
+        listen_string = f" for {self.listen_duration}s" if self.listen_duration > 0 else ""
         self.spinner.update(
             f"{CliColor.BOLD}{CliColor.MAGENTA}{self.name}{CliColor.RESET} "
-            f"{CliColor.GREEN}is listening for {self.listen_duration}s{CliColor.RESET}"
+            f"{CliColor.GREEN}is listening{listen_string}{CliColor.RESET}"
         )
 
     def on_user_input(self, user_input: str) -> None:

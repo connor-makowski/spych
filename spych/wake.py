@@ -1,6 +1,6 @@
 import threading, time
 from faster_whisper import WhisperModel
-from spych.utils import Notify, record, get_clean_audio_buffer
+from spych.utils import Notify, Recorder, get_clean_audio_buffer
 
 
 class SpychWakeListener(Notify):
@@ -21,6 +21,7 @@ class SpychWakeListener(Notify):
         self.spych_wake_object = spych_wake_object
         self.locked = False
         self.kill = False
+        self.recorder = Recorder()
 
     def stop(self):
         """
@@ -76,7 +77,7 @@ class SpychWakeListener(Notify):
         if self.should_stop():
             return
         self.locked = True
-        buffer = record(
+        buffer = self.recorder.record(
             device_index=self.spych_wake_object.device_index,
             duration=self.spych_wake_object.wake_listener_time,
         )
