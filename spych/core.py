@@ -100,7 +100,7 @@ class Spych(Notify):
 
     def listen(
         self,
-        duration: Union[int, float, str] = 5,
+        duration: Union[int, float, str] = 0,
         device_index: int = -1,
     ) -> str:
         """
@@ -115,7 +115,7 @@ class Spych(Notify):
         - `duration`:
             - Type: int | float | str
             - What: Controls how long to record
-            - Default: 5
+            - Default: 0
             - Options:
                 - int | float : Record for exactly this many seconds
                 - "auto" or 0 : Use Silero VAD to detect a complete utterance and

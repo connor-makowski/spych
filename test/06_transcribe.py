@@ -1,8 +1,8 @@
 from spych.live import SpychLive
 
 live = SpychLive(
-    output_format="both",        # "txt", "srt", or "both"
-    output_path="my_transcript",
+    output_format="srt",        # "txt", "srt", or "both"
+    output_path="06_test",
     show_timestamps=True,
     stop_key="q",
     terminate_words=["stop recording"],
