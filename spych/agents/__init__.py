@@ -14,6 +14,7 @@ Agents are organized by the underlying AI service they interface with:
 
 Each file may have multiple agent variants for different usage patterns.
 """
+
 from spych.agents.claude import (
     claude_code_cli,
     LocalClaudeCodeCLIResponder,

@@ -1,5 +1,5 @@
 from faster_whisper import WhisperModel
-from spych.utils import Notify, record, get_clean_audio_buffer
+from spych.utils import Notify, Recorder, get_clean_audio_buffer
 from typing import Union
 
 
@@ -10,6 +10,11 @@ class Spych(Notify):
         whisper_device: str = "cpu",
         whisper_compute_type: str = "int8",
         no_speech_threshold: float = 0.3,
+        vad_speech_threshold: float = 0.5,
+        vad_silence_threshold: float = 0.35,
+        vad_silence_frames_threshold: int = 20,
+        vad_speech_pad_frames: int = 5,
+        vad_max_speech_duration_s: float = 30.0,
     ) -> None:
         """
         Usage:
@@ -44,7 +49,40 @@ class Spych(Notify):
             - Type: float
             - What: The threshold for the `no_speech_prob` returned by faster-whisper
             - Default: 0.3
-            - Note: Segments with a `no_speech_prob` above this threshold will be ignored to reduce false positives from silence or background noise
+            - Note: Segments with a `no_speech_prob` above this threshold will be
+              ignored to reduce false positives from silence or background noise
+
+        - `vad_speech_threshold`:
+            - Type: float (0.0–1.0)
+            - What: Silero probability above which a frame is considered speech onset
+              when `listen` is called with `duration="auto"` or `duration=0`
+            - Default: 0.5
+            - Note: Raise to reduce false positives in noisy environments
+
+        - `vad_silence_threshold`:
+            - Type: float (0.0–1.0)
+            - What: Silero probability below which a frame is considered silence
+              during an active utterance; must be less than `vad_speech_threshold`
+              to create a hysteresis band that prevents rapid toggling
+            - Default: 0.35
+
+        - `vad_silence_frames_threshold`:
+            - Type: int
+            - What: Consecutive silent frames (~32ms each) required to confirm the
+              utterance has ended and return the buffer
+            - Default: 20  (~640ms)
+
+        - `vad_speech_pad_frames`:
+            - Type: int
+            - What: Pre-roll frames captured before onset confirmation; also the
+              number of consecutive voiced frames required to confirm speech onset
+            - Default: 5  (~160ms)
+
+        - `vad_max_speech_duration_s`:
+            - Type: float
+            - What: Hard cap on a single VAD-captured utterance in seconds; forces
+              a return even if the speaker never pauses
+            - Default: 30.0
         """
         self.wake_model = WhisperModel(
             whisper_model,
@@ -52,22 +90,37 @@ class Spych(Notify):
             compute_type=whisper_compute_type,
         )
         self.no_speech_threshold = no_speech_threshold
+        self.vad_speech_threshold = vad_speech_threshold
+        self.vad_silence_threshold = vad_silence_threshold
+        self.vad_silence_frames_threshold = vad_silence_frames_threshold
+        self.vad_speech_pad_frames = vad_speech_pad_frames
+        self.vad_max_speech_duration_s = vad_max_speech_duration_s
+        self.recorder = Recorder()
 
     def listen(
-        self, duration: Union[int, float] = 5, device_index: int = -1
+        self,
+        duration: Union[int, float, str] = 0,
+        device_index: int = -1,
     ) -> str:
         """
         Usage:
 
-        - Records audio from the microphone for a specified duration and returns
-          the transcription as a string
+        - Records audio from the microphone and returns the transcription as a string.
+          Supports both fixed-duration recording and VAD-gated recording that
+          automatically stops at the end of a natural utterance.
 
         Optional:
 
         - `duration`:
-            - Type: int | float
-            - What: The number of seconds to record
-            - Default: 5
+            - Type: int | float | str
+            - What: Controls how long to record
+            - Default: 0
+            - Options:
+                - int | float : Record for exactly this many seconds
+                - "auto" or 0 : Use Silero VAD to detect a complete utterance and
+                                stop automatically when the speaker finishes;
+                                honours the `vad_*` parameters set at init time
+            - Note: "auto" and 0 are equivalent; either signals VAD-gated recording
 
         - `device_index`:
             - Type: int
@@ -82,7 +135,20 @@ class Spych(Notify):
             - What: The transcribed text from the recorded audio
             - Note: Multiple segments are joined with a single space
         """
-        buffer = record(device_index=device_index, duration=duration)
+        if duration == "auto" or duration == 0:
+            buffer = self.recorder.record_vad(
+                device_index=device_index,
+                speech_threshold=self.vad_speech_threshold,
+                silence_threshold=self.vad_silence_threshold,
+                silence_frames_threshold=self.vad_silence_frames_threshold,
+                speech_pad_frames=self.vad_speech_pad_frames,
+                max_speech_duration_s=self.vad_max_speech_duration_s,
+            )
+        else:
+            buffer = self.recorder.record(
+                device_index=device_index, duration=duration
+            )
+
         audio_buffer = get_clean_audio_buffer(buffer)
         segments, _ = self.wake_model.transcribe(audio_buffer, beam_size=2)
         return " ".join(

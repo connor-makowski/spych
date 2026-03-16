@@ -10,7 +10,7 @@ class LocalOpenCodeCLIResponder(BaseResponder):
         self,
         spych_object: "Spych",
         continue_conversation: bool = True,
-        listen_duration: int | float = 5,
+        listen_duration: int | float | str = 0,
         name: Optional[str] = "OpenCode",
         show_tool_events: bool = True,
         model: Optional[str] = None,
@@ -37,9 +37,13 @@ class LocalOpenCodeCLIResponder(BaseResponder):
             - Default: True
 
         - `listen_duration`:
-            - Type: int | float
-            - What: The number of seconds to listen for after the wake word is detected
-            - Default: 5
+            - Type: int | float | str
+            - What: How long to listen for after the wake word is detected
+            - Default: 0 (Auto detect)
+            - Options:
+                - int | float : Record for exactly this many seconds
+                - "auto" or 0 : Use Silero VAD to detect a complete utterance and
+                                stop automatically when the speaker finishes
 
         - `name`:
             - Type: str
@@ -223,7 +227,7 @@ class LocalOpenCodeCLIResponder(BaseResponder):
 def opencode_cli(
     wake_words: list[str] = ["opencode", "open code"],
     terminate_words: list[str] = ["terminate"],
-    listen_duration: int | float = 5,
+    listen_duration: int | float | str = 0,
     continue_conversation: bool = True,
     show_tool_events: bool = True,
     model: Optional[str] = None,
@@ -252,7 +256,7 @@ def opencode_cli(
     - `listen_duration`:
         - Type: int | float
         - What: The number of seconds to listen for after the wake word is detected
-        - Default: 5
+        - Default: 0 (Auto detect)
 
     - `continue_conversation`:
         - Type: bool

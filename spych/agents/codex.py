@@ -10,7 +10,7 @@ class LocalCodexCLIResponder(BaseResponder):
         self,
         spych_object: "Spych",
         continue_conversation: bool = True,
-        listen_duration: int | float = 5,
+        listen_duration: int | float | str = 0,
         name: Optional[str] = "Codex",
         show_tool_events: bool = True,
     ) -> None:
@@ -33,8 +33,12 @@ class LocalCodexCLIResponder(BaseResponder):
             - Default: True
 
         - `listen_duration`:
-            - Type: int | float
-            - Default: 5
+            - Type: int | float | str
+            - Default: 0
+            - Options:
+                - int | float : Record for exactly this many seconds
+                - "auto" or 0 : Use Silero VAD to detect a complete utterance and
+                                stop automatically when the speaker finishes
 
         - `name`:
             - Type: str
@@ -207,7 +211,7 @@ class LocalCodexCLIResponder(BaseResponder):
 def codex_cli(
     wake_words: list[str] = ["codex"],
     terminate_words: list[str] = ["terminate"],
-    listen_duration: int | float = 5,
+    listen_duration: int | float | str = 0,
     continue_conversation: bool = True,
     show_tool_events: bool = True,
     spych_kwargs: Optional[dict[str, Any]] = None,
@@ -235,7 +239,7 @@ def codex_cli(
     - `listen_duration`:
         - Type: int | float
         - What: The number of seconds to listen for after the wake word is detected
-        - Default: 5
+        - Default: 0 (Auto detect)
 
     - `continue_conversation`:
         - Type: bool

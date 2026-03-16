@@ -14,7 +14,7 @@ class LocalClaudeCodeSDKResponder(BaseResponder):
         self,
         spych_object: "Spych",
         continue_conversation: bool = True,
-        listen_duration: int | float = 5,
+        listen_duration: int | float | str = 0,
         name: str | None = "Claude Code",
         setting_sources: list[str] = ["user", "project", "local"],
         show_tool_events: bool = True,
@@ -39,8 +39,12 @@ class LocalClaudeCodeSDKResponder(BaseResponder):
             - Default: True
 
         - `listen_duration`:
-            - Type: int | float
-            - Default: 5
+            - Type: int | float | str
+            - Default: 0
+            - Options:
+                - int | float : Record for exactly this many seconds
+                - "auto" or 0 : Use Silero VAD to detect a complete utterance and
+                                stop automatically when the speaker finishes
 
         - `name`:
             - Type: str
@@ -155,7 +159,7 @@ class LocalClaudeCodeSDKResponder(BaseResponder):
 def claude_code_sdk(
     wake_words: list[str] = ["claude", "clod", "cloud", "clawed"],
     terminate_words: list[str] = ["terminate"],
-    listen_duration: int | float = 5,
+    listen_duration: int | float | str = 0,
     continue_conversation: bool = True,
     setting_sources: list[str] = ["user", "project", "local"],
     show_tool_events: bool = True,
@@ -184,7 +188,7 @@ def claude_code_sdk(
     - `listen_duration`:
         - Type: int | float
         - What: The number of seconds to listen for after the wake word is detected
-        - Default: 5
+        - Default: 0 (Auto Detect)
 
     - `continue_conversation`:
         - Type: bool
@@ -242,7 +246,7 @@ class LocalClaudeCodeCLIResponder(BaseResponder):
         self,
         spych_object: "Spych",
         continue_conversation: bool = True,
-        listen_duration: int | float = 5,
+        listen_duration: int | float | str = 0,
         name: Optional[str] = "Claude",
         show_tool_events: bool = True,
     ) -> None:
@@ -265,8 +269,12 @@ class LocalClaudeCodeCLIResponder(BaseResponder):
             - Default: True
 
         - `listen_duration`:
-            - Type: int | float
-            - Default: 5
+            - Type: int | float | str
+            - Default: 0
+            - Options:
+                - int | float : Record for exactly this many seconds
+                - "auto" or 0 : Use Silero VAD to detect a complete utterance and
+                                stop automatically when the speaker finishes
 
         - `name`:
             - Type: str
@@ -468,7 +476,7 @@ class LocalClaudeCodeCLIResponder(BaseResponder):
 def claude_code_cli(
     wake_words: list[str] = ["claude", "clod", "cloud", "clawed"],
     terminate_words: list[str] = ["terminate"],
-    listen_duration: int | float = 5,
+    listen_duration: int | float | str = 0,
     continue_conversation: bool = True,
     show_tool_events: bool = True,
     spych_kwargs: Optional[dict[str, Any]] = None,
@@ -491,7 +499,7 @@ def claude_code_cli(
 
     - `listen_duration`:
         - Type: int | float
-        - Default: 5
+        - Default: 0 (Auto)
 
     - `continue_conversation`:
         - Type: bool

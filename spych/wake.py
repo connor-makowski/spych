@@ -1,6 +1,6 @@
 import threading, time
 from faster_whisper import WhisperModel
-from spych.utils import Notify, record, get_clean_audio_buffer
+from spych.utils import Notify, Recorder, get_clean_audio_buffer
 
 
 class SpychWakeListener(Notify):
@@ -76,7 +76,7 @@ class SpychWakeListener(Notify):
         if self.should_stop():
             return
         self.locked = True
-        buffer = record(
+        buffer = self.spych_wake_object.recorder.record(
             device_index=self.spych_wake_object.device_index,
             duration=self.spych_wake_object.wake_listener_time,
         )
@@ -213,6 +213,7 @@ class SpychWake(Notify):
             - Default: None (disabled)
             - Note: If provided, this callback will be executed before the system is stopped when a terminate word is detected
         """
+        self.recorder = Recorder()
         self.wake_word_map = {k.lower(): v for k, v in wake_word_map.items()}
         # Handle Terminating Words
         self.terminate_words = (

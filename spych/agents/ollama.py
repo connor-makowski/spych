@@ -1,6 +1,7 @@
 from spych.core import Spych
 from spych.orchestrator import SpychOrchestrator
 from spych.responders import BaseResponder
+from spych.cli_tools import CliPrinter, theme
 import requests
 
 
@@ -11,7 +12,7 @@ class OllamaResponder(BaseResponder):
         model: str,
         history_length: int = 10,
         host: str = "http://localhost:11434",
-        listen_duration: int | float = 5,
+        listen_duration: int | float | str = 0,
         name: str | None = "Ollama",
     ) -> None:
         """
@@ -48,9 +49,13 @@ class OllamaResponder(BaseResponder):
             - Default: "http://localhost:11434"
 
         - `listen_duration`:
-            - Type: int | float
-            - What: The number of seconds to listen for after the wake word is detected
-            - Default: 5
+            - Type: int | float | str
+            - What: How long to listen for after the wake word is detected
+            - Default: 0 (Auto detect)
+            - Options:
+                - int | float : Record for exactly this many seconds
+                - "auto" or 0 : Use Silero VAD to detect a complete utterance and
+                                stop automatically when the speaker finishes
 
         - `name`:
             - Type: str
@@ -66,6 +71,46 @@ class OllamaResponder(BaseResponder):
         self.history_length = history_length
         self.host = host
         self.history = []
+
+    def healthcheck(self) -> bool:
+        """
+        Usage:
+
+        - Checks if the Ollama instance is reachable and responding to requests.
+
+        Returns:
+
+        - `is_healthy`:
+            - Type: bool
+            - What: True if the Ollama instance responded successfully, False otherwise
+        """
+        try:
+            # List Ollama models that have been pulled to check if the host is responsive
+            response = requests.get(f"{self.host}/api/tags", timeout=3)
+            models = response.json().get("models", [])
+            model_names = [model.get("name", "") for model in models]
+            if self.model not in model_names:
+                CliPrinter.info(
+                    f"Ollama is reachable at {self.host}, but the specified model '{self.model}' was not found.",
+                    color=theme.error,
+                )
+                CliPrinter.info(
+                    f"Available models: {', '.join(model_names)}",
+                    color=theme.error,
+                )
+                CliPrinter.info(
+                    f"Run `ollama pull {self.model}` in your terminal to download the model and try again.",
+                    color=theme.error,
+                )
+                return False
+            return True
+        except requests.RequestException:
+            # CliPrinter.info(f"{entry["responder"].name} healthcheck failed.", color=theme.error)
+            CliPrinter.info(
+                f"Failed to connect to Ollama at {self.host}. Check if Ollama is running and the host URL is correct.",
+                color=theme.error,
+            )
+            return False
 
     def respond(self, user_input: str) -> str:
         """
@@ -110,7 +155,7 @@ def ollama(
     model: str,
     wake_words: list[str] = ["llama", "ollama", "lama"],
     terminate_words: list[str] = ["terminate"],
-    listen_duration: int | float = 5,
+    listen_duration: int | float | str = 0,
     history_length: int = 10,
     host: str = "http://localhost:11434",
     spych_kwargs: dict[str, any] | None = None,
@@ -149,7 +194,7 @@ def ollama(
     - `listen_duration`:
         - Type: int | float
         - What: The number of seconds to listen for after the wake word is detected
-        - Default: 5
+        - Default: 0 (Auto detect)
 
     - `history_length`:
         - Type: int
