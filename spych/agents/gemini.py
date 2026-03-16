@@ -2,9 +2,7 @@ from spych.core import Spych
 from spych.orchestrator import SpychOrchestrator
 from spych.responders import BaseResponder
 from typing import Optional, Any
-import subprocess
-import json
-import time
+import subprocess, json, time
 
 
 class LocalGeminiCLIResponder(BaseResponder):

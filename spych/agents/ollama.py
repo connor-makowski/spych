@@ -1,6 +1,7 @@
 from spych.core import Spych
 from spych.orchestrator import SpychOrchestrator
 from spych.responders import BaseResponder
+from spych.cli_tools import CliPrinter, theme
 import requests
 
 
@@ -70,6 +71,34 @@ class OllamaResponder(BaseResponder):
         self.history_length = history_length
         self.host = host
         self.history = []
+
+    def healthcheck(self) -> bool:
+        """
+        Usage:
+
+        - Checks if the Ollama instance is reachable and responding to requests.
+
+        Returns:
+
+        - `is_healthy`:
+            - Type: bool
+            - What: True if the Ollama instance responded successfully, False otherwise
+        """
+        try:
+            #List Ollama models that have been pulled to check if the host is responsive
+            response = requests.get(f"{self.host}/api/tags", timeout=3)
+            models = response.json().get("models", [])
+            model_names = [model.get("name", "") for model in models]
+            if self.model not in model_names:
+                CliPrinter.info(f"Ollama is reachable at {self.host}, but the specified model '{self.model}' was not found.", color=theme.error)
+                CliPrinter.info(f"Available models: {', '.join(model_names)}", color=theme.error)
+                CliPrinter.info(f"Run `ollama pull {self.model}` in your terminal to download the model and try again.", color=theme.error)
+                return False
+            return True
+        except requests.RequestException:
+            # CliPrinter.info(f"{entry["responder"].name} healthcheck failed.", color=theme.error)
+            CliPrinter.info(f"Failed to connect to Ollama at {self.host}. Check if Ollama is running and the host URL is correct.", color=theme.error)
+            return False
 
     def respond(self, user_input: str) -> str:
         """

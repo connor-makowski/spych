@@ -189,6 +189,18 @@ class BaseResponder(Notify):
     #  Extension hooks — override in subclasses for custom behaviour      #
     # ------------------------------------------------------------------ #
 
+    def healthcheck(self) -> bool:
+        """
+        Usage:
+
+        - Optional method that can be overridden to perform a health check of the responder's
+          dependencies (e.g., API connectivity, model availability). If implemented, this method
+          should return True if the responder is healthy and ready to respond, or False if there
+          is an issue that would prevent it from functioning properly. 
+
+        """
+        return True
+
     def respond(self, user_input: str) -> str:
         """
         Usage:

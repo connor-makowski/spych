@@ -401,7 +401,7 @@ class CliSpinner:
             sys.stdout.write(line)
             sys.stdout.flush()
 
-            time.sleep(0.08)
+            time.sleep(0.12)
             frame_idx += 1
             if frame_idx % 5 == 0:
                 dot_count += 1

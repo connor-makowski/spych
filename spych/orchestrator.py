@@ -232,6 +232,9 @@ class SpychOrchestrator:
           or ctrl+c is pressed.
         """
         for entry in self.entries:
+            if not entry["responder"].healthcheck():
+                CliPrinter.info(f"{entry["responder"].name} healthcheck failed.", color=theme.error)
+                return
             entry["responder"].ready_message(
                 show_wait_for_wake=False,
                 wake_words=entry["wake_words"],
