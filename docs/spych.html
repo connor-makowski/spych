@@ -829,7 +829,6 @@ spych<span class="w"> </span>multi<span class="w"> </span>--agents<span class="w
         <span class="p">{</span>
             <span class="s2">&quot;responder&quot;</span><span class="p">:</span> <span class="n">Spanish</span><span class="p">(</span>
                 <span class="n">spych_object</span><span class="o">=</span><span class="n">Spych</span><span class="p">(</span><span class="n">whisper_model</span><span class="o">=</span><span class="s2">&quot;base.en&quot;</span><span class="p">),</span>
-                <span class="n">listen_duration</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
                 <span class="n">name</span><span class="o">=</span><span class="s2">&quot;SpanishTranslator&quot;</span><span class="p">,</span>
                 <span class="n">model</span><span class="o">=</span><span class="s2">&quot;llama3.2:latest&quot;</span><span class="p">,</span>
             <span class="p">),</span>
@@ -839,7 +838,6 @@ spych<span class="w"> </span>multi<span class="w"> </span>--agents<span class="w
         <span class="p">{</span>
             <span class="s2">&quot;responder&quot;</span><span class="p">:</span> <span class="n">German</span><span class="p">(</span>
                 <span class="n">spych_object</span><span class="o">=</span><span class="n">Spych</span><span class="p">(</span><span class="n">whisper_model</span><span class="o">=</span><span class="s2">&quot;base.en&quot;</span><span class="p">),</span>
-                <span class="n">listen_duration</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
                 <span class="n">name</span><span class="o">=</span><span class="s2">&quot;GermanTranslator&quot;</span><span class="p">,</span>
                 <span class="n">model</span><span class="o">=</span><span class="s2">&quot;llama3.2:latest&quot;</span><span class="p">,</span>
             <span class="p">),</span>
@@ -1324,111 +1322,109 @@ pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </s
 </span><span id="L-377"><a href="#L-377"><span class="linenos">377</span></a><span class="sd">        {</span>
 </span><span id="L-378"><a href="#L-378"><span class="linenos">378</span></a><span class="sd">            &quot;responder&quot;: Spanish(</span>
 </span><span id="L-379"><a href="#L-379"><span class="linenos">379</span></a><span class="sd">                spych_object=Spych(whisper_model=&quot;base.en&quot;),</span>
-</span><span id="L-380"><a href="#L-380"><span class="linenos">380</span></a><span class="sd">                listen_duration=5,</span>
-</span><span id="L-381"><a href="#L-381"><span class="linenos">381</span></a><span class="sd">                name=&quot;SpanishTranslator&quot;,</span>
-</span><span id="L-382"><a href="#L-382"><span class="linenos">382</span></a><span class="sd">                model=&quot;llama3.2:latest&quot;,</span>
-</span><span id="L-383"><a href="#L-383"><span class="linenos">383</span></a><span class="sd">            ),</span>
-</span><span id="L-384"><a href="#L-384"><span class="linenos">384</span></a><span class="sd">            &quot;wake_words&quot;: [&quot;spanish&quot;],</span>
-</span><span id="L-385"><a href="#L-385"><span class="linenos">385</span></a><span class="sd">            &quot;terminate_words&quot;: [&quot;terminate&quot;],</span>
-</span><span id="L-386"><a href="#L-386"><span class="linenos">386</span></a><span class="sd">        },</span>
-</span><span id="L-387"><a href="#L-387"><span class="linenos">387</span></a><span class="sd">        {</span>
-</span><span id="L-388"><a href="#L-388"><span class="linenos">388</span></a><span class="sd">            &quot;responder&quot;: German(</span>
-</span><span id="L-389"><a href="#L-389"><span class="linenos">389</span></a><span class="sd">                spych_object=Spych(whisper_model=&quot;base.en&quot;),</span>
-</span><span id="L-390"><a href="#L-390"><span class="linenos">390</span></a><span class="sd">                listen_duration=5,</span>
-</span><span id="L-391"><a href="#L-391"><span class="linenos">391</span></a><span class="sd">                name=&quot;GermanTranslator&quot;,</span>
-</span><span id="L-392"><a href="#L-392"><span class="linenos">392</span></a><span class="sd">                model=&quot;llama3.2:latest&quot;,</span>
-</span><span id="L-393"><a href="#L-393"><span class="linenos">393</span></a><span class="sd">            ),</span>
-</span><span id="L-394"><a href="#L-394"><span class="linenos">394</span></a><span class="sd">            &quot;wake_words&quot;: [&quot;german&quot;],</span>
-</span><span id="L-395"><a href="#L-395"><span class="linenos">395</span></a><span class="sd">            &quot;terminate_words&quot;: [&quot;terminate&quot;],</span>
-</span><span id="L-396"><a href="#L-396"><span class="linenos">396</span></a><span class="sd">        }</span>
-</span><span id="L-397"><a href="#L-397"><span class="linenos">397</span></a><span class="sd">    ]</span>
-</span><span id="L-398"><a href="#L-398"><span class="linenos">398</span></a><span class="sd">).start()</span>
-</span><span id="L-399"><a href="#L-399"><span class="linenos">399</span></a><span class="sd">```</span>
+</span><span id="L-380"><a href="#L-380"><span class="linenos">380</span></a><span class="sd">                name=&quot;SpanishTranslator&quot;,</span>
+</span><span id="L-381"><a href="#L-381"><span class="linenos">381</span></a><span class="sd">                model=&quot;llama3.2:latest&quot;,</span>
+</span><span id="L-382"><a href="#L-382"><span class="linenos">382</span></a><span class="sd">            ),</span>
+</span><span id="L-383"><a href="#L-383"><span class="linenos">383</span></a><span class="sd">            &quot;wake_words&quot;: [&quot;spanish&quot;],</span>
+</span><span id="L-384"><a href="#L-384"><span class="linenos">384</span></a><span class="sd">            &quot;terminate_words&quot;: [&quot;terminate&quot;],</span>
+</span><span id="L-385"><a href="#L-385"><span class="linenos">385</span></a><span class="sd">        },</span>
+</span><span id="L-386"><a href="#L-386"><span class="linenos">386</span></a><span class="sd">        {</span>
+</span><span id="L-387"><a href="#L-387"><span class="linenos">387</span></a><span class="sd">            &quot;responder&quot;: German(</span>
+</span><span id="L-388"><a href="#L-388"><span class="linenos">388</span></a><span class="sd">                spych_object=Spych(whisper_model=&quot;base.en&quot;),</span>
+</span><span id="L-389"><a href="#L-389"><span class="linenos">389</span></a><span class="sd">                name=&quot;GermanTranslator&quot;,</span>
+</span><span id="L-390"><a href="#L-390"><span class="linenos">390</span></a><span class="sd">                model=&quot;llama3.2:latest&quot;,</span>
+</span><span id="L-391"><a href="#L-391"><span class="linenos">391</span></a><span class="sd">            ),</span>
+</span><span id="L-392"><a href="#L-392"><span class="linenos">392</span></a><span class="sd">            &quot;wake_words&quot;: [&quot;german&quot;],</span>
+</span><span id="L-393"><a href="#L-393"><span class="linenos">393</span></a><span class="sd">            &quot;terminate_words&quot;: [&quot;terminate&quot;],</span>
+</span><span id="L-394"><a href="#L-394"><span class="linenos">394</span></a><span class="sd">        }</span>
+</span><span id="L-395"><a href="#L-395"><span class="linenos">395</span></a><span class="sd">    ]</span>
+</span><span id="L-396"><a href="#L-396"><span class="linenos">396</span></a><span class="sd">).start()</span>
+</span><span id="L-397"><a href="#L-397"><span class="linenos">397</span></a><span class="sd">```</span>
+</span><span id="L-398"><a href="#L-398"><span class="linenos">398</span></a>
+</span><span id="L-399"><a href="#L-399"><span class="linenos">399</span></a><span class="sd">## Custom Agent Contributions</span>
 </span><span id="L-400"><a href="#L-400"><span class="linenos">400</span></a>
-</span><span id="L-401"><a href="#L-401"><span class="linenos">401</span></a><span class="sd">## Custom Agent Contributions</span>
+</span><span id="L-401"><a href="#L-401"><span class="linenos">401</span></a><span class="sd">Think your agent would be useful to others? Open a PR or file a feature request via a GitHub issue. Contributions are very welcome.</span>
 </span><span id="L-402"><a href="#L-402"><span class="linenos">402</span></a>
-</span><span id="L-403"><a href="#L-403"><span class="linenos">403</span></a><span class="sd">Think your agent would be useful to others? Open a PR or file a feature request via a GitHub issue. Contributions are very welcome.</span>
+</span><span id="L-403"><a href="#L-403"><span class="linenos">403</span></a><span class="sd">---</span>
 </span><span id="L-404"><a href="#L-404"><span class="linenos">404</span></a>
-</span><span id="L-405"><a href="#L-405"><span class="linenos">405</span></a><span class="sd">---</span>
+</span><span id="L-405"><a href="#L-405"><span class="linenos">405</span></a><span class="sd"># Lower-Level API</span>
 </span><span id="L-406"><a href="#L-406"><span class="linenos">406</span></a>
-</span><span id="L-407"><a href="#L-407"><span class="linenos">407</span></a><span class="sd"># Lower-Level API</span>
+</span><span id="L-407"><a href="#L-407"><span class="linenos">407</span></a><span class="sd">Need more control? Use `SpychWake` and `Spych` directly.</span>
 </span><span id="L-408"><a href="#L-408"><span class="linenos">408</span></a>
-</span><span id="L-409"><a href="#L-409"><span class="linenos">409</span></a><span class="sd">Need more control? Use `SpychWake` and `Spych` directly.</span>
+</span><span id="L-409"><a href="#L-409"><span class="linenos">409</span></a><span class="sd">## Listen and Transcribe</span>
 </span><span id="L-410"><a href="#L-410"><span class="linenos">410</span></a>
-</span><span id="L-411"><a href="#L-411"><span class="linenos">411</span></a><span class="sd">## Listen and Transcribe</span>
-</span><span id="L-412"><a href="#L-412"><span class="linenos">412</span></a>
-</span><span id="L-413"><a href="#L-413"><span class="linenos">413</span></a><span class="sd">`Spych` records from the mic and returns a transcription string.</span>
-</span><span id="L-414"><a href="#L-414"><span class="linenos">414</span></a><span class="sd">```python</span>
-</span><span id="L-415"><a href="#L-415"><span class="linenos">415</span></a><span class="sd">from spych import Spych</span>
-</span><span id="L-416"><a href="#L-416"><span class="linenos">416</span></a>
-</span><span id="L-417"><a href="#L-417"><span class="linenos">417</span></a><span class="sd">spych = Spych(</span>
-</span><span id="L-418"><a href="#L-418"><span class="linenos">418</span></a><span class="sd">    whisper_model=&quot;base.en&quot;,  # or tiny, small, medium, large -&gt; all faster-whisper models work</span>
-</span><span id="L-419"><a href="#L-419"><span class="linenos">419</span></a><span class="sd">    whisper_device=&quot;cpu&quot;,     # use &quot;cuda&quot; if you have an Nvidia GPU</span>
-</span><span id="L-420"><a href="#L-420"><span class="linenos">420</span></a><span class="sd">)</span>
-</span><span id="L-421"><a href="#L-421"><span class="linenos">421</span></a>
-</span><span id="L-422"><a href="#L-422"><span class="linenos">422</span></a><span class="sd">print(spych.listen(duration=5))</span>
-</span><span id="L-423"><a href="#L-423"><span class="linenos">423</span></a><span class="sd">```</span>
+</span><span id="L-411"><a href="#L-411"><span class="linenos">411</span></a><span class="sd">`Spych` records from the mic and returns a transcription string.</span>
+</span><span id="L-412"><a href="#L-412"><span class="linenos">412</span></a><span class="sd">```python</span>
+</span><span id="L-413"><a href="#L-413"><span class="linenos">413</span></a><span class="sd">from spych import Spych</span>
+</span><span id="L-414"><a href="#L-414"><span class="linenos">414</span></a>
+</span><span id="L-415"><a href="#L-415"><span class="linenos">415</span></a><span class="sd">spych = Spych(</span>
+</span><span id="L-416"><a href="#L-416"><span class="linenos">416</span></a><span class="sd">    whisper_model=&quot;base.en&quot;,  # or tiny, small, medium, large -&gt; all faster-whisper models work</span>
+</span><span id="L-417"><a href="#L-417"><span class="linenos">417</span></a><span class="sd">    whisper_device=&quot;cpu&quot;,     # use &quot;cuda&quot; if you have an Nvidia GPU</span>
+</span><span id="L-418"><a href="#L-418"><span class="linenos">418</span></a><span class="sd">)</span>
+</span><span id="L-419"><a href="#L-419"><span class="linenos">419</span></a>
+</span><span id="L-420"><a href="#L-420"><span class="linenos">420</span></a><span class="sd">print(spych.listen(duration=5))</span>
+</span><span id="L-421"><a href="#L-421"><span class="linenos">421</span></a><span class="sd">```</span>
+</span><span id="L-422"><a href="#L-422"><span class="linenos">422</span></a>
+</span><span id="L-423"><a href="#L-423"><span class="linenos">423</span></a><span class="sd">See: https://connor-makowski.github.io/spych/spych/core.html</span>
 </span><span id="L-424"><a href="#L-424"><span class="linenos">424</span></a>
-</span><span id="L-425"><a href="#L-425"><span class="linenos">425</span></a><span class="sd">See: https://connor-makowski.github.io/spych/spych/core.html</span>
+</span><span id="L-425"><a href="#L-425"><span class="linenos">425</span></a><span class="sd">## Wake Word Detection</span>
 </span><span id="L-426"><a href="#L-426"><span class="linenos">426</span></a>
-</span><span id="L-427"><a href="#L-427"><span class="linenos">427</span></a><span class="sd">## Wake Word Detection</span>
-</span><span id="L-428"><a href="#L-428"><span class="linenos">428</span></a>
-</span><span id="L-429"><a href="#L-429"><span class="linenos">429</span></a><span class="sd">`SpychWake` runs multiple overlapping listener threads and fires a callback when a wake word is detected.</span>
-</span><span id="L-430"><a href="#L-430"><span class="linenos">430</span></a><span class="sd">```python</span>
-</span><span id="L-431"><a href="#L-431"><span class="linenos">431</span></a><span class="sd">from spych import SpychWake, Spych</span>
+</span><span id="L-427"><a href="#L-427"><span class="linenos">427</span></a><span class="sd">`SpychWake` runs multiple overlapping listener threads and fires a callback when a wake word is detected.</span>
+</span><span id="L-428"><a href="#L-428"><span class="linenos">428</span></a><span class="sd">```python</span>
+</span><span id="L-429"><a href="#L-429"><span class="linenos">429</span></a><span class="sd">from spych import SpychWake, Spych</span>
+</span><span id="L-430"><a href="#L-430"><span class="linenos">430</span></a>
+</span><span id="L-431"><a href="#L-431"><span class="linenos">431</span></a><span class="sd">spych = Spych(whisper_model=&quot;base.en&quot;, whisper_device=&quot;cpu&quot;)</span>
 </span><span id="L-432"><a href="#L-432"><span class="linenos">432</span></a>
-</span><span id="L-433"><a href="#L-433"><span class="linenos">433</span></a><span class="sd">spych = Spych(whisper_model=&quot;base.en&quot;, whisper_device=&quot;cpu&quot;)</span>
-</span><span id="L-434"><a href="#L-434"><span class="linenos">434</span></a>
-</span><span id="L-435"><a href="#L-435"><span class="linenos">435</span></a><span class="sd">def on_wake():</span>
-</span><span id="L-436"><a href="#L-436"><span class="linenos">436</span></a><span class="sd">    print(&quot;Wake word detected! Listening...&quot;)</span>
-</span><span id="L-437"><a href="#L-437"><span class="linenos">437</span></a><span class="sd">    print(spych.listen(duration=5))</span>
-</span><span id="L-438"><a href="#L-438"><span class="linenos">438</span></a>
-</span><span id="L-439"><a href="#L-439"><span class="linenos">439</span></a><span class="sd">wake = SpychWake(</span>
-</span><span id="L-440"><a href="#L-440"><span class="linenos">440</span></a><span class="sd">    wake_word_map={&quot;speech&quot;: on_wake},</span>
-</span><span id="L-441"><a href="#L-441"><span class="linenos">441</span></a><span class="sd">    whisper_model=&quot;tiny.en&quot;,</span>
-</span><span id="L-442"><a href="#L-442"><span class="linenos">442</span></a><span class="sd">    whisper_device=&quot;cpu&quot;,</span>
-</span><span id="L-443"><a href="#L-443"><span class="linenos">443</span></a><span class="sd">)</span>
-</span><span id="L-444"><a href="#L-444"><span class="linenos">444</span></a>
-</span><span id="L-445"><a href="#L-445"><span class="linenos">445</span></a><span class="sd">wake.start()</span>
-</span><span id="L-446"><a href="#L-446"><span class="linenos">446</span></a><span class="sd">```</span>
+</span><span id="L-433"><a href="#L-433"><span class="linenos">433</span></a><span class="sd">def on_wake():</span>
+</span><span id="L-434"><a href="#L-434"><span class="linenos">434</span></a><span class="sd">    print(&quot;Wake word detected! Listening...&quot;)</span>
+</span><span id="L-435"><a href="#L-435"><span class="linenos">435</span></a><span class="sd">    print(spych.listen(duration=5))</span>
+</span><span id="L-436"><a href="#L-436"><span class="linenos">436</span></a>
+</span><span id="L-437"><a href="#L-437"><span class="linenos">437</span></a><span class="sd">wake = SpychWake(</span>
+</span><span id="L-438"><a href="#L-438"><span class="linenos">438</span></a><span class="sd">    wake_word_map={&quot;speech&quot;: on_wake},</span>
+</span><span id="L-439"><a href="#L-439"><span class="linenos">439</span></a><span class="sd">    whisper_model=&quot;tiny.en&quot;,</span>
+</span><span id="L-440"><a href="#L-440"><span class="linenos">440</span></a><span class="sd">    whisper_device=&quot;cpu&quot;,</span>
+</span><span id="L-441"><a href="#L-441"><span class="linenos">441</span></a><span class="sd">)</span>
+</span><span id="L-442"><a href="#L-442"><span class="linenos">442</span></a>
+</span><span id="L-443"><a href="#L-443"><span class="linenos">443</span></a><span class="sd">wake.start()</span>
+</span><span id="L-444"><a href="#L-444"><span class="linenos">444</span></a><span class="sd">```</span>
+</span><span id="L-445"><a href="#L-445"><span class="linenos">445</span></a>
+</span><span id="L-446"><a href="#L-446"><span class="linenos">446</span></a><span class="sd">See: https://connor-makowski.github.io/spych/spych/wake.html</span>
 </span><span id="L-447"><a href="#L-447"><span class="linenos">447</span></a>
-</span><span id="L-448"><a href="#L-448"><span class="linenos">448</span></a><span class="sd">See: https://connor-makowski.github.io/spych/spych/wake.html</span>
+</span><span id="L-448"><a href="#L-448"><span class="linenos">448</span></a><span class="sd">---</span>
 </span><span id="L-449"><a href="#L-449"><span class="linenos">449</span></a>
-</span><span id="L-450"><a href="#L-450"><span class="linenos">450</span></a><span class="sd">---</span>
+</span><span id="L-450"><a href="#L-450"><span class="linenos">450</span></a><span class="sd"># API Reference</span>
 </span><span id="L-451"><a href="#L-451"><span class="linenos">451</span></a>
-</span><span id="L-452"><a href="#L-452"><span class="linenos">452</span></a><span class="sd"># API Reference</span>
+</span><span id="L-452"><a href="#L-452"><span class="linenos">452</span></a><span class="sd">Full docs including all parameters and methods: https://connor-makowski.github.io/spych/spych.html</span>
 </span><span id="L-453"><a href="#L-453"><span class="linenos">453</span></a>
-</span><span id="L-454"><a href="#L-454"><span class="linenos">454</span></a><span class="sd">Full docs including all parameters and methods: https://connor-makowski.github.io/spych/spych.html</span>
+</span><span id="L-454"><a href="#L-454"><span class="linenos">454</span></a><span class="sd">---</span>
 </span><span id="L-455"><a href="#L-455"><span class="linenos">455</span></a>
-</span><span id="L-456"><a href="#L-456"><span class="linenos">456</span></a><span class="sd">---</span>
+</span><span id="L-456"><a href="#L-456"><span class="linenos">456</span></a><span class="sd"># Support</span>
 </span><span id="L-457"><a href="#L-457"><span class="linenos">457</span></a>
-</span><span id="L-458"><a href="#L-458"><span class="linenos">458</span></a><span class="sd"># Support</span>
+</span><span id="L-458"><a href="#L-458"><span class="linenos">458</span></a><span class="sd">Found a bug or want a new feature? [Open an issue on GitHub](https://github.com/connor-makowski/spych/issues).</span>
 </span><span id="L-459"><a href="#L-459"><span class="linenos">459</span></a>
-</span><span id="L-460"><a href="#L-460"><span class="linenos">460</span></a><span class="sd">Found a bug or want a new feature? [Open an issue on GitHub](https://github.com/connor-makowski/spych/issues).</span>
+</span><span id="L-460"><a href="#L-460"><span class="linenos">460</span></a><span class="sd">---</span>
 </span><span id="L-461"><a href="#L-461"><span class="linenos">461</span></a>
-</span><span id="L-462"><a href="#L-462"><span class="linenos">462</span></a><span class="sd">---</span>
+</span><span id="L-462"><a href="#L-462"><span class="linenos">462</span></a><span class="sd"># Contributing</span>
 </span><span id="L-463"><a href="#L-463"><span class="linenos">463</span></a>
-</span><span id="L-464"><a href="#L-464"><span class="linenos">464</span></a><span class="sd"># Contributing</span>
+</span><span id="L-464"><a href="#L-464"><span class="linenos">464</span></a><span class="sd">Contributions are welcome!</span>
 </span><span id="L-465"><a href="#L-465"><span class="linenos">465</span></a>
-</span><span id="L-466"><a href="#L-466"><span class="linenos">466</span></a><span class="sd">Contributions are welcome!</span>
-</span><span id="L-467"><a href="#L-467"><span class="linenos">467</span></a>
-</span><span id="L-468"><a href="#L-468"><span class="linenos">468</span></a><span class="sd">1. Fork the repo and clone it locally.</span>
-</span><span id="L-469"><a href="#L-469"><span class="linenos">469</span></a><span class="sd">2. Make your changes.</span>
-</span><span id="L-470"><a href="#L-470"><span class="linenos">470</span></a><span class="sd">3. Run tests and make sure they pass.</span>
-</span><span id="L-471"><a href="#L-471"><span class="linenos">471</span></a><span class="sd">4. Commit atomically with clear messages.</span>
-</span><span id="L-472"><a href="#L-472"><span class="linenos">472</span></a><span class="sd">5. Submit a pull request.</span>
-</span><span id="L-473"><a href="#L-473"><span class="linenos">473</span></a>
-</span><span id="L-474"><a href="#L-474"><span class="linenos">474</span></a><span class="sd">**Virtual environment setup:**</span>
-</span><span id="L-475"><a href="#L-475"><span class="linenos">475</span></a><span class="sd">```bash</span>
-</span><span id="L-476"><a href="#L-476"><span class="linenos">476</span></a><span class="sd">python3.11 -m venv venv</span>
-</span><span id="L-477"><a href="#L-477"><span class="linenos">477</span></a><span class="sd">source venv/bin/activate</span>
-</span><span id="L-478"><a href="#L-478"><span class="linenos">478</span></a><span class="sd">pip install -r requirements.txt</span>
-</span><span id="L-479"><a href="#L-479"><span class="linenos">479</span></a><span class="sd">./utils/test.sh</span>
-</span><span id="L-480"><a href="#L-480"><span class="linenos">480</span></a><span class="sd">```&quot;&quot;&quot;</span>
-</span><span id="L-481"><a href="#L-481"><span class="linenos">481</span></a>
-</span><span id="L-482"><a href="#L-482"><span class="linenos">482</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">Spych</span>
-</span><span id="L-483"><a href="#L-483"><span class="linenos">483</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">.wake</span><span class="w"> </span><span class="kn">import</span> <span class="n">SpychWake</span>
-</span><span id="L-484"><a href="#L-484"><span class="linenos">484</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">.orchestrator</span><span class="w"> </span><span class="kn">import</span> <span class="n">SpychOrchestrator</span>
+</span><span id="L-466"><a href="#L-466"><span class="linenos">466</span></a><span class="sd">1. Fork the repo and clone it locally.</span>
+</span><span id="L-467"><a href="#L-467"><span class="linenos">467</span></a><span class="sd">2. Make your changes.</span>
+</span><span id="L-468"><a href="#L-468"><span class="linenos">468</span></a><span class="sd">3. Run tests and make sure they pass.</span>
+</span><span id="L-469"><a href="#L-469"><span class="linenos">469</span></a><span class="sd">4. Commit atomically with clear messages.</span>
+</span><span id="L-470"><a href="#L-470"><span class="linenos">470</span></a><span class="sd">5. Submit a pull request.</span>
+</span><span id="L-471"><a href="#L-471"><span class="linenos">471</span></a>
+</span><span id="L-472"><a href="#L-472"><span class="linenos">472</span></a><span class="sd">**Virtual environment setup:**</span>
+</span><span id="L-473"><a href="#L-473"><span class="linenos">473</span></a><span class="sd">```bash</span>
+</span><span id="L-474"><a href="#L-474"><span class="linenos">474</span></a><span class="sd">python3.11 -m venv venv</span>
+</span><span id="L-475"><a href="#L-475"><span class="linenos">475</span></a><span class="sd">source venv/bin/activate</span>
+</span><span id="L-476"><a href="#L-476"><span class="linenos">476</span></a><span class="sd">pip install -r requirements.txt</span>
+</span><span id="L-477"><a href="#L-477"><span class="linenos">477</span></a><span class="sd">./utils/test.sh</span>
+</span><span id="L-478"><a href="#L-478"><span class="linenos">478</span></a><span class="sd">```&quot;&quot;&quot;</span>
+</span><span id="L-479"><a href="#L-479"><span class="linenos">479</span></a>
+</span><span id="L-480"><a href="#L-480"><span class="linenos">480</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">Spych</span>
+</span><span id="L-481"><a href="#L-481"><span class="linenos">481</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">.wake</span><span class="w"> </span><span class="kn">import</span> <span class="n">SpychWake</span>
+</span><span id="L-482"><a href="#L-482"><span class="linenos">482</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">.orchestrator</span><span class="w"> </span><span class="kn">import</span> <span class="n">SpychOrchestrator</span>
 </span></pre></div>
 
 

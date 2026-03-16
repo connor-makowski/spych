@@ -21,7 +21,6 @@ SpychOrchestrator(
         {
             "responder": Spanish(
                 spych_object=Spych(whisper_model="base.en"),
-                listen_duration=5,
                 name="SpanishTranslator",
                 model="llama3.2:latest",
             ),
@@ -31,7 +30,6 @@ SpychOrchestrator(
         {
             "responder": German(
                 spych_object=Spych(whisper_model="base.en"),
-                listen_duration=5,
                 name="GermanTranslator",
                 model="llama3.2:latest",
             ),
