@@ -8,9 +8,9 @@ from spych.spinners import Spinner
 
 
 class OrchestratorEntry(TypedDict, total=False):
-    responder: "BaseResponder"   # required
-    wake_words: list[str]        # required
-    terminate_words: list[str]   # optional — defaults to ["terminate"]
+    responder: "BaseResponder"  # required
+    wake_words: list[str]  # required
+    terminate_words: list[str]  # optional — defaults to ["terminate"]
 
 
 class SpychOrchestrator:
@@ -71,7 +71,9 @@ class SpychOrchestrator:
     #  Initialisation helpers                                              #
     # ------------------------------------------------------------------ #
 
-    def build_entries(self, raw_entries: list[OrchestratorEntry]) -> list[OrchestratorEntry]:
+    def build_entries(
+        self, raw_entries: list[OrchestratorEntry]
+    ) -> list[OrchestratorEntry]:
         """
         Usage:
 
@@ -95,12 +97,16 @@ class SpychOrchestrator:
             if "responder" not in raw:
                 raise ValueError("Each entry must contain a 'responder' key.")
             if "wake_words" not in raw or not raw["wake_words"]:
-                raise ValueError("Each entry must contain a non-empty 'wake_words' key.")
+                raise ValueError(
+                    "Each entry must contain a non-empty 'wake_words' key."
+                )
             entries.append(
                 {
                     "responder": raw["responder"],
                     "wake_words": list(raw["wake_words"]),
-                    "terminate_words": list(raw.get("terminate_words", ["terminate"])),
+                    "terminate_words": list(
+                        raw.get("terminate_words", ["terminate"])
+                    ),
                 }
             )
         return entries
@@ -124,7 +130,9 @@ class SpychOrchestrator:
             entry["responder"].spinner = spinner
         return spinner
 
-    def build_wake_word_map(self) -> tuple[dict[str, "BaseResponder"], list[str]]:
+    def build_wake_word_map(
+        self,
+    ) -> tuple[dict[str, "BaseResponder"], list[str]]:
         """
         Usage:
 
@@ -233,7 +241,10 @@ class SpychOrchestrator:
         """
         for entry in self.entries:
             if not entry["responder"].healthcheck():
-                CliPrinter.info(f"{entry["responder"].name} healthcheck failed.", color=theme.error)
+                CliPrinter.info(
+                    f"{entry["responder"].name} healthcheck failed.",
+                    color=theme.error,
+                )
                 return
             entry["responder"].ready_message(
                 show_wait_for_wake=False,

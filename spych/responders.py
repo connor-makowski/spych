@@ -67,7 +67,9 @@ class BaseResponder(Notify):
         self.listen_duration = listen_duration
         self.name = name if name else self.__class__.__name__
         # Accept an injected shared spinner or create a private one.
-        self.spinner: CliSpinner = spinner if spinner is not None else CliSpinner()
+        self.spinner: CliSpinner = (
+            spinner if spinner is not None else CliSpinner()
+        )
         self._start_time: float = 0.0
 
     # ------------------------------------------------------------------ #
@@ -196,7 +198,7 @@ class BaseResponder(Notify):
         - Optional method that can be overridden to perform a health check of the responder's
           dependencies (e.g., API connectivity, model availability). If implemented, this method
           should return True if the responder is healthy and ready to respond, or False if there
-          is an issue that would prevent it from functioning properly. 
+          is an issue that would prevent it from functioning properly.
 
         """
         return True
@@ -280,11 +282,13 @@ class BaseResponder(Notify):
         - This method is called automatically at the start of each listen cycle.
         - It updates the spinner label to show the responder name and listening duration.
         """
-        listen_string = f" for {self.listen_duration}s" if self.listen_duration > 0 else ""
+        listen_string = (
+            f" for {self.listen_duration}s" if self.listen_duration > 0 else ""
+        )
         self.spinner.start(
             f"{theme.bold}{theme.highlight}{self.name}{theme.reset} "
             f"{theme.success}is listening{listen_string}{theme.reset}",
-            spinner = Spinner.EQUALIZER,
+            spinner=Spinner.EQUALIZER,
         )
 
     def on_user_input(self, user_input: str) -> None:
@@ -307,7 +311,9 @@ class BaseResponder(Notify):
         """
         CliPrinter.label("User:", user_input)
         self._start_time = time.time()
-        self.spinner.start_with_verbs(self.name, interval=15, spinner=Spinner.ZEN)
+        self.spinner.start_with_verbs(
+            self.name, interval=15, spinner=Spinner.ZEN
+        )
 
     def on_response(self, response: str) -> None:
         """
@@ -409,7 +415,7 @@ class BaseResponder(Notify):
         - `**kwargs`:
             - Type: dict
             - What: Additional keyword arguments to display in the ready message
-        
+
         """
         CliPrinter.header(self.name)
         CliPrinter.kwarg_inputs(**kwargs)

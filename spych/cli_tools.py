@@ -16,9 +16,9 @@ def _visible_len(text: str) -> int:
 # ---------------------------------------------------------------------------
 
 # Escape-code constants used only inside this module to build the palettes.
-_RESET  = "\033[0m"
-_BOLD   = "\033[1m"
-_DIM    = "\033[2m"
+_RESET = "\033[0m"
+_BOLD = "\033[1m"
+_DIM = "\033[2m"
 _ITALIC = "\033[3m"
 
 
@@ -42,19 +42,19 @@ class Theme:
         # ------------------------------------------------------------------
         "dark": {
             # formatting
-            "reset":          _RESET,
-            "bold":           _BOLD,
-            "italic":         _ITALIC,
+            "reset": _RESET,
+            "bold": _BOLD,
+            "italic": _ITALIC,
             # structural
-            "chrome":         "\033[90m",   # dark-gray  — borders, dividers
-            "body":           "\033[97m",   # bright white — primary text
-            "dim":            _DIM,         # secondary / de-emphasised
+            "chrome": "\033[90m",  # dark-gray  — borders, dividers
+            "body": "\033[97m",  # bright white — primary text
+            "dim": _DIM,  # secondary / de-emphasised
             # semantic
-            "accent":         "\033[96m",   # bright cyan  — brand accent
-            "highlight":      "\033[95m",   # bright magenta — speaker label
-            "running":        "\033[93m",   # bright yellow — in-progress
-            "success":        "\033[92m",   # bright green  — completed
-            "error":          "\033[91m",   # bright red    — failures
+            "accent": "\033[96m",  # bright cyan  — brand accent
+            "highlight": "\033[95m",  # bright magenta — speaker label
+            "running": "\033[93m",  # bright yellow — in-progress
+            "success": "\033[92m",  # bright green  — completed
+            "error": "\033[91m",  # bright red    — failures
             # spinner
             "spinner_colors": [
                 "\033[96m",  # bright cyan
@@ -63,22 +63,21 @@ class Theme:
                 "\033[96m",
             ],
         },
-
         # ------------------------------------------------------------------
         # light — readable on white/light backgrounds
         # ------------------------------------------------------------------
         "light": {
-            "reset":          _RESET,
-            "bold":           _BOLD,
-            "italic":         _ITALIC,
-            "chrome":         "\033[90m",   # dark-gray borders
-            "body":           "\033[30m",   # black text
-            "dim":            _DIM,
-            "accent":         "\033[36m",   # teal
-            "highlight":      "\033[35m",   # magenta/purple
-            "running":        "\033[33m",   # amber
-            "success":        "\033[32m",   # dark green
-            "error":          "\033[31m",   # dark red
+            "reset": _RESET,
+            "bold": _BOLD,
+            "italic": _ITALIC,
+            "chrome": "\033[90m",  # dark-gray borders
+            "body": "\033[30m",  # black text
+            "dim": _DIM,
+            "accent": "\033[36m",  # teal
+            "highlight": "\033[35m",  # magenta/purple
+            "running": "\033[33m",  # amber
+            "success": "\033[32m",  # dark green
+            "error": "\033[31m",  # dark red
             "spinner_colors": [
                 "\033[36m",  # teal
                 "\033[34m",  # blue
@@ -86,45 +85,43 @@ class Theme:
                 "\033[36m",
             ],
         },
-
         # ------------------------------------------------------------------
         # solarized — Solarized-Dark accent colors, muted base
         # ------------------------------------------------------------------
         "solarized": {
-            "reset":          _RESET,
-            "bold":           _BOLD,
-            "italic":         _ITALIC,
-            "chrome":         "\033[38;5;240m",  # base01  — subtle borders
-            "body":           "\033[38;5;252m",  # base2   — primary text
-            "dim":            _DIM,
-            "accent":         "\033[38;5;37m",   # cyan    (#2aa198)
-            "highlight":      "\033[38;5;125m",  # magenta (#d33682)
-            "running":        "\033[38;5;136m",  # yellow  (#b58900)
-            "success":        "\033[38;5;64m",   # green   (#859900)
-            "error":          "\033[38;5;160m",  # red     (#dc322f)
+            "reset": _RESET,
+            "bold": _BOLD,
+            "italic": _ITALIC,
+            "chrome": "\033[38;5;240m",  # base01  — subtle borders
+            "body": "\033[38;5;252m",  # base2   — primary text
+            "dim": _DIM,
+            "accent": "\033[38;5;37m",  # cyan    (#2aa198)
+            "highlight": "\033[38;5;125m",  # magenta (#d33682)
+            "running": "\033[38;5;136m",  # yellow  (#b58900)
+            "success": "\033[38;5;64m",  # green   (#859900)
+            "error": "\033[38;5;160m",  # red     (#dc322f)
             "spinner_colors": [
-                "\033[38;5;37m",   # cyan
-                "\033[38;5;33m",   # blue   (#268bd2)
-                "\033[38;5;61m",   # violet (#6c71c4)
+                "\033[38;5;37m",  # cyan
+                "\033[38;5;33m",  # blue   (#268bd2)
+                "\033[38;5;61m",  # violet (#6c71c4)
                 "\033[38;5;37m",
             ],
         },
-
         # ------------------------------------------------------------------
         # mono — greyscale; bold/dim contrast only, no hue
         # ------------------------------------------------------------------
         "mono": {
-            "reset":          _RESET,
-            "bold":           _BOLD,
-            "italic":         _ITALIC,
-            "chrome":         "\033[90m",   # dark gray
-            "body":           "\033[97m",   # bright white
-            "dim":            _DIM,
-            "accent":         _BOLD,        # bold, no hue
-            "highlight":      _BOLD,
-            "running":        "\033[97m",
-            "success":        "\033[97m",
-            "error":          _BOLD,
+            "reset": _RESET,
+            "bold": _BOLD,
+            "italic": _ITALIC,
+            "chrome": "\033[90m",  # dark gray
+            "body": "\033[97m",  # bright white
+            "dim": _DIM,
+            "accent": _BOLD,  # bold, no hue
+            "highlight": _BOLD,
+            "running": "\033[97m",
+            "success": "\033[97m",
+            "error": _BOLD,
             "spinner_colors": [
                 "\033[97m",  # bright white
                 "\033[37m",  # light gray
@@ -142,27 +139,49 @@ class Theme:
     # Convenience accessors -------------------------------------------------
 
     @property
-    def reset(self) -> str:     return self._palette["reset"]
+    def reset(self) -> str:
+        return self._palette["reset"]
+
     @property
-    def bold(self) -> str:      return self._palette["bold"]
+    def bold(self) -> str:
+        return self._palette["bold"]
+
     @property
-    def italic(self) -> str:    return self._palette["italic"]
+    def italic(self) -> str:
+        return self._palette["italic"]
+
     @property
-    def chrome(self) -> str:    return self._palette["chrome"]
+    def chrome(self) -> str:
+        return self._palette["chrome"]
+
     @property
-    def body(self) -> str:      return self._palette["body"]
+    def body(self) -> str:
+        return self._palette["body"]
+
     @property
-    def dim(self) -> str:       return self._palette["dim"]
+    def dim(self) -> str:
+        return self._palette["dim"]
+
     @property
-    def accent(self) -> str:    return self._palette["accent"]
+    def accent(self) -> str:
+        return self._palette["accent"]
+
     @property
-    def highlight(self) -> str: return self._palette["highlight"]
+    def highlight(self) -> str:
+        return self._palette["highlight"]
+
     @property
-    def running(self) -> str:   return self._palette["running"]
+    def running(self) -> str:
+        return self._palette["running"]
+
     @property
-    def success(self) -> str:   return self._palette["success"]
+    def success(self) -> str:
+        return self._palette["success"]
+
     @property
-    def error(self) -> str:     return self._palette["error"]
+    def error(self) -> str:
+        return self._palette["error"]
+
     @property
     def spinner_colors(self) -> list[str]:
         return self._palette["spinner_colors"]
@@ -255,7 +274,7 @@ class CliSpinner:
         self._message = ""
         self._verb_thread: threading.Thread | None = None
         self._running = False
-        self._frames = Spinner.BRAILLE 
+        self._frames = Spinner.BRAILLE
 
     # ------------------------------------------------------------------
     # Public API
@@ -331,7 +350,7 @@ class CliSpinner:
         def _get_random_message():
             idx = random.randrange(len(verbs))
             return f"{name} is {verbs[idx]}"
-        
+
         def _get_random_spinner():
             options = [
                 Spinner.ARC,
@@ -384,7 +403,7 @@ class CliSpinner:
         frame_idx = 0
         color_idx = 0
         dot_count = 0
-        frames = self._frames          # snapshot so swaps don't mid-spin
+        frames = self._frames  # snapshot so swaps don't mid-spin
         while not self._stop_event.is_set():
             frame = frames[frame_idx % len(frames)]
             colors = theme.spinner_colors
@@ -463,9 +482,7 @@ class CliPrinter:
         icon = "⚙" if is_running else "✓"
         color = theme.running if is_running else theme.success
         elapsed_str = (
-            f" {theme.chrome}({elapsed:.2f}s){theme.reset}"
-            if elapsed
-            else ""
+            f" {theme.chrome}({elapsed:.2f}s){theme.reset}" if elapsed else ""
         )
         print(
             f"  {color}{icon}{theme.reset}  {theme.dim}tool:{theme.reset} "

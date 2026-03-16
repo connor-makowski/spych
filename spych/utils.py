@@ -5,6 +5,7 @@ from typing import Union
 from silero_vad import load_silero_vad
 import torch
 
+
 def get_clean_audio_buffer(buffer: list[int]) -> np.ndarray:
     """
     Usage:
@@ -92,7 +93,9 @@ class Recorder:
             - Type: list[int]
             - What: A flat list of raw int16 PCM samples at the configured sample rate
         """
-        recorder = PvRecorder(device_index=device_index, frame_length=self.frame_length)
+        recorder = PvRecorder(
+            device_index=device_index, frame_length=self.frame_length
+        )
         try:
             recorder.start()
             frames = int(self.sample_rate * duration / self.frame_length)
@@ -163,7 +166,9 @@ class Recorder:
         frame_ms = self.frame_length / self.sample_rate * 1000
         max_speech_frames = int(max_speech_duration_s * 1000 / frame_ms)
 
-        recorder = PvRecorder(device_index=device_index, frame_length=self.frame_length)
+        recorder = PvRecorder(
+            device_index=device_index, frame_length=self.frame_length
+        )
 
         speech_buffer: list[list[int]] = []
         pre_roll: list[list[int]] = []
@@ -175,10 +180,15 @@ class Recorder:
             recorder.start()
             while stop_event is None or not stop_event.is_set():
                 frame = recorder.read()
-                tensor = torch.tensor(frame, dtype=torch.float32).unsqueeze(0) / 32768.0
+                tensor = (
+                    torch.tensor(frame, dtype=torch.float32).unsqueeze(0)
+                    / 32768.0
+                )
 
                 with torch.no_grad():
-                    speech_prob = self._vad_model(tensor, self.sample_rate).item()
+                    speech_prob = self._vad_model(
+                        tensor, self.sample_rate
+                    ).item()
 
                 if not in_speech:
                     pre_roll.append(frame)

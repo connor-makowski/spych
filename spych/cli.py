@@ -425,6 +425,7 @@ def main():
     # Apply color theme as early as possible so all subsequent output uses it.
     if args.theme != "dark":
         from spych.cli_tools import set_theme
+
         set_theme(args.theme)
 
     # ------------------------------------------------------------------ #
@@ -507,89 +508,101 @@ def main():
             if agent_name == "claude_code_cli":
                 from spych.agents.claude import LocalClaudeCodeCLIResponder
 
-                entries.append({
-                    "responder": LocalClaudeCodeCLIResponder(
-                        spych_object=spych_object,
-                        continue_conversation=args.continue_conversation,
-                        listen_duration=args.listen_duration,
-                        show_tool_events=args.show_tool_events,
-                    ),
-                    "wake_words": ["claude", "clod", "cloud", "clawed"],
-                    "terminate_words": args.terminate_words,
-                })
+                entries.append(
+                    {
+                        "responder": LocalClaudeCodeCLIResponder(
+                            spych_object=spych_object,
+                            continue_conversation=args.continue_conversation,
+                            listen_duration=args.listen_duration,
+                            show_tool_events=args.show_tool_events,
+                        ),
+                        "wake_words": ["claude", "clod", "cloud", "clawed"],
+                        "terminate_words": args.terminate_words,
+                    }
+                )
 
             elif agent_name == "claude_code_sdk":
                 from spych.agents.claude import LocalClaudeCodeSDKResponder
 
-                entries.append({
-                    "responder": LocalClaudeCodeSDKResponder(
-                        spych_object=spych_object,
-                        continue_conversation=args.continue_conversation,
-                        listen_duration=args.listen_duration,
-                        setting_sources=args.setting_sources,
-                        show_tool_events=args.show_tool_events,
-                    ),
-                    "wake_words": ["claude", "clod", "cloud", "clawed"],
-                    "terminate_words": args.terminate_words,
-                })
+                entries.append(
+                    {
+                        "responder": LocalClaudeCodeSDKResponder(
+                            spych_object=spych_object,
+                            continue_conversation=args.continue_conversation,
+                            listen_duration=args.listen_duration,
+                            setting_sources=args.setting_sources,
+                            show_tool_events=args.show_tool_events,
+                        ),
+                        "wake_words": ["claude", "clod", "cloud", "clawed"],
+                        "terminate_words": args.terminate_words,
+                    }
+                )
 
             elif agent_name == "codex_cli":
                 from spych.agents.codex import LocalCodexCLIResponder
 
-                entries.append({
-                    "responder": LocalCodexCLIResponder(
-                        spych_object=spych_object,
-                        continue_conversation=args.continue_conversation,
-                        listen_duration=args.listen_duration,
-                        show_tool_events=args.show_tool_events,
-                    ),
-                    "wake_words": ["codex"],
-                    "terminate_words": args.terminate_words,
-                })
+                entries.append(
+                    {
+                        "responder": LocalCodexCLIResponder(
+                            spych_object=spych_object,
+                            continue_conversation=args.continue_conversation,
+                            listen_duration=args.listen_duration,
+                            show_tool_events=args.show_tool_events,
+                        ),
+                        "wake_words": ["codex"],
+                        "terminate_words": args.terminate_words,
+                    }
+                )
 
             elif agent_name == "gemini_cli":
                 from spych.agents.gemini import LocalGeminiCLIResponder
 
-                entries.append({
-                    "responder": LocalGeminiCLIResponder(
-                        spych_object=spych_object,
-                        continue_conversation=args.continue_conversation,
-                        listen_duration=args.listen_duration,
-                        show_tool_events=args.show_tool_events,
-                    ),
-                    "wake_words": ["gemini"],
-                    "terminate_words": args.terminate_words,
-                })
+                entries.append(
+                    {
+                        "responder": LocalGeminiCLIResponder(
+                            spych_object=spych_object,
+                            continue_conversation=args.continue_conversation,
+                            listen_duration=args.listen_duration,
+                            show_tool_events=args.show_tool_events,
+                        ),
+                        "wake_words": ["gemini"],
+                        "terminate_words": args.terminate_words,
+                    }
+                )
 
             elif agent_name == "opencode_cli":
                 from spych.agents.opencode import LocalOpenCodeCLIResponder
 
-                entries.append({
-                    "responder": LocalOpenCodeCLIResponder(
-                        spych_object=spych_object,
-                        continue_conversation=args.continue_conversation,
-                        listen_duration=args.listen_duration,
-                        show_tool_events=args.show_tool_events,
-                        model=args.opencode_model,
-                    ),
-                    "wake_words": ["opencode", "open code"],
-                    "terminate_words": args.terminate_words,
-                })
+                entries.append(
+                    {
+                        "responder": LocalOpenCodeCLIResponder(
+                            spych_object=spych_object,
+                            continue_conversation=args.continue_conversation,
+                            listen_duration=args.listen_duration,
+                            show_tool_events=args.show_tool_events,
+                            model=args.opencode_model,
+                        ),
+                        "wake_words": ["opencode", "open code"],
+                        "terminate_words": args.terminate_words,
+                    }
+                )
 
             elif agent_name == "ollama":
                 from spych.agents.ollama import OllamaResponder
 
-                entries.append({
-                    "responder": OllamaResponder(
-                        spych_object=spych_object,
-                        model=args.ollama_model,
-                        history_length=args.ollama_history_length,
-                        host=args.ollama_host,
-                        listen_duration=args.listen_duration,
-                    ),
-                    "wake_words": ["llama", "ollama", "lama"],
-                    "terminate_words": args.terminate_words,
-                })
+                entries.append(
+                    {
+                        "responder": OllamaResponder(
+                            spych_object=spych_object,
+                            model=args.ollama_model,
+                            history_length=args.ollama_history_length,
+                            host=args.ollama_host,
+                            listen_duration=args.listen_duration,
+                        ),
+                        "wake_words": ["llama", "ollama", "lama"],
+                        "terminate_words": args.terminate_words,
+                    }
+                )
 
         SpychOrchestrator(entries=entries).start()
 

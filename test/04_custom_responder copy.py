@@ -1,9 +1,11 @@
-from spych import Spych,SpychOrchestrator
+from spych import Spych, SpychOrchestrator
 from spych.responders import BaseResponder
+
 
 class MyResponder(BaseResponder):
     def respond(self, user_input: str) -> str:
         return f"'{self.name}' heard: {user_input}"
+
 
 SpychOrchestrator(
     entries=[

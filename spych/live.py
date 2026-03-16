@@ -7,16 +7,12 @@ from typing import Optional, Callable
 
 from faster_whisper import WhisperModel
 
-from spych.utils import (
-    Notify,
-    get_clean_audio_buffer,
-    Recorder
-)
-
+from spych.utils import Notify, get_clean_audio_buffer, Recorder
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def format_timestamp_srt(seconds: float) -> str:
     """Convert a float second offset into an SRT-compatible timestamp string."""
@@ -41,11 +37,15 @@ def format_timestamp_txt(seconds: float) -> str:
 # Data container for a completed transcription segment
 # ---------------------------------------------------------------------------
 
+
 class Segment:
     """Internal container for a fully transcribed speech segment."""
+
     __slots__ = ("text", "start_time", "end_time", "index")
 
-    def __init__(self, text: str, start_time: float, end_time: float, index: int):
+    def __init__(
+        self, text: str, start_time: float, end_time: float, index: int
+    ):
         self.text = text.strip()
         self.start_time = start_time
         self.end_time = end_time
@@ -55,6 +55,7 @@ class Segment:
 # ---------------------------------------------------------------------------
 # VAD-gated recording thread
 # ---------------------------------------------------------------------------
+
 
 class VADRecorder(Notify):
     """
@@ -156,7 +157,7 @@ class VADRecorder(Notify):
         self.silence_frames_threshold = silence_frames_threshold
         self.speech_pad_frames = speech_pad_frames
         self.max_speech_duration_s = max_speech_duration_s
-        self.recorder=Recorder()
+        self.recorder = Recorder()
         self.max_speech_frames = int(
             max_speech_duration_s * 1000 / self.recorder.frame_ms
         )
@@ -217,6 +218,7 @@ class VADRecorder(Notify):
 # ---------------------------------------------------------------------------
 # Transcription worker thread
 # ---------------------------------------------------------------------------
+
 
 class Transcriber(Notify):
     """
@@ -287,7 +289,9 @@ class Transcriber(Notify):
                 break
 
             audio, start_time, end_time = item
-            initial_prompt = " ".join(self.context_buffer[-self.context_words:])
+            initial_prompt = " ".join(
+                self.context_buffer[-self.context_words :]
+            )
 
             segments, _ = self.model.transcribe(
                 audio,
@@ -319,6 +323,7 @@ class Transcriber(Notify):
 # ---------------------------------------------------------------------------
 # Writer / output thread
 # ---------------------------------------------------------------------------
+
 
 class Writer(Notify):
     """
@@ -381,9 +386,13 @@ class Writer(Notify):
         """Blocking writer loop. Intended to be run in a dedicated thread."""
         try:
             if self.output_format in ("txt", "both"):
-                self.txt_file = open(f"{self.output_path}.txt", "w", encoding="utf-8")
+                self.txt_file = open(
+                    f"{self.output_path}.txt", "w", encoding="utf-8"
+                )
             if self.output_format in ("srt", "both"):
-                self.srt_file = open(f"{self.output_path}.srt", "w", encoding="utf-8")
+                self.srt_file = open(
+                    f"{self.output_path}.srt", "w", encoding="utf-8"
+                )
 
             while True:
                 try:
@@ -436,6 +445,7 @@ class Writer(Notify):
 # ---------------------------------------------------------------------------
 # Keystroke listener
 # ---------------------------------------------------------------------------
+
 
 class KeystrokeListener(Notify):
     """
@@ -490,6 +500,7 @@ class KeystrokeListener(Notify):
 # ---------------------------------------------------------------------------
 # Main orchestrator
 # ---------------------------------------------------------------------------
+
 
 class SpychLive(Notify):
     def __init__(

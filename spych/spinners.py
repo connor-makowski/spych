@@ -47,8 +47,20 @@ class Spinner:
 
     # Vertical equalizer bar
     EQUALIZER: list[str] = [
-        "▁", "▂", "▃", "▄", "▅", "▆", "▇", "█",
-        "▇", "▆", "▅", "▄", "▃", "▂",
+        "▁",
+        "▂",
+        "▃",
+        "▄",
+        "▅",
+        "▆",
+        "▇",
+        "█",
+        "▇",
+        "▆",
+        "▅",
+        "▄",
+        "▃",
+        "▂",
     ]
 
     # Zen / full-braille rotation
@@ -59,6 +71,16 @@ class Spinner:
 
     # Clock face  (emoji — use a slower interval, ~100 ms)
     CLOCK: list[str] = [
-        "🕛", "🕐", "🕑", "🕒", "🕓", "🕔",
-        "🕕", "🕖", "🕗", "🕘", "🕙", "🕚",
+        "🕛",
+        "🕐",
+        "🕑",
+        "🕒",
+        "🕓",
+        "🕔",
+        "🕕",
+        "🕖",
+        "🕗",
+        "🕘",
+        "🕙",
+        "🕚",
     ]

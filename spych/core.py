@@ -3,7 +3,6 @@ from spych.utils import Notify, Recorder, get_clean_audio_buffer
 from typing import Union
 
 
-
 class Spych(Notify):
     def __init__(
         self,
@@ -146,7 +145,9 @@ class Spych(Notify):
                 max_speech_duration_s=self.vad_max_speech_duration_s,
             )
         else:
-            buffer = self.recorder.record(device_index=device_index, duration=duration)
+            buffer = self.recorder.record(
+                device_index=device_index, duration=duration
+            )
 
         audio_buffer = get_clean_audio_buffer(buffer)
         segments, _ = self.wake_model.transcribe(audio_buffer, beam_size=2)
