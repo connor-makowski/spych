@@ -2,8 +2,9 @@ from __future__ import annotations
 
 from typing import Optional, TypedDict
 
-from spych.cli_tools import CliColor, CliPrinter, CliSpinner
+from spych.cli_tools import theme, CliPrinter, CliSpinner
 from spych.wake import SpychWake
+from spych.spinners import Spinner
 
 
 class OrchestratorEntry(TypedDict, total=False):
@@ -237,8 +238,8 @@ class SpychOrchestrator:
                 terminate_words=entry["terminate_words"],
             )
 
-        CliPrinter.divider("─", 60, CliColor.GRAY)
-        self.spinner.start("Waiting for wake word")
+        CliPrinter.divider("─", 60, theme.accent)
+        self.spinner.start("Waiting for wake word", spinner=Spinner.BRAILLE)
 
         try:
             self.spych_wake.start()

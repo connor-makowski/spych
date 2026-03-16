@@ -1,5 +1,6 @@
 from spych.utils import Notify
-from spych.cli_tools import CliColor, CliSpinner, CliPrinter
+from spych.cli_tools import CliSpinner, CliPrinter, theme
+from spych.spinners import Spinner
 from typing import Optional
 import time
 
@@ -26,7 +27,6 @@ class BaseResponder(Notify):
           UI needs without importing CLI internals:
 
             - `self.spinner.start(message)`          — restart spinner after a pause
-            - `self.spinner.update(message)`         — change the spinner label
             - `self.spinner.stop()`                  — stop spinner (e.g. before printing)
             - `self.print_info(message, color)`      — print a styled info line
 
@@ -90,8 +90,8 @@ class BaseResponder(Notify):
             - Default: True
         """
         if divider:
-            CliPrinter.divider("─", 60, CliColor.GRAY)
-        self.spinner.start("Waiting for wake word")
+            CliPrinter.divider()
+        self.spinner.start("Waiting for wake word", spinner=Spinner.BRAILLE)
 
     def tool_event(
         self,
@@ -136,7 +136,7 @@ class BaseResponder(Notify):
         if was_running:
             self.spinner.start()
 
-    def print_info(self, message: str, color: str = CliColor.CYAN) -> None:
+    def print_info(self, message: str, color: str | None = None) -> None:
         """
         Usage:
 
@@ -153,9 +153,9 @@ class BaseResponder(Notify):
         Optional:
 
         - `color`:
-            - Type: str (CliColor constant)
-            - What: ANSI color for the info icon
-            - Default: CliColor.CYAN
+            - Type: str | None
+            - What: ANSI escape code for the info icon. Defaults to the theme accent.
+            - Default: None
         """
         was_running = self.spinner.stop()
         CliPrinter.info(message, color)
@@ -200,7 +200,6 @@ class BaseResponder(Notify):
         - Use the public helper methods for UI feedback inside this method:
 
             - `self.spinner.start(message)`          — restart spinner after a pause
-            - `self.spinner.update(message)`         — change the spinner label
             - `self.spinner.stop()`                  — stop spinner (e.g. before printing)
             - `self.print_info(message, color)`      — print a styled info line
 
@@ -270,9 +269,10 @@ class BaseResponder(Notify):
         - It updates the spinner label to show the responder name and listening duration.
         """
         listen_string = f" for {self.listen_duration}s" if self.listen_duration > 0 else ""
-        self.spinner.update(
-            f"{CliColor.BOLD}{CliColor.MAGENTA}{self.name}{CliColor.RESET} "
-            f"{CliColor.GREEN}is listening{listen_string}{CliColor.RESET}"
+        self.spinner.start(
+            f"{theme.bold}{theme.highlight}{self.name}{theme.reset} "
+            f"{theme.success}is listening{listen_string}{theme.reset}",
+            spinner = Spinner.EQUALIZER,
         )
 
     def on_user_input(self, user_input: str) -> None:
@@ -295,7 +295,7 @@ class BaseResponder(Notify):
         """
         CliPrinter.label("User:", user_input)
         self._start_time = time.time()
-        self.spinner.start_with_verbs(self.name, interval=15)
+        self.spinner.start_with_verbs(self.name, interval=15, spinner=Spinner.ZEN)
 
     def on_response(self, response: str) -> None:
         """
@@ -347,6 +347,7 @@ class BaseResponder(Notify):
         - This method is called automatically at the end of each listen cycle.
         - It stops the spinner to indicate that listening has finished.
         """
+        self.spinner.start(spinner=Spinner.BRAILLE)
         self.spinner.stop()
 
     def __call__(self) -> str:
@@ -375,7 +376,7 @@ class BaseResponder(Notify):
             self.on_after_respond(user_input, response)
         except Exception as exc:
             self.spinner.stop()
-            print(f"  {CliColor.RED}✗  Error: {exc}{CliColor.RESET}\n")
+            print(f"  {theme.error}✗  Error: {exc}{theme.reset}\n")
             return ""
         self.on_response(response)
         self.wait_for_next_wake_word()

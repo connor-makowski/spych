@@ -6,7 +6,7 @@ Usage:
 
 Examples:
     spych ollama --model llama3.2:latest
-    spych claude_code_cli
+    spych --theme light claude_code_cli
     spych claude_code_sdk --setting-sources user project local
     spych codex_cli --listen-duration 8
     spych gemini_cli
@@ -99,6 +99,17 @@ def main():
         description="Launch a voice agent from the terminal.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=__doc__,
+    )
+
+    parser.add_argument(
+        "--theme",
+        default="dark",
+        choices=["dark", "light", "solarized", "mono"],
+        metavar="THEME",
+        help=(
+            "Colour theme for terminal output. "
+            "Choices: dark (default), light, solarized, mono"
+        ),
     )
 
     subparsers = parser.add_subparsers(dest="agent", metavar="agent")
@@ -410,6 +421,11 @@ def main():
     # Dispatch                                                             #
     # ------------------------------------------------------------------ #
     args = parser.parse_args()
+
+    # Apply color theme as early as possible so all subsequent output uses it.
+    if args.theme != "dark":
+        from spych.cli_tools import set_theme
+        set_theme(args.theme)
 
     # ------------------------------------------------------------------ #
     # Single-agent dispatch                                                #

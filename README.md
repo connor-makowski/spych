@@ -18,22 +18,23 @@ A lightweight, fully offline Python toolkit for wake word detection, audio trans
 **API Docs**: https://connor-makowski.github.io/spych/spych.html
 
 
-Quick hints:
-
-- Mac Notes:
-    - Make sure that your microphone is not set to remove background noise.
-        - This can cause the recorder to show permission issues.
-- General Notes: 
-    - If you are experience performance issues, try setting listen_time to some number instead of using auto. In general 5 seems to be a good balance.
-
----
-
 # Setup
 
-Requires Python 3.11+. Download it [here](https://www.python.org/downloads/) if needed.
-
 ## Installation
+
+### Recommended: pipx (strongly recommended)
+
+Install Spych globally using [pipx](https://pipx.pypa.io/stable/installation/):
+
+```bash
+pipx install spych
 ```
+
+### Alternative: pip
+
+Install using pip (requires Python 3.11+):
+
+```bash
 pip install spych
 ```
 
