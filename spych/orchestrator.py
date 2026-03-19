@@ -250,6 +250,7 @@ class SpychOrchestrator:
                 show_wait_for_wake=False,
                 wake_words=entry["wake_words"],
                 terminate_words=entry["terminate_words"],
+                responder=entry["responder"].__class__.__name__,
             )
 
         CliPrinter.divider("─", 60, theme.accent)

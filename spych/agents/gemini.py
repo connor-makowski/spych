@@ -1,8 +1,9 @@
 from spych.core import Spych
 from spych.orchestrator import SpychOrchestrator
 from spych.responders import BaseResponder
+from spych.cli_tools import CliPrinter, theme
 from typing import Optional, Any
-import subprocess, json, time
+import subprocess, json, time, shutil, select
 
 
 class LocalGeminiCLIResponder(BaseResponder):
@@ -11,7 +12,7 @@ class LocalGeminiCLIResponder(BaseResponder):
         spych_object: "Spych",
         continue_conversation: bool = True,
         listen_duration: int | float | str = 0,
-        name: Optional[str] = "Gemini",
+        name: Optional[str] = None,
         show_tool_events: bool = True,
     ) -> None:
         """
@@ -58,6 +59,7 @@ class LocalGeminiCLIResponder(BaseResponder):
         - Uses `--output-format stream-json` to stream intermediate tool call events
         - Gemini CLI must be installed and authenticated before use
         """
+        name = name or "Gemini"
         super().__init__(
             spych_object=spych_object,
             listen_duration=listen_duration,
@@ -69,6 +71,153 @@ class LocalGeminiCLIResponder(BaseResponder):
         self._last_session_id: Optional[str] = None
         self._prev_message: str = ""
         self._prev_role: str = ""
+
+    def healthcheck(self) -> bool:
+        """
+        Usage:
+
+        - Checks that the Gemini CLI is installed and authenticated.
+
+        Returns:
+
+        - `is_healthy`:
+            - Type: bool
+            - What: True if the Gemini CLI is installed, reachable, and authenticated;
+              False otherwise
+
+        Notes:
+
+        - Step 1: Verifies the `gemini` binary is on PATH via shutil.which
+        - Step 2: Runs a minimal prompt with a short timeout to confirm
+          authentication and API connectivity; parses early output for errors
+        """
+        # --- 1. Check the CLI binary is installed ---
+        if not shutil.which("gemini"):
+            CliPrinter.info(
+                "Gemini CLI is not installed or not found on PATH.",
+                color=theme.error,
+            )
+            CliPrinter.info(
+                "Install it with: npm install -g @anthropic-ai/gemini-cli",
+                color=theme.error,
+            )
+            return False
+
+        # --- 2. Verify authentication and connectivity ---
+        # Run a minimal prompt; the CLI will emit an error event early if
+        # credentials are missing or the API is unreachable.
+        try:
+            proc = subprocess.Popen(
+                [
+                    "gemini",
+                    "-p",
+                    "return only 'true' then stop immediately.",
+                    "--output-format",
+                    "stream-json",
+                ],
+                stdin=subprocess.DEVNULL,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+            )
+
+            authenticated = False
+            error_message = ""
+
+            try:
+                # Read lines with a timeout — we only need the first few
+                # events to know whether auth succeeded.
+                # Use select() so the deadline fires even when the subprocess
+                # produces no output (e.g. network stall).
+                deadline = time.time() + 10
+                while True:
+                    remaining = deadline - time.time()
+                    if remaining <= 0:
+                        break
+                    ready, _, _ = select.select(
+                        [proc.stdout], [], [], remaining
+                    )
+                    if not ready:
+                        break  # timed out with no output
+
+                    raw_line = proc.stdout.readline()
+                    if not raw_line:
+                        break  # EOF
+
+                    raw_line = raw_line.strip()
+                    if not raw_line:
+                        continue
+
+                    try:
+                        event = json.loads(raw_line)
+                    except json.JSONDecodeError:
+                        continue
+
+                    etype = event.get("type")
+
+                    if etype == "error":
+                        error_message = event.get(
+                            "message",
+                            event.get("content", "unknown error"),
+                        )
+                        break
+
+                    # Any successful non-error event (init, message, result)
+                    # means the CLI authenticated and connected to the API.
+                    if etype in ("init", "message", "result"):
+                        authenticated = True
+                        break
+            finally:
+                proc.kill()
+                proc.wait()
+
+            if error_message:
+                CliPrinter.info(
+                    f"Gemini CLI returned an error: {error_message}",
+                    color=theme.error,
+                )
+                if any(
+                    keyword in error_message.lower()
+                    for keyword in (
+                        "auth",
+                        "credential",
+                        "login",
+                        "token",
+                        "api key",
+                    )
+                ):
+                    CliPrinter.info(
+                        "Run `gemini` interactively to authenticate and try again.",
+                        color=theme.error,
+                    )
+                return False
+
+            if not authenticated:
+                CliPrinter.info(
+                    "Gemini CLI did not respond in time. "
+                    "Check your network connection and authentication.",
+                    color=theme.error,
+                )
+                CliPrinter.info(
+                    "Run `gemini` interactively to authenticate and try again.",
+                    color=theme.error,
+                )
+                return False
+
+            return True
+
+        except FileNotFoundError:
+            CliPrinter.info(
+                "Gemini CLI binary was found on PATH but could not be executed.",
+                color=theme.error,
+            )
+            return False
+        except Exception as e:
+            CliPrinter.info(
+                f"Unexpected error during Gemini healthcheck: {e}",
+                color=theme.error,
+            )
+            return False
 
     def respond(self, user_input: str) -> str:
         """
@@ -103,6 +252,7 @@ class LocalGeminiCLIResponder(BaseResponder):
 
         proc = subprocess.Popen(
             cmd,
+            stdin=subprocess.DEVNULL,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
@@ -176,11 +326,12 @@ class LocalGeminiCLIResponder(BaseResponder):
 
 
 def gemini_cli(
-    wake_words: list[str] = ["gemini"],
+    wake_words: list[str] = ["gemini", "google"],
     terminate_words: list[str] = ["terminate"],
     listen_duration: int | float | str = 0,
     continue_conversation: bool = True,
     show_tool_events: bool = True,
+    name: Optional[str] = None,
     spych_kwargs: Optional[dict[str, Any]] = None,
     spych_wake_kwargs: Optional[dict[str, Any]] = None,
 ) -> None:
@@ -220,6 +371,11 @@ def gemini_cli(
         - What: Whether to print tool start/end events in the CLI as they arrive from the subprocess
         - Default: True
 
+    - `name`:
+        - Type: str
+        - What: A custom display name for the responder shown in printed messages
+        - Default: None (uses "Gemini")
+
     - `spych_kwargs`:
         - Type: dict
         - What: Additional keyword arguments to pass to the Spych constructor
@@ -238,6 +394,7 @@ def gemini_cli(
         continue_conversation=continue_conversation,
         listen_duration=listen_duration,
         show_tool_events=show_tool_events,
+        name=name,
     )
 
     SpychOrchestrator(

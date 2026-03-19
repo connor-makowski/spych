@@ -15,7 +15,7 @@ class LocalClaudeCodeSDKResponder(BaseResponder):
         spych_object: "Spych",
         continue_conversation: bool = True,
         listen_duration: int | float | str = 0,
-        name: str | None = "Claude Code",
+        name: str | None = None,
         setting_sources: list[str] = ["user", "project", "local"],
         show_tool_events: bool = True,
     ) -> None:
@@ -59,6 +59,7 @@ class LocalClaudeCodeSDKResponder(BaseResponder):
         - Requires _sdk_worker.py in the same directory as this file
         - An ANTHROPIC_API_KEY environment variable must be set
         """
+        name = name or "Claude"
         super().__init__(
             spych_object=spych_object,
             listen_duration=listen_duration,
@@ -163,6 +164,7 @@ def claude_code_sdk(
     continue_conversation: bool = True,
     setting_sources: list[str] = ["user", "project", "local"],
     show_tool_events: bool = True,
+    name: Optional[str] = None,
     spych_kwargs: dict[str, any] | None = None,
     spych_wake_kwargs: dict[str, any] | None = None,
 ) -> None:
@@ -208,6 +210,11 @@ def claude_code_sdk(
         - What: Whether to print tool start/end events in the CLI as they arrive from the subprocess worker
         - Default: True
 
+    - `name`:
+        - Type: str
+        - What: A custom display name for the responder shown in printed messages
+        - Default: None (uses "Claude")
+
     - `spych_kwargs`:
         - Type: dict
         - What: Additional keyword arguments to pass to the Spych constructor
@@ -227,6 +234,7 @@ def claude_code_sdk(
         listen_duration=listen_duration,
         setting_sources=setting_sources,
         show_tool_events=show_tool_events,
+        name=name,
     )
 
     SpychOrchestrator(
@@ -247,7 +255,7 @@ class LocalClaudeCodeCLIResponder(BaseResponder):
         spych_object: "Spych",
         continue_conversation: bool = True,
         listen_duration: int | float | str = 0,
-        name: Optional[str] = "Claude",
+        name: Optional[str] = None,
         show_tool_events: bool = True,
     ) -> None:
         """
@@ -296,6 +304,7 @@ class LocalClaudeCodeCLIResponder(BaseResponder):
           never printed directly, to avoid double-printing.
         - Claude Code CLI must be installed: npm install -g @anthropic-ai/claude-code
         """
+        name = name or "Claude"
         super().__init__(
             spych_object=spych_object,
             listen_duration=listen_duration,
@@ -359,6 +368,7 @@ class LocalClaudeCodeCLIResponder(BaseResponder):
 
         proc = subprocess.Popen(
             cmd,
+            stdin=subprocess.DEVNULL,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
@@ -479,6 +489,7 @@ def claude_code_cli(
     listen_duration: int | float | str = 0,
     continue_conversation: bool = True,
     show_tool_events: bool = True,
+    name: Optional[str] = None,
     spych_kwargs: Optional[dict[str, Any]] = None,
     spych_wake_kwargs: Optional[dict[str, Any]] = None,
 ) -> None:
@@ -509,6 +520,11 @@ def claude_code_cli(
         - Type: bool
         - Default: True
 
+    - `name`:
+        - Type: str
+        - What: A custom display name for the responder shown in printed messages
+        - Default: None (uses "Claude")
+
     - `spych_kwargs`:
         - Type: dict
         - Default: None
@@ -525,6 +541,7 @@ def claude_code_cli(
         continue_conversation=continue_conversation,
         listen_duration=listen_duration,
         show_tool_events=show_tool_events,
+        name=name,
     )
 
     SpychOrchestrator(

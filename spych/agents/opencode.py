@@ -11,7 +11,7 @@ class LocalOpenCodeCLIResponder(BaseResponder):
         spych_object: "Spych",
         continue_conversation: bool = True,
         listen_duration: int | float | str = 0,
-        name: Optional[str] = "OpenCode",
+        name: Optional[str] = None,
         show_tool_events: bool = True,
         model: Optional[str] = None,
     ) -> None:
@@ -75,6 +75,7 @@ class LocalOpenCodeCLIResponder(BaseResponder):
         - Session continuation uses --session <id> when available, else --continue.
         - OpenCode CLI must be installed and authenticated before use.
         """
+        name = name or "OpenCode"
         super().__init__(
             spych_object=spych_object,
             listen_duration=listen_duration,
@@ -136,6 +137,7 @@ class LocalOpenCodeCLIResponder(BaseResponder):
 
         proc = subprocess.Popen(
             cmd,
+            stdin=subprocess.DEVNULL,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
@@ -231,6 +233,7 @@ def opencode_cli(
     continue_conversation: bool = True,
     show_tool_events: bool = True,
     model: Optional[str] = None,
+    name: Optional[str] = None,
     spych_kwargs: Optional[dict[str, Any]] = None,
     spych_wake_kwargs: Optional[dict[str, Any]] = None,
 ) -> None:
@@ -273,6 +276,11 @@ def opencode_cli(
         - What: Model to use in provider/model format (e.g. "anthropic/claude-sonnet-4-5")
         - Default: None (uses opencode default)
 
+    - `name`:
+        - Type: str
+        - What: A custom display name for the responder shown in printed messages
+        - Default: None (uses "OpenCode")
+
     - `spych_kwargs`:
         - Type: dict
         - What: Additional keyword arguments to pass to the Spych constructor
@@ -292,6 +300,7 @@ def opencode_cli(
         listen_duration=listen_duration,
         show_tool_events=show_tool_events,
         model=model,
+        name=name,
     )
 
     SpychOrchestrator(

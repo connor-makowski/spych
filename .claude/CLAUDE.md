@@ -15,6 +15,4 @@ Type Hints:
 
 Other Instructions:
 
-Ignore content in gitignored files like __pycache__, venv, .claude, *.egg-info, build, dist, etc. is not relevant to the codebase and should not be considered when making edits or suggestions.
-
-
+Ignore content in gitignored files like __pycache__, venv, .claude, .gemini, *.egg-info, build, dist, etc. is not relevant to the codebase and should not be considered when making edits or suggestions.

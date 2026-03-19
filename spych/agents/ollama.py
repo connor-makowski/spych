@@ -2,6 +2,7 @@ from spych.core import Spych
 from spych.orchestrator import SpychOrchestrator
 from spych.responders import BaseResponder
 from spych.cli_tools import CliPrinter, theme
+from typing import Optional
 import requests
 
 
@@ -13,7 +14,7 @@ class OllamaResponder(BaseResponder):
         history_length: int = 10,
         host: str = "http://localhost:11434",
         listen_duration: int | float | str = 0,
-        name: str | None = "Ollama",
+        name: Optional[str] = None,
     ) -> None:
         """
         Usage:
@@ -62,6 +63,7 @@ class OllamaResponder(BaseResponder):
             - What: A custom name for the responder to use in printed messages
             - Default: "Ollama"
         """
+        name = name or "Ollama"
         super().__init__(
             spych_object=spych_object,
             listen_duration=listen_duration,
@@ -158,6 +160,7 @@ def ollama(
     listen_duration: int | float | str = 0,
     history_length: int = 10,
     host: str = "http://localhost:11434",
+    name: Optional[str] = None,
     spych_kwargs: dict[str, any] | None = None,
     spych_wake_kwargs: dict[str, any] | None = None,
 ) -> None:
@@ -208,6 +211,11 @@ def ollama(
         - What: The base URL of the running Ollama instance
         - Default: "http://localhost:11434"
 
+    - `name`:
+        - Type: str
+        - What: A custom display name for the responder shown in printed messages
+        - Default: None (uses "Ollama")
+
     - `spych_kwargs`:
         - Type: dict
         - What: Additional keyword arguments to pass to the Spych constructor
@@ -227,6 +235,7 @@ def ollama(
         listen_duration=listen_duration,
         history_length=history_length,
         host=host,
+        name=name,
     )
 
     SpychOrchestrator(

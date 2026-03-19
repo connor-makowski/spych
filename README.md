@@ -46,18 +46,27 @@ Once installed, `spych` is available as a command anywhere on your machine. You 
 
 ```bash
 cd ~/my_project
-spych claude_code_cli
+spych claude
 ```
 
 All agents and their parameters are supported as flags:
 
 ```bash
 spych ollama --model llama3.2:latest
-spych claude_code_sdk --setting-sources user project local
-spych codex_cli --listen-duration 8
-spych opencode_cli --model anthropic/claude-sonnet-4-5
-spych gemini_cli --wake-words gemini "hey gemini"
+spych claude_sdk --setting-sources user project local
+spych codex --listen-duration 8
+spych opencode --model anthropic/claude-sonnet-4-5
+spych gemini --wake-words gemini "hey gemini"
 ```
+
+A global `--theme` flag controls the terminal colour output and must be placed before the agent name:
+
+```bash
+spych --theme light claude
+spych --theme solarized ollama --model llama3.2:latest
+```
+
+Available themes: `dark` (default), `light`, `solarized`, `mono`.
 
 Live transcription is also available via the CLI:
 
@@ -68,11 +77,10 @@ spych live --terminate-words "stop recording"
 spych live --no-timestamps --whisper-model small.en
 ```
 
-Multi-agent mode is also available via the CLI. See the "Multi-agent" section below for more details.
+Multiple agents can be run by creating one terminal session per agent and setting `--wake-words` to be different per agent. In this way you can create 3 claude agents with different wake words.
 
-```bash
-spych multi --agents claude_code_sdk ollama --ollama-model llama3.2:latest --listen-duration 8
-```
+- A Multi agent mode is also available via the CLI, but has some limitations.
+- See the "Multi-agent" section below for more details.
 
 Run `spych --help` or `spych <agent> --help` to see all available options.
 
@@ -163,7 +171,8 @@ All agents accept a `terminate_words` list (default: `["terminate"]`). Say the w
 
 | Parameter | `claude_code_cli` | `claude_code_sdk` | `codex_cli` | `gemini_cli` | `opencode_cli` | Description |
 |---|---|---|---|---|---|---|
-| `wake_words` | `["claude", "clod", "cloud", "clawed"]` | `["claude", "clod", "cloud", "clawed"]` | `["codex"]` | `["gemini"]` | `["opencode", "open code"]` | Words that trigger the agent |
+| `name` | `Claude` | `Claude` | `Codex` | `Gemini` | `OpenCode` | Custom display name for the agent |
+| `wake_words` | `["claude", "clod", "cloud", "clawed"]` | `["claude", "clod", "cloud", "clawed"]` | `["codex"]` | `["gemini", "google"]` | `["opencode", "open code"]` | Words that trigger the agent |
 | `terminate_words` | `["terminate"]` | `["terminate"]` | `["terminate"]` | `["terminate"]` | `["terminate"]` | Words that stop the listener |
 | `model` | - | - | - | - | `None` | Model in `provider/model` format |
 | `listen_duration` | `0` | `0` | `0` | `0` | `0` | Seconds to listen after wake word (0 = VAD auto) |
@@ -177,6 +186,7 @@ All agents accept a `terminate_words` list (default: `["terminate"]`). Say the w
 
 | Parameter | Default | Description |
 |---|---|---|
+| `name` | `"Ollama"` | Custom display name for the agent |
 | `wake_words` | `["llama", "ollama", "lama"]` | Words that trigger the agent |
 | `terminate_words` | `["terminate"]` | Words that stop the listener |
 | `model` | `"llama3.2:latest"` | Ollama model name |
@@ -248,22 +258,22 @@ Run several agents simultaneously under a single listener, each bound to its own
 
 ```bash
 # Two agents, default wake words
-spych multi --agents claude_code_cli gemini_cli
+spych multi --agents claude gemini
 
 # Include Ollama with a specific model
-spych multi --agents claude_code_cli ollama --ollama-model llama3.2:latest
+spych multi --agents claude ollama --ollama-model llama3.2:latest
 
 # Tune listen duration across all agents
-spych multi --agents claude_code_sdk codex_cli --listen-duration 8
+spych multi --agents claude codex --listen-duration 8
 ```
 
 ### Multi-agent CLI Parameters
 
 | Flag | Default | Description |
 |---|---|---|
-| `--agents` | *(required)* | One or more agent names to run: `claude_code_cli`, `claude_code_sdk`, `codex_cli`, `gemini_cli`, `opencode_cli`, `ollama` |
+| `--agents` | *(required)* | One or more agent names to run: `claude` (`claude_code_cli`), `claude_sdk` (`claude_code_sdk`), `codex` (`codex_cli`), `gemini` (`gemini_cli`), `opencode` (`opencode_cli`), `ollama` |
 | `--terminate-words` | `["terminate"]` | Words that stop all agents |
-| `--listen-duration` | `0` | Seconds to listen after a wake word (0 = VAD auto) |
+| `--listen-duration` | `5` | Seconds to listen after a wake word |
 | `--continue-conversation` | `true` | Resume the most recent session for each coding agent |
 | `--show-tool-events` | `true` | Print live tool start/end events |
 | `--ollama-model` | `llama3.2:latest` | Ollama model. Only used when `ollama` is in `--agents` |

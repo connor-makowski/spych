@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "defaultMode": "dontAsk",
+    "allow": [
+      "Read(./spych/**)",
+      "Edit(./spych/**)",
+      "Write(./spych/**)",
+      "Read(./scripts/**)",
+      "Edit(./scripts/**)",
+      "Write(./scripts/**)",
+      "Read(./README.md)",
+      "Edit(./README.md)",
+      "Bash(./run.sh prettify)",
+      "Bash(./run.sh test)"
+    ],
+    "deny": [
+      "Read(**/__pycache__/**)",
+      "Read(**/venv/**)"
+    ]
+  }
+}

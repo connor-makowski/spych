@@ -37,6 +37,11 @@ def _parse_bool(value: str) -> bool:
 def _add_shared_args(parser: argparse.ArgumentParser) -> None:
     """Args shared by all agents."""
     parser.add_argument(
+        "--name",
+        metavar="NAME",
+        help="Custom display name for the agent",
+    )
+    parser.add_argument(
         "--wake-words",
         nargs="+",
         metavar="WORD",
@@ -77,6 +82,8 @@ def _add_agent_args(parser: argparse.ArgumentParser) -> None:
 
 def _build_shared_kwargs(args: argparse.Namespace) -> dict:
     kwargs = {}
+    if args.name is not None:
+        kwargs["name"] = args.name
     if args.wake_words:
         kwargs["wake_words"] = args.wake_words
     if args.terminate_words:
@@ -115,6 +122,14 @@ def main():
     subparsers = parser.add_subparsers(dest="agent", metavar="agent")
     subparsers.required = True
 
+    # Aliases → canonical name; used to normalise args.agent after parsing.
+    _AGENT_ALIASES: dict[str, str] = {
+        "claude": "claude_code_cli",
+        "codex": "codex_cli",
+        "gemini": "gemini_cli",
+        "opencode": "opencode_cli",
+    }
+
     # ------------------------------------------------------------------ #
     # ollama                                                               #
     # ------------------------------------------------------------------ #
@@ -146,7 +161,9 @@ def main():
     # claude_code_cli                                                      #
     # ------------------------------------------------------------------ #
     p_claude_cli = subparsers.add_parser(
-        "claude_code_cli", help="Voice-control Claude Code via the CLI"
+        "claude_code_cli",
+        aliases=["claude"],
+        help="Voice-control Claude Code via the CLI",
     )
     _add_shared_args(p_claude_cli)
     _add_agent_args(p_claude_cli)
@@ -155,7 +172,8 @@ def main():
     # claude_code_sdk                                                      #
     # ------------------------------------------------------------------ #
     p_claude_sdk = subparsers.add_parser(
-        "claude_code_sdk", help="Voice-control Claude Code via the Agent SDK"
+        "claude_code_sdk",
+        help="Voice-control Claude Code via the Agent SDK",
     )
     _add_shared_args(p_claude_sdk)
     _add_agent_args(p_claude_sdk)
@@ -171,7 +189,9 @@ def main():
     # codex_cli                                                            #
     # ------------------------------------------------------------------ #
     p_codex = subparsers.add_parser(
-        "codex_cli", help="Voice-control the OpenAI Codex agent"
+        "codex_cli",
+        aliases=["codex"],
+        help="Voice-control the OpenAI Codex agent",
     )
     _add_shared_args(p_codex)
     _add_agent_args(p_codex)
@@ -180,7 +200,9 @@ def main():
     # gemini_cli                                                           #
     # ------------------------------------------------------------------ #
     p_gemini = subparsers.add_parser(
-        "gemini_cli", help="Voice-control the Google Gemini agent"
+        "gemini_cli",
+        aliases=["gemini"],
+        help="Voice-control the Google Gemini agent",
     )
     _add_shared_args(p_gemini)
     _add_agent_args(p_gemini)
@@ -189,7 +211,9 @@ def main():
     # opencode_cli                                                         #
     # ------------------------------------------------------------------ #
     p_opencode = subparsers.add_parser(
-        "opencode_cli", help="Voice-control the OpenCode agent"
+        "opencode_cli",
+        aliases=["opencode"],
+        help="Voice-control the OpenCode agent",
     )
     _add_shared_args(p_opencode)
     _add_agent_args(p_opencode)
@@ -342,15 +366,21 @@ def main():
         metavar="AGENT",
         choices=[
             "claude_code_cli",
+            "claude",
             "claude_code_sdk",
+            "claude_sdk",
             "codex_cli",
+            "codex",
             "gemini_cli",
+            "gemini",
             "opencode_cli",
+            "opencode",
             "ollama",
         ],
         help=(
-            "Agents to run. Choices: claude_code_cli, claude_code_sdk, "
-            "codex_cli, gemini_cli, opencode_cli, ollama"
+            "Agents to run. Choices: claude (claude_code_cli), "
+            "claude_sdk (claude_code_sdk), codex (codex_cli), "
+            "gemini (gemini_cli), opencode (opencode_cli), ollama"
         ),
     )
     p_multi.add_argument(
@@ -421,6 +451,10 @@ def main():
     # Dispatch                                                             #
     # ------------------------------------------------------------------ #
     args = parser.parse_args()
+
+    # Normalise any alias back to the canonical agent name so the dispatch
+    # block below only needs to handle one name per agent.
+    args.agent = _AGENT_ALIASES.get(args.agent, args.agent)
 
     # Apply color theme as early as possible so all subsequent output uses it.
     if args.theme != "dark":
@@ -504,7 +538,7 @@ def main():
 
         entries = []
 
-        for agent_name in args.agents:
+        for agent_name in [_AGENT_ALIASES.get(a, a) for a in args.agents]:
             if agent_name == "claude_code_cli":
                 from spych.agents.claude import LocalClaudeCodeCLIResponder
 

@@ -98,7 +98,7 @@ ollama(model="llama3.2:latest")
 
 ## Claude Code CLI
 
-Voice-control Claude Code directly from your terminal. Requires [Claude Code](https://docs.anthropic.com/en/docs/claude-code) installed and authenticated. See: https://code.claude.com/docs/en/quickstart. Make sure you can run `claude code` commands in your terminal before trying this. 
+Voice-control Claude Code directly from your terminal. Requires [Claude Code](https://docs.anthropic.com/en/docs/claude-code) installed and authenticated. See: https://code.claude.com/docs/en/quickstart. Make sure you can run `claude code` commands in your terminal before trying this.
 
 Note: This can pull from your `.claude` folder in your user directory or from the project directory, so you can have different settings for different projects if you like.
 
@@ -112,7 +112,7 @@ claude_code_cli()
 
 ## Claude Code SDK
 
-Same as above but uses the Claude Agent SDK via a subprocess worker instead of the CLI. This is great for a lightweight setup with better tool call feedback loops, but you will still need to be authenticated with the SDK and have your tools set up. See: https://platform.claude.com/docs/en/agent-sdk/overview for setup instructions. 
+Same as above but uses the Claude Agent SDK via a subprocess worker instead of the CLI. This is great for a lightweight setup with better tool call feedback loops, but you will still need to be authenticated with the SDK and have your tools set up. See: https://platform.claude.com/docs/en/agent-sdk/overview for setup instructions.
 
 Note: This can pull from your `.claude` folder in your user directory or from the project directory, so you can have different settings for different projects if you like.
 
@@ -365,7 +365,7 @@ class Spanish(OllamaResponder):
         user_input = f"Translate the following text to Spanish and return only the translated text: '{user_input}'"
         response = super().respond(user_input)
         return response
-    
+
 class German(OllamaResponder):
     def respond(self, user_input: str) -> str:
         user_input = f"Translate the following text to German and return only the translated text: '{user_input}'"
