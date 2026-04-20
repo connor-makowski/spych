@@ -11,6 +11,8 @@
       "Write(./scripts/**)",
       "Read(./README.md)",
       "Edit(./README.md)",
+      "Read(./DEVELOPMENT.md)",
+      "Edit(./DEVELOPMENT.md)",
       "Bash(./run.sh prettify)",
       "Bash(./run.sh test)"
     ],
