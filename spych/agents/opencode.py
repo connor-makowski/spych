@@ -14,6 +14,9 @@ class LocalOpenCodeCLIResponder(BaseResponder):
         name: Optional[str] = None,
         show_tool_events: bool = True,
         model: Optional[str] = None,
+        use_speaker: bool = False,
+        speaker_voice: str = "af_heart",
+        speaker_style: Optional[str] = None,
     ) -> None:
         """
         Usage:
@@ -80,6 +83,9 @@ class LocalOpenCodeCLIResponder(BaseResponder):
             spych_object=spych_object,
             listen_duration=listen_duration,
             name=name,
+            use_speaker=use_speaker,
+            speaker_voice=speaker_voice,
+            speaker_style=speaker_style,
         )
         self.continue_conversation = continue_conversation
         self.show_tool_events = show_tool_events
@@ -234,6 +240,9 @@ def opencode_cli(
     show_tool_events: bool = True,
     model: Optional[str] = None,
     name: Optional[str] = None,
+    use_speaker: bool = False,
+    speaker_voice: str = "af_heart",
+    speaker_style: Optional[str] = None,
     spych_kwargs: Optional[dict[str, Any]] = None,
     spych_wake_kwargs: Optional[dict[str, Any]] = None,
 ) -> None:
@@ -301,6 +310,9 @@ def opencode_cli(
         show_tool_events=show_tool_events,
         model=model,
         name=name,
+        use_speaker=use_speaker,
+        speaker_voice=speaker_voice,
+        speaker_style=speaker_style,
     )
 
     SpychOrchestrator(

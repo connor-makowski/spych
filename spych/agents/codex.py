@@ -13,6 +13,9 @@ class LocalCodexCLIResponder(BaseResponder):
         listen_duration: int | float | str = 0,
         name: Optional[str] = None,
         show_tool_events: bool = True,
+        use_speaker: bool = False,
+        speaker_voice: str = "af_heart",
+        speaker_style: Optional[str] = None,
     ) -> None:
         """
         Usage:
@@ -63,6 +66,9 @@ class LocalCodexCLIResponder(BaseResponder):
             spych_object=spych_object,
             listen_duration=listen_duration,
             name=name,
+            use_speaker=use_speaker,
+            speaker_voice=speaker_voice,
+            speaker_style=speaker_style,
         )
         self.continue_conversation = continue_conversation
         self.show_tool_events = show_tool_events
@@ -217,6 +223,9 @@ def codex_cli(
     continue_conversation: bool = True,
     show_tool_events: bool = True,
     name: Optional[str] = None,
+    use_speaker: bool = False,
+    speaker_voice: str = "af_heart",
+    speaker_style: Optional[str] = None,
     spych_kwargs: Optional[dict[str, Any]] = None,
     spych_wake_kwargs: Optional[dict[str, Any]] = None,
 ) -> None:
@@ -278,6 +287,9 @@ def codex_cli(
         listen_duration=listen_duration,
         show_tool_events=show_tool_events,
         name=name,
+        use_speaker=use_speaker,
+        speaker_voice=speaker_voice,
+        speaker_style=speaker_style,
     )
 
     SpychOrchestrator(

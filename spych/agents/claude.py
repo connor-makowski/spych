@@ -18,6 +18,9 @@ class LocalClaudeCodeSDKResponder(BaseResponder):
         name: str | None = None,
         setting_sources: list[str] = ["user", "project", "local"],
         show_tool_events: bool = True,
+        use_speaker: bool = False,
+        speaker_voice: str = "af_heart",
+        speaker_style: Optional[str] = None,
     ) -> None:
         """
         Usage:
@@ -64,6 +67,9 @@ class LocalClaudeCodeSDKResponder(BaseResponder):
             spych_object=spych_object,
             listen_duration=listen_duration,
             name=name,
+            use_speaker=use_speaker,
+            speaker_voice=speaker_voice,
+            speaker_style=speaker_style,
         )
         self.continue_conversation = continue_conversation
         self.setting_sources = list(setting_sources) if setting_sources else []
@@ -165,6 +171,9 @@ def claude_code_sdk(
     setting_sources: list[str] = ["user", "project", "local"],
     show_tool_events: bool = True,
     name: Optional[str] = None,
+    use_speaker: bool = False,
+    speaker_voice: str = "af_heart",
+    speaker_style: Optional[str] = None,
     spych_kwargs: dict[str, any] | None = None,
     spych_wake_kwargs: dict[str, any] | None = None,
 ) -> None:
@@ -235,6 +244,9 @@ def claude_code_sdk(
         setting_sources=setting_sources,
         show_tool_events=show_tool_events,
         name=name,
+        use_speaker=use_speaker,
+        speaker_voice=speaker_voice,
+        speaker_style=speaker_style,
     )
 
     SpychOrchestrator(
@@ -257,6 +269,9 @@ class LocalClaudeCodeCLIResponder(BaseResponder):
         listen_duration: int | float | str = 0,
         name: Optional[str] = None,
         show_tool_events: bool = True,
+        use_speaker: bool = False,
+        speaker_voice: str = "af_heart",
+        speaker_style: Optional[str] = None,
     ) -> None:
         """
         Usage:
@@ -309,6 +324,9 @@ class LocalClaudeCodeCLIResponder(BaseResponder):
             spych_object=spych_object,
             listen_duration=listen_duration,
             name=name,
+            use_speaker=use_speaker,
+            speaker_voice=speaker_voice,
+            speaker_style=speaker_style,
         )
         self.continue_conversation = continue_conversation
         self.show_tool_events = show_tool_events
@@ -490,6 +508,9 @@ def claude_code_cli(
     continue_conversation: bool = True,
     show_tool_events: bool = True,
     name: Optional[str] = None,
+    use_speaker: bool = False,
+    speaker_voice: str = "af_heart",
+    speaker_style: Optional[str] = None,
     spych_kwargs: Optional[dict[str, Any]] = None,
     spych_wake_kwargs: Optional[dict[str, Any]] = None,
 ) -> None:
@@ -542,6 +563,9 @@ def claude_code_cli(
         listen_duration=listen_duration,
         show_tool_events=show_tool_events,
         name=name,
+        use_speaker=use_speaker,
+        speaker_voice=speaker_voice,
+        speaker_style=speaker_style,
     )
 
     SpychOrchestrator(

@@ -60,6 +60,27 @@ def _add_shared_args(parser: argparse.ArgumentParser) -> None:
         metavar="SECONDS",
         help="Seconds to listen after wake word (default: 5)",
     )
+    parser.add_argument(
+        "--use-speaker",
+        action="store_true",
+        default=False,
+        help="Speak responses aloud via kokoro TTS (default: false)",
+    )
+    parser.add_argument(
+        "--speaker-voice",
+        default="af_heart",
+        metavar="VOICE",
+        help="Kokoro voice ID for spoken responses (default: af_heart)",
+    )
+    parser.add_argument(
+        "--speaker-style",
+        default=None,
+        metavar="STYLE",
+        help=(
+            "Style preset for reformatting spoken output. "
+            "Choices: military, five_year_old, fast, pirate, news_anchor, haiku, shakespearean, robot"
+        ),
+    )
 
 
 def _add_agent_args(parser: argparse.ArgumentParser) -> None:
@@ -90,6 +111,12 @@ def _build_shared_kwargs(args: argparse.Namespace) -> dict:
         kwargs["terminate_words"] = args.terminate_words
     if args.listen_duration is not None:
         kwargs["listen_duration"] = args.listen_duration
+    if args.use_speaker:
+        kwargs["use_speaker"] = True
+    if args.speaker_voice != "af_heart":
+        kwargs["speaker_voice"] = args.speaker_voice
+    if args.speaker_style is not None:
+        kwargs["speaker_style"] = args.speaker_style
     return kwargs
 
 

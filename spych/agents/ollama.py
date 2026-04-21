@@ -15,6 +15,9 @@ class OllamaResponder(BaseResponder):
         host: str = "http://localhost:11434",
         listen_duration: int | float | str = 0,
         name: Optional[str] = None,
+        use_speaker: bool = False,
+        speaker_voice: str = "af_heart",
+        speaker_style: Optional[str] = None,
     ) -> None:
         """
         Usage:
@@ -62,12 +65,30 @@ class OllamaResponder(BaseResponder):
             - Type: str
             - What: A custom name for the responder to use in printed messages
             - Default: "Ollama"
+
+        - `use_speaker`:
+            - Type: bool
+            - What: Whether to speak responses aloud via kokoro TTS
+            - Default: False
+
+        - `speaker_voice`:
+            - Type: str
+            - What: Kokoro voice ID for spoken responses
+            - Default: "af_heart"
+
+        - `speaker_style`:
+            - Type: str | None
+            - What: Style preset for reformatting spoken output (e.g. "military", "fast")
+            - Default: None
         """
         name = name or "Ollama"
         super().__init__(
             spych_object=spych_object,
             listen_duration=listen_duration,
             name=name,
+            use_speaker=use_speaker,
+            speaker_voice=speaker_voice,
+            speaker_style=speaker_style,
         )
         self.model = model
         self.history_length = history_length
@@ -161,6 +182,9 @@ def ollama(
     history_length: int = 10,
     host: str = "http://localhost:11434",
     name: Optional[str] = None,
+    use_speaker: bool = False,
+    speaker_voice: str = "af_heart",
+    speaker_style: Optional[str] = None,
     spych_kwargs: dict[str, any] | None = None,
     spych_wake_kwargs: dict[str, any] | None = None,
 ) -> None:
@@ -216,6 +240,21 @@ def ollama(
         - What: A custom display name for the responder shown in printed messages
         - Default: None (uses "Ollama")
 
+    - `use_speaker`:
+        - Type: bool
+        - What: Whether to speak responses aloud via kokoro TTS
+        - Default: False
+
+    - `speaker_voice`:
+        - Type: str
+        - What: Kokoro voice ID for spoken responses
+        - Default: "af_heart"
+
+    - `speaker_style`:
+        - Type: str | None
+        - What: Style preset for reformatting spoken output (e.g. "military", "fast")
+        - Default: None
+
     - `spych_kwargs`:
         - Type: dict
         - What: Additional keyword arguments to pass to the Spych constructor
@@ -236,6 +275,9 @@ def ollama(
         history_length=history_length,
         host=host,
         name=name,
+        use_speaker=use_speaker,
+        speaker_voice=speaker_voice,
+        speaker_style=speaker_style,
     )
 
     SpychOrchestrator(

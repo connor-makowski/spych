@@ -1,7 +1,9 @@
 from spych.utils import Notify
 from spych.cli_tools import CliSpinner, CliPrinter, theme
 from spych.spinners import Spinner
+from spych.speaker import Speaker, SPEAKER_STYLES
 from typing import Optional
+import threading
 import time
 
 
@@ -12,6 +14,10 @@ class BaseResponder(Notify):
         listen_duration: int | float = 0,
         name: Optional[str] = None,
         spinner: Optional[CliSpinner] = None,
+        use_speaker: bool = False,
+        speaker_voice: str = "af_heart",
+        speaker_style: Optional[str] = None,
+        follow_up_listen_duration: int | float = 0,
     ) -> None:
         """
         Usage:
@@ -57,11 +63,46 @@ class BaseResponder(Notify):
               created, preserving the original single-responder behaviour.
             - Default: None
 
+        - `use_speaker`:
+            - Type: bool
+            - What: Whether to speak responses aloud via kokoro TTS after printing them
+            - Default: False
+
+        - `speaker_voice`:
+            - Type: str
+            - What: A kokoro voice ID used for all spoken responses
+            - Default: "af_heart"
+            - Note: American English voices use prefix `am_` or `af_`; British English
+              use `bm_` or `bf_`. See spych.speaker.Speaker for the full voice list.
+
+        - `speaker_style`:
+            - Type: str | None
+            - What: A style preset that re-prompts the same agent to reformat the
+              response before speaking. Available presets are keys of
+              `spych.speaker.SPEAKER_STYLES` (e.g. "military", "five_year_old", "fast").
+              When None the raw response text is spoken without reformatting.
+            - Default: None
+
+        - `follow_up_listen_duration`:
+            - Type: int | float
+            - What: How long to listen for a follow-up answer after the agent speaks
+              a response that contains a question. Uses the same duration semantics as
+              `listen_duration`: 0 uses Silero VAD to auto-detect the end of speech;
+              a positive number records for exactly that many seconds.
+            - Default: 0 (VAD auto-detect)
+            - Note: Only used when `use_speaker` is True and the spoken summary
+              contains a question mark.
+
         Notes:
 
         - Subclasses must implement the `respond` method.
         - The `__call__` method orchestrates the full voice listen -> transcribe -> respond
           cycle; use `text_input` for the typed equivalent.
+        - When `use_speaker` is True, `summarize_for_speech()` is called in a background
+          thread after each response so audio playback does not block the main loop.
+        - When the spoken summary contains a question, `spoken_follow_up_loop()` listens for
+          a user answer and re-runs the respond cycle inline, chaining follow-ups until
+          no question remains or the user triggers the wake word to interrupt.
         """
         self.spych_object = spych_object
         self.listen_duration = listen_duration
@@ -71,6 +112,18 @@ class BaseResponder(Notify):
             spinner if spinner is not None else CliSpinner()
         )
         self._start_time: float = 0.0
+
+        self._current_user_input: str = ""
+        self.use_speaker = use_speaker
+        self.speaker_voice = speaker_voice
+        self.speaker_style = speaker_style
+        self.follow_up_listen_duration = follow_up_listen_duration
+        self._speaker = None
+        self._speech_text: str = ""
+        self._speech_complete: threading.Event = threading.Event()
+        self._speech_complete.set()
+        if use_speaker:
+            self._speaker = Speaker(speaker_voice)
 
     # ------------------------------------------------------------------ #
     #  Public helper API — safe to call from inside respond()             #
@@ -186,6 +239,137 @@ class BaseResponder(Notify):
         CliPrinter.print_response(name, message)
         if was_running:
             self.spinner.start()
+
+    # ------------------------------------------------------------------ #
+    #  Speaker integration                                                #
+    # ------------------------------------------------------------------ #
+
+    def summarize_for_speech(self, response: str) -> str:
+        """
+        Usage:
+
+        - Produces the text that will be spoken aloud by the Speaker. The default
+          implementation re-prompts the same agent with a style meta-prompt so
+          that the spoken output is reformatted according to `speaker_style`.
+          When `speaker_style` is None the response is summarized for spoken
+          delivery without a specific style constraint.
+
+        - Override in subclasses for custom speech generation behaviour, such as
+          injecting a final prompt into a CLI session via a temp file instead of
+          spawning a new subprocess call.
+
+        Requires:
+
+        - `response`:
+            - Type: str
+            - What: The full response string returned by `respond()`
+
+        Returns:
+
+        - `speech_text`:
+            - Type: str
+            - What: The text to pass to `Speaker.speak()`
+
+        Notes:
+
+        - This method is called from a background thread; avoid mutating shared
+          state without a lock when overriding.
+        - For `OllamaResponder` and other history-based responders, the default
+          implementation calls `self.respond()` which appends the meta-prompt to
+          the conversation history. Override `summarize_for_speech()` in those
+          subclasses to avoid history pollution if desired.
+        """
+        if len(response) < 500:
+            return response
+        style_prompt = SPEAKER_STYLES.get(self.speaker_style, "")
+        summary_command = f"""
+        Summarize the content below for clear and natural delivery. 
+            - If reasonable, return the original text.  
+            - Do not indicate that it is a summary or that it is for voice transcription.
+            - Important: Only return the summary, nothing else.
+
+        Additional Style Instructions:
+        {style_prompt}
+
+        Begin summary:
+        {response}
+        """
+        summary_response = self.respond(summary_command)
+        if len(summary_response) > 1000:
+            # self.print_info(f"{theme.warning}Warning: summarize_for_speech response is very long ({len(summary_response)} characters). Truncating to 1000 characters.{theme.reset}")
+            summary_response = summary_response[:1000]
+        return summary_response
+
+    def speak_to_user(self, response: str) -> None:
+        try:
+            text = self.summarize_for_speech(response)
+            self._speech_text = text
+            if not self._speaker._interrupted.is_set():
+                self._speaker.speak(text)
+        except Exception:
+            self._speech_text = ""
+        finally:
+            self._speech_complete.set()
+
+    def spoken_follow_up_loop(self) -> None:
+        """
+        Usage:
+
+        - Called at the end of each `__call__` cycle when `use_speaker` is True.
+          Waits for the background speech thread to finish, then checks whether the
+          spoken summary contained a question. If so, enters a follow-up listen →
+          respond loop that continues until one of the following:
+
+            1. The spoken summary has no question.
+            2. The user does not respond (VAD returns empty string).
+            3. The speaker is interrupted by the wake word.
+
+        Notes:
+
+        - The follow-up cycle re-uses `on_user_input`, `respond`, `on_response`, and
+          `on_before_respond` / `on_after_respond`, so all hooks fire normally.
+        - Each follow-up response is itself summarized and spoken; if that summary also
+          contains a question the loop continues, enabling natural multi-turn dialogue
+          without requiring the user to repeat the wake word.
+        - Interrupting via the wake word (which calls `Speaker.interrupt()`) causes
+          `_speech_complete` to be set and `_interrupted` to be flagged, so the loop
+          exits cleanly and the new `__call__` cycle takes over.
+        """
+        while True:
+            # Wait for the speech thread to finish (or for an interrupt to arrive).
+            self._speech_complete.wait()
+            if self._speaker._interrupted.is_set():
+                self.wait_for_next_wake_word(divider=False)
+                return
+            if "?" not in self._speech_text:
+                self.wait_for_next_wake_word(divider=False)
+                return
+            # A question was spoken — start listening for the user's answer.
+            self.spinner.start(
+                f"{theme.bold}{theme.highlight}{self.name}{theme.reset} "
+                f"{theme.success}is listening for follow-up{theme.reset}",
+                spinner=Spinner.EQUALIZER,
+            )
+            follow_up_input = self.spych_object.listen(
+                duration=self.follow_up_listen_duration
+            )
+            self.on_listen_end()
+            if not follow_up_input or self._speaker._interrupted.is_set():
+                self.wait_for_next_wake_word(divider=False)
+                return
+            self.on_user_input(follow_up_input)
+            try:
+                self.on_before_respond(follow_up_input)
+                follow_up_response = self.respond(follow_up_input)
+                self.on_after_respond(follow_up_input, follow_up_response)
+            except Exception as exc:
+                self.spinner.stop()
+                print(f"  {theme.error}✗  Error: {exc}{theme.reset}\n")
+                self.wait_for_next_wake_word(divider=False)
+                return
+            self.on_response(follow_up_response)
+            CliPrinter.divider()
+            # Loop: check whether the new spoken response also contains a question.
 
     # ------------------------------------------------------------------ #
     #  Extension hooks — override in subclasses for custom behaviour      #
@@ -309,6 +493,7 @@ class BaseResponder(Notify):
         - It prints the user input label and starts the spinner with verb animation.
         - The start time is recorded for timing purposes.
         """
+        self._current_user_input = user_input
         CliPrinter.label("User:", user_input)
         self._start_time = time.time()
         self.spinner.start_with_verbs(
@@ -337,6 +522,15 @@ class BaseResponder(Notify):
         if response:
             CliPrinter.print_response(self.name, response)
             CliPrinter.print_status(self.name, success=True, elapsed=elapsed)
+            if self.use_speaker and self._speaker is not None:
+                self._speech_text = ""
+                self._speech_complete.clear()
+                self._speaker._interrupted.clear()
+                threading.Thread(
+                    target=self.speak_to_user,
+                    args=(response,),
+                    daemon=True,
+                ).start()
         else:
             CliPrinter.print_status(self.name, success=False, elapsed=elapsed)
 
@@ -381,6 +575,8 @@ class BaseResponder(Notify):
             - Type: str
             - What: The response string returned by `respond`
         """
+        if self.use_speaker and self._speaker is not None:
+            self._speaker.interrupt()
         self.on_listen_start()
         user_input = self.spych_object.listen(duration=self.listen_duration)
         self.on_listen_end()
@@ -397,7 +593,11 @@ class BaseResponder(Notify):
             print(f"  {theme.error}✗  Error: {exc}{theme.reset}\n")
             return ""
         self.on_response(response)
-        self.wait_for_next_wake_word()
+        if self.use_speaker and self._speaker is not None:
+            CliPrinter.divider()
+            self.spoken_follow_up_loop()
+        else:
+            self.wait_for_next_wake_word()
         return response
 
     def ready_message(self, show_wait_for_wake: bool = True, **kwargs) -> None:

@@ -1,5 +1,6 @@
 import io
 import os
+import threading
 import time
 import warnings
 import wave
@@ -13,6 +14,19 @@ warnings.filterwarnings("ignore", category=FutureWarning, module="torch")
 import pygame
 from huggingface_hub import constants as _hf_constants
 from kokoro import KPipeline
+
+SPEAKER_STYLES: dict[str, str] = {
+    "concise": "Summarize concisely in 1-2 sentences. Focus on key points and be direct.",
+    "friendly": "Summarize in a friendly and approachable tone. Use simple language and be concise. Max 2 sentences.",
+    "military": "Reformat in military brevity style. Max 2 terse sentences. Example: 'Objective achieved. Proceeding to next phase.'",
+    "five_year_old": "Explain this like I'm 5 years old. Use simple words, be short and friendly. Max 2 sentences.",
+    "fast": "Summarize in exactly one sentence. Be direct and concise.",
+    "pirate": "Reformat in pirate speak. Keep it short and colorful. Arrr!",
+    "news_anchor": "Reformat as a professional TV news anchor would say it. 1-2 sentences.",
+    "haiku": "Convert this response to a haiku (5-7-5 syllables). Return only the haiku, nothing else.",
+    "shakespearean": "Reformat in Shakespearean English. Brief and poetic.",
+    "robot": "Reformat as a robot speaking. Monotone, literal, and short.",
+}
 
 
 class Speaker:
@@ -65,13 +79,13 @@ class Speaker:
           |-------------|--------|-------|
           | bf_emma     | F      | B-    |
           | bf_isabella | F      | C     |
-          | bm_fable    | M      | C     |
           | bm_george   | M      | C     |
         """
         pygame.mixer.init()
         self.REPO_ID = "hexgrad/Kokoro-82M"
         self.voice = voice
         self.model = None
+        self._interrupted = threading.Event()
         self.load_pipeline(voice)
 
     def load_pipeline(self, voice: str) -> None:
@@ -108,9 +122,14 @@ class Speaker:
         Notes:
 
         - Playback is blocking — this method returns only after all audio has
-          finished playing.
+          finished playing or `interrupt()` is called.
+        - Calling `interrupt()` stops playback immediately and causes this
+          method to return early.
         """
+        self._interrupted.clear()
         for _, _, audio in self.pipeline(text, voice=self.voice):
+            if self._interrupted.is_set():
+                return
             pcm = (audio.numpy() * 32767).astype(np.int16)
             buf = io.BytesIO()
             with wave.open(buf, "wb") as wf:
@@ -122,4 +141,18 @@ class Speaker:
             pygame.mixer.music.load(buf)
             pygame.mixer.music.play()
             while pygame.mixer.music.get_busy():
+                if self._interrupted.is_set():
+                    pygame.mixer.music.stop()
+                    return
                 time.sleep(0.05)
+
+    def interrupt(self) -> None:
+        """
+        Usage:
+
+        - Stops any in-progress `speak()` call immediately. Safe to call from
+          any thread at any time. If `speak()` is not running, this is a no-op
+          — the flag is cleared at the start of the next `speak()` call.
+        """
+        self._interrupted.set()
+        pygame.mixer.music.stop()
