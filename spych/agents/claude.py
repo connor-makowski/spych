@@ -1,7 +1,7 @@
 import sys, json, time, subprocess, importlib, re
 from spych.core import Spych
 from spych.orchestrator import SpychOrchestrator
-from spych.responders import BaseResponder
+from spych.responders import BaseResponder, AgentResponse
 from typing import Optional, Any
 
 CLAUDE_SDK_WORKER_PATH = importlib.util.find_spec(
@@ -20,7 +20,7 @@ class LocalClaudeCodeSDKResponder(BaseResponder):
         show_tool_events: bool = True,
         use_speaker: bool = False,
         speaker_voice: str = "af_heart",
-        speaker_style: Optional[str] = None,
+        response_style: Optional[str] = None,
     ) -> None:
         """
         Usage:
@@ -69,7 +69,7 @@ class LocalClaudeCodeSDKResponder(BaseResponder):
             name=name,
             use_speaker=use_speaker,
             speaker_voice=speaker_voice,
-            speaker_style=speaker_style,
+            response_style=response_style,
         )
         self.continue_conversation = continue_conversation
         self.setting_sources = list(setting_sources) if setting_sources else []
@@ -77,20 +77,20 @@ class LocalClaudeCodeSDKResponder(BaseResponder):
         self._first_call = True
         self._last_session_id: str | None = None
 
-    def respond(self, user_input: str) -> str:
+    def respond(self, user_input: str) -> AgentResponse:
         """
         Spawns _sdk_worker.py as a subprocess, writes the request payload to
         its stdin, then reads newline-delimited JSON events from its stdout.
 
         Tool start/end events are fired live as they arrive so the user sees
-        real-time feedback. The final result is returned as a string.
+        real-time feedback. The final result is parsed into an AgentResponse.
         """
         is_first = self._first_call
         self._first_call = False
 
         payload = json.dumps(
             {
-                "user_input": user_input,
+                "user_input": self.format_prompt(user_input),
                 "is_first": is_first,
                 "continue_conversation": self.continue_conversation,
                 "last_session_id": self._last_session_id,
@@ -160,7 +160,7 @@ class LocalClaudeCodeSDKResponder(BaseResponder):
             elif etype == "error":
                 final_result = f"Error: {event.get('text', 'unknown error')}"
         proc.wait()
-        return final_result
+        return self.parse_output(final_result)
 
 
 def claude_code_sdk(
@@ -173,7 +173,7 @@ def claude_code_sdk(
     name: Optional[str] = None,
     use_speaker: bool = False,
     speaker_voice: str = "af_heart",
-    speaker_style: Optional[str] = None,
+    response_style: Optional[str] = None,
     spych_kwargs: dict[str, any] | None = None,
     spych_wake_kwargs: dict[str, any] | None = None,
 ) -> None:
@@ -246,7 +246,7 @@ def claude_code_sdk(
         name=name,
         use_speaker=use_speaker,
         speaker_voice=speaker_voice,
-        speaker_style=speaker_style,
+        response_style=response_style,
     )
 
     SpychOrchestrator(
@@ -271,7 +271,7 @@ class LocalClaudeCodeCLIResponder(BaseResponder):
         show_tool_events: bool = True,
         use_speaker: bool = False,
         speaker_voice: str = "af_heart",
-        speaker_style: Optional[str] = None,
+        response_style: Optional[str] = None,
     ) -> None:
         """
         Usage:
@@ -326,7 +326,7 @@ class LocalClaudeCodeCLIResponder(BaseResponder):
             name=name,
             use_speaker=use_speaker,
             speaker_voice=speaker_voice,
-            speaker_style=speaker_style,
+            response_style=response_style,
         )
         self.continue_conversation = continue_conversation
         self.show_tool_events = show_tool_events
@@ -471,18 +471,17 @@ class LocalClaudeCodeCLIResponder(BaseResponder):
 
         return False, self.__strip_tool_calls__(result_text).strip()
 
-    def respond(self, user_input: str) -> str:
+    def respond(self, user_input: str) -> AgentResponse:
         """
         Runs one or more `claude -p` subprocess turns until a clean result is
         received. Intermediate turns (where tool calls are in flight) print
-        assistant text live. The final answer is returned for the base class
-        to print, preventing double-printing.
+        assistant text live. The final answer is parsed into an AgentResponse.
         """
         is_first = self.first_call
         self.first_call = False
 
         active_tools: dict[str, float] = {}
-        current_input = user_input
+        current_input = self.format_prompt(user_input)
 
         while True:
             needs_continuation, result_text = self.__run_turn__(
@@ -496,7 +495,7 @@ class LocalClaudeCodeCLIResponder(BaseResponder):
             is_first = False
 
             if not needs_continuation:
-                return result_text
+                return self.parse_output(result_text)
 
             current_input = result_text
 
@@ -510,7 +509,7 @@ def claude_code_cli(
     name: Optional[str] = None,
     use_speaker: bool = False,
     speaker_voice: str = "af_heart",
-    speaker_style: Optional[str] = None,
+    response_style: Optional[str] = None,
     spych_kwargs: Optional[dict[str, Any]] = None,
     spych_wake_kwargs: Optional[dict[str, Any]] = None,
 ) -> None:
@@ -565,7 +564,7 @@ def claude_code_cli(
         name=name,
         use_speaker=use_speaker,
         speaker_voice=speaker_voice,
-        speaker_style=speaker_style,
+        response_style=response_style,
     )
 
     SpychOrchestrator(

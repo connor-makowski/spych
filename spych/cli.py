@@ -61,6 +61,15 @@ def _add_shared_args(parser: argparse.ArgumentParser) -> None:
         help="Seconds to listen after wake word (default: 5)",
     )
     parser.add_argument(
+        "--response-style",
+        default="",
+        metavar="STYLE",
+        help=(
+            "Style for reformatting output. "
+            "Choices: military, five_year_old, fast, pirate, news_anchor, haiku, shakespearean, robot", "caveman", "yoda"
+        ),
+    )
+    parser.add_argument(
         "--use-speaker",
         action="store_true",
         default=False,
@@ -71,15 +80,6 @@ def _add_shared_args(parser: argparse.ArgumentParser) -> None:
         default="af_heart",
         metavar="VOICE",
         help="Kokoro voice ID for spoken responses (default: af_heart)",
-    )
-    parser.add_argument(
-        "--speaker-style",
-        default=None,
-        metavar="STYLE",
-        help=(
-            "Style preset for reformatting spoken output. "
-            "Choices: military, five_year_old, fast, pirate, news_anchor, haiku, shakespearean, robot"
-        ),
     )
 
 
@@ -115,8 +115,8 @@ def _build_shared_kwargs(args: argparse.Namespace) -> dict:
         kwargs["use_speaker"] = True
     if args.speaker_voice != "af_heart":
         kwargs["speaker_voice"] = args.speaker_voice
-    if args.speaker_style is not None:
-        kwargs["speaker_style"] = args.speaker_style
+    if args.response_style is not None:
+        kwargs["response_style"] = args.response_style
     return kwargs
 
 
@@ -151,7 +151,7 @@ def main():
 
     # Aliases → canonical name; used to normalise args.agent after parsing.
     _AGENT_ALIASES: dict[str, str] = {
-        "claude": "claude_code_cli",
+        "claude": "claude_code_sdk",
         "codex": "codex_cli",
         "gemini": "gemini_cli",
         "opencode": "opencode_cli",
@@ -189,7 +189,6 @@ def main():
     # ------------------------------------------------------------------ #
     p_claude_cli = subparsers.add_parser(
         "claude_code_cli",
-        aliases=["claude"],
         help="Voice-control Claude Code via the CLI",
     )
     _add_shared_args(p_claude_cli)
@@ -200,6 +199,7 @@ def main():
     # ------------------------------------------------------------------ #
     p_claude_sdk = subparsers.add_parser(
         "claude_code_sdk",
+        aliases=["claude"],
         help="Voice-control Claude Code via the Agent SDK",
     )
     _add_shared_args(p_claude_sdk)

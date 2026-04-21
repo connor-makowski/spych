@@ -1,6 +1,6 @@
 from spych.core import Spych
 from spych.orchestrator import SpychOrchestrator
-from spych.responders import BaseResponder
+from spych.responders import BaseResponder, AgentResponse
 from typing import Optional, Any
 import subprocess, json, time
 
@@ -15,7 +15,7 @@ class LocalCodexCLIResponder(BaseResponder):
         show_tool_events: bool = True,
         use_speaker: bool = False,
         speaker_voice: str = "af_heart",
-        speaker_style: Optional[str] = None,
+        response_style: Optional[str] = None,
     ) -> None:
         """
         Usage:
@@ -68,7 +68,7 @@ class LocalCodexCLIResponder(BaseResponder):
             name=name,
             use_speaker=use_speaker,
             speaker_voice=speaker_voice,
-            speaker_style=speaker_style,
+            response_style=response_style,
         )
         self.continue_conversation = continue_conversation
         self.show_tool_events = show_tool_events
@@ -202,18 +202,19 @@ class LocalCodexCLIResponder(BaseResponder):
 
         return final_text.strip()
 
-    def respond(self, user_input: str) -> str:
+    def respond(self, user_input: str) -> AgentResponse:
         """
-        Runs a single `codex exec` subprocess turn and returns the final answer.
-        Tool calls are handled natively by the CLI — no manual re-submission needed.
+        Runs a single `codex exec` subprocess turn and returns a structured
+        AgentResponse. Tool calls are handled natively by the CLI.
         """
         is_first = self.first_call
         self.first_call = False
 
         active_tools: dict[str, tuple[str, float]] = {}
-        return self.__run_turn__(
-            user_input, is_first=is_first, active_tools=active_tools
+        raw = self.__run_turn__(
+            self.format_prompt(user_input), is_first=is_first, active_tools=active_tools
         )
+        return self.parse_output(raw)
 
 
 def codex_cli(
@@ -225,7 +226,7 @@ def codex_cli(
     name: Optional[str] = None,
     use_speaker: bool = False,
     speaker_voice: str = "af_heart",
-    speaker_style: Optional[str] = None,
+    response_style: Optional[str] = None,
     spych_kwargs: Optional[dict[str, Any]] = None,
     spych_wake_kwargs: Optional[dict[str, Any]] = None,
 ) -> None:
@@ -289,7 +290,7 @@ def codex_cli(
         name=name,
         use_speaker=use_speaker,
         speaker_voice=speaker_voice,
-        speaker_style=speaker_style,
+        response_style=response_style,
     )
 
     SpychOrchestrator(

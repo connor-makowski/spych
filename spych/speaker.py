@@ -1,3 +1,4 @@
+import glob
 import io
 import os
 import threading
@@ -14,19 +15,6 @@ warnings.filterwarnings("ignore", category=FutureWarning, module="torch")
 import pygame
 from huggingface_hub import constants as _hf_constants
 from kokoro import KPipeline
-
-SPEAKER_STYLES: dict[str, str] = {
-    "concise": "Summarize concisely in 1-2 sentences. Focus on key points and be direct.",
-    "friendly": "Summarize in a friendly and approachable tone. Use simple language and be concise. Max 2 sentences.",
-    "military": "Reformat in military brevity style. Max 2 terse sentences. Example: 'Objective achieved. Proceeding to next phase.'",
-    "five_year_old": "Explain this like I'm 5 years old. Use simple words, be short and friendly. Max 2 sentences.",
-    "fast": "Summarize in exactly one sentence. Be direct and concise.",
-    "pirate": "Reformat in pirate speak. Keep it short and colorful. Arrr!",
-    "news_anchor": "Reformat as a professional TV news anchor would say it. 1-2 sentences.",
-    "haiku": "Convert this response to a haiku (5-7-5 syllables). Return only the haiku, nothing else.",
-    "shakespearean": "Reformat in Shakespearean English. Brief and poetic.",
-    "robot": "Reformat as a robot speaking. Monotone, literal, and short.",
-}
 
 
 class Speaker:
@@ -94,7 +82,8 @@ class Speaker:
             _hf_constants.HF_HUB_CACHE,
             "models--" + self.REPO_ID.replace("/", "--"),
         )
-        is_cached = os.path.isdir(model_cache) and bool(os.listdir(model_cache))
+        voice_pattern = os.path.join(model_cache, "**", f"voices/{voice}.pt")
+        is_cached = bool(glob.glob(voice_pattern, recursive=True))
         prev_HF_HUB_OFFLINE = _hf_constants.HF_HUB_OFFLINE
         if is_cached:
             _hf_constants.HF_HUB_OFFLINE = True

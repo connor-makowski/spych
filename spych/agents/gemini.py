@@ -1,6 +1,6 @@
 from spych.core import Spych
 from spych.orchestrator import SpychOrchestrator
-from spych.responders import BaseResponder
+from spych.responders import BaseResponder, AgentResponse
 from spych.cli_tools import CliPrinter, theme
 from typing import Optional, Any
 import subprocess, json, time, shutil, select
@@ -16,7 +16,7 @@ class LocalGeminiCLIResponder(BaseResponder):
         show_tool_events: bool = True,
         use_speaker: bool = False,
         speaker_voice: str = "af_heart",
-        speaker_style: Optional[str] = None,
+        response_style: Optional[str] = None,
     ) -> None:
         """
         Usage:
@@ -69,7 +69,7 @@ class LocalGeminiCLIResponder(BaseResponder):
             name=name,
             use_speaker=use_speaker,
             speaker_voice=speaker_voice,
-            speaker_style=speaker_style,
+            response_style=response_style,
         )
         self.continue_conversation = continue_conversation
         self.show_tool_events = show_tool_events
@@ -225,12 +225,12 @@ class LocalGeminiCLIResponder(BaseResponder):
             )
             return False
 
-    def respond(self, user_input: str) -> str:
+    def respond(self, user_input: str) -> AgentResponse:
         """
         Usage:
 
         - Pipes the transcribed user input into `gemini -p` with `stream-json`
-          and returns the final response after all tool calls have completed.
+          and returns a structured AgentResponse after all tool calls complete.
           Fires tool events live as they arrive.
 
         Requires:
@@ -242,13 +242,13 @@ class LocalGeminiCLIResponder(BaseResponder):
         Returns:
 
         - `response`:
-            - Type: str
-            - What: The final response string from Gemini CLI
+            - Type: AgentResponse
+            - What: Parsed structured response from Gemini CLI
         """
         is_first = self.first_call
         self.first_call = False
 
-        cmd = ["gemini", "-p", user_input, "--output-format", "stream-json"]
+        cmd = ["gemini", "-p", self.format_prompt(user_input), "--output-format", "stream-json"]
 
         if self.continue_conversation:
             if self._last_session_id:
@@ -328,7 +328,7 @@ class LocalGeminiCLIResponder(BaseResponder):
                 final_result = f"Error: {event.get('message', 'unknown error')}"
 
         proc.wait()
-        return final_result
+        return self.parse_output(final_result)
 
 
 def gemini_cli(
@@ -340,7 +340,7 @@ def gemini_cli(
     name: Optional[str] = None,
     use_speaker: bool = False,
     speaker_voice: str = "af_heart",
-    speaker_style: Optional[str] = None,
+    response_style: Optional[str] = None,
     spych_kwargs: Optional[dict[str, Any]] = None,
     spych_wake_kwargs: Optional[dict[str, Any]] = None,
 ) -> None:
@@ -406,7 +406,7 @@ def gemini_cli(
         name=name,
         use_speaker=use_speaker,
         speaker_voice=speaker_voice,
-        speaker_style=speaker_style,
+        response_style=response_style,
     )
 
     SpychOrchestrator(

@@ -1,6 +1,6 @@
 from spych.core import Spych
 from spych.orchestrator import SpychOrchestrator
-from spych.responders import BaseResponder
+from spych.responders import BaseResponder, AgentResponse
 from typing import Optional, Any
 import subprocess, json, re, time
 
@@ -16,7 +16,7 @@ class LocalOpenCodeCLIResponder(BaseResponder):
         model: Optional[str] = None,
         use_speaker: bool = False,
         speaker_voice: str = "af_heart",
-        speaker_style: Optional[str] = None,
+        response_style: Optional[str] = None,
     ) -> None:
         """
         Usage:
@@ -85,7 +85,7 @@ class LocalOpenCodeCLIResponder(BaseResponder):
             name=name,
             use_speaker=use_speaker,
             speaker_voice=speaker_voice,
-            speaker_style=speaker_style,
+            response_style=response_style,
         )
         self.continue_conversation = continue_conversation
         self.show_tool_events = show_tool_events
@@ -104,12 +104,12 @@ class LocalOpenCodeCLIResponder(BaseResponder):
         """Strip inline tool-call XML from text, return clean prose only."""
         return self.TOOL_CALL_RE.sub("", text).strip()
 
-    def respond(self, user_input: str) -> str:
+    def respond(self, user_input: str) -> AgentResponse:
         """
         Usage:
 
         - Pipes the transcribed user input into `opencode run --format json`
-          and returns the final response after all tool calls have completed.
+          and returns a structured AgentResponse after all tool calls complete.
           Fires tool events live as they arrive from text deltas.
 
         Requires:
@@ -121,8 +121,8 @@ class LocalOpenCodeCLIResponder(BaseResponder):
         Returns:
 
         - `response`:
-            - Type: str
-            - What: The final clean response string (inline tool XML stripped)
+            - Type: AgentResponse
+            - What: Parsed structured response (inline tool XML stripped before parse)
         """
         is_first = self.first_call
         self.first_call = False
@@ -139,7 +139,7 @@ class LocalOpenCodeCLIResponder(BaseResponder):
         if self.model:
             cmd.extend(["--model", self.model])
 
-        cmd.append(user_input)
+        cmd.append(self.format_prompt(user_input))
 
         proc = subprocess.Popen(
             cmd,
@@ -229,7 +229,7 @@ class LocalOpenCodeCLIResponder(BaseResponder):
                 )
         active_tools.clear()
 
-        return self.__strip_tool_calls__(accumulated_text)
+        return self.parse_output(self.__strip_tool_calls__(accumulated_text))
 
 
 def opencode_cli(
@@ -242,7 +242,7 @@ def opencode_cli(
     name: Optional[str] = None,
     use_speaker: bool = False,
     speaker_voice: str = "af_heart",
-    speaker_style: Optional[str] = None,
+    response_style: Optional[str] = None,
     spych_kwargs: Optional[dict[str, Any]] = None,
     spych_wake_kwargs: Optional[dict[str, Any]] = None,
 ) -> None:
@@ -312,7 +312,7 @@ def opencode_cli(
         name=name,
         use_speaker=use_speaker,
         speaker_voice=speaker_voice,
-        speaker_style=speaker_style,
+        response_style=response_style,
     )
 
     SpychOrchestrator(

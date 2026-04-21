@@ -1,10 +1,19 @@
-from spych.utils import Notify
+from spych.utils import Notify, get_response_style
 from spych.cli_tools import CliSpinner, CliPrinter, theme
 from spych.spinners import Spinner
-from spych.speaker import Speaker, SPEAKER_STYLES
+from spych.speaker import Speaker
+from dataclasses import dataclass
 from typing import Optional
+import json
 import threading
 import time
+
+
+@dataclass
+class AgentResponse:
+    response: str
+    summary: str
+    requires_user_feedback: bool
 
 
 class BaseResponder(Notify):
@@ -14,9 +23,9 @@ class BaseResponder(Notify):
         listen_duration: int | float = 0,
         name: Optional[str] = None,
         spinner: Optional[CliSpinner] = None,
+        response_style: str = "",
         use_speaker: bool = False,
         speaker_voice: str = "af_heart",
-        speaker_style: Optional[str] = None,
         follow_up_listen_duration: int | float = 0,
     ) -> None:
         """
@@ -75,13 +84,23 @@ class BaseResponder(Notify):
             - Note: American English voices use prefix `am_` or `af_`; British English
               use `bm_` or `bf_`. See spych.speaker.Speaker for the full voice list.
 
-        - `speaker_style`:
-            - Type: str | None
-            - What: A style preset that re-prompts the same agent to reformat the
-              response before speaking. Available presets are keys of
-              `spych.speaker.SPEAKER_STYLES` (e.g. "military", "five_year_old", "fast").
-              When None the raw response text is spoken without reformatting.
-            - Default: None
+        - `response_style`:
+            - Type: str
+            - What: A style preset that formats the default prompt in a more stylized way.
+              - Options include: 
+                - concise
+                - friendly
+                - five_year_old
+                - fast
+                - pirate
+                - news_anchor
+                - haiku
+                - shakespearean
+                - robot
+                - caveman
+                - yoda
+              - You can also write your own custom style instructions as a string here.
+            - Default: "" (no additional style instructions)
 
         - `follow_up_listen_duration`:
             - Type: int | float
@@ -116,14 +135,15 @@ class BaseResponder(Notify):
         self._current_user_input: str = ""
         self.use_speaker = use_speaker
         self.speaker_voice = speaker_voice
-        self.speaker_style = speaker_style
+        self.response_style = response_style
+        self.style_hint = get_response_style(response_style)
         self.follow_up_listen_duration = follow_up_listen_duration
-        self._speaker = None
-        self._speech_text: str = ""
-        self._speech_complete: threading.Event = threading.Event()
-        self._speech_complete.set()
+        self.speaker = None
+        self._last_agent_response: Optional[AgentResponse] = None
+        self.speech_complete: threading.Event = threading.Event()
+        self.speech_complete.set()
         if use_speaker:
-            self._speaker = Speaker(speaker_voice)
+            self.speaker = Speaker(speaker_voice)
 
     # ------------------------------------------------------------------ #
     #  Public helper API — safe to call from inside respond()             #
@@ -244,72 +264,91 @@ class BaseResponder(Notify):
     #  Speaker integration                                                #
     # ------------------------------------------------------------------ #
 
-    def summarize_for_speech(self, response: str) -> str:
+    def format_prompt(self, prompt: str) -> str:
         """
         Usage:
 
-        - Produces the text that will be spoken aloud by the Speaker. The default
-          implementation re-prompts the same agent with a style meta-prompt so
-          that the spoken output is reformatted according to `speaker_style`.
-          When `speaker_style` is None the response is summarized for spoken
-          delivery without a specific style constraint.
-
-        - Override in subclasses for custom speech generation behaviour, such as
-          injecting a final prompt into a CLI session via a temp file instead of
-          spawning a new subprocess call.
-
-        Requires:
-
-        - `response`:
-            - Type: str
-            - What: The full response string returned by `respond()`
+        - Returns the JSON format instruction string to append to each outgoing
+          prompt. Includes a style hint when `response_style` is set.
 
         Returns:
 
-        - `speech_text`:
+        - `prompt`:
             - Type: str
-            - What: The text to pass to `Speaker.speak()`
-
-        Notes:
-
-        - This method is called from a background thread; avoid mutating shared
-          state without a lock when overriding.
-        - For `OllamaResponder` and other history-based responders, the default
-          implementation calls `self.respond()` which appends the meta-prompt to
-          the conversation history. Override `summarize_for_speech()` in those
-          subclasses to avoid history pollution if desired.
+            - What: Formatted string ready to append to user_input
         """
-        if len(response) < 500:
-            return response
-        style_prompt = SPEAKER_STYLES.get(self.speaker_style, "")
-        summary_command = f"""
-        Summarize the content below for clear and natural delivery. 
-            - If reasonable, return the original text.  
-            - Do not indicate that it is a summary or that it is for voice transcription.
-            - Important: Only return the summary, nothing else.
+        return f"""
+        You must respond with a valid json object with the following keys:
 
-        Additional Style Instructions:
-        {style_prompt}
+        - `response`: The full text of your response, which will be printed in the terminal. 
+            - Type: String
+        - `summary`: A short summary of your response, that will be presented at the end of each response cycle, but may be spoken outloud. Keep as short as possible. Ask any follow up questions at the end of this summary.
+            - Type: String
+        - `requires_user_feedback`: a boolean flag indicating whether your response contains a question or otherwise requires a user to follow up with additional information.
+            - Type: Boolean
+        
+        {self.style_hint}
 
-        Begin summary:
-        {response}
+        Below is the input prompt to consider:
+        =================
+
+        {prompt}
         """
-        summary_response = self.respond(summary_command)
-        if len(summary_response) > 1000:
-            # self.print_info(f"{theme.warning}Warning: summarize_for_speech response is very long ({len(summary_response)} characters). Truncating to 1000 characters.{theme.reset}")
-            summary_response = summary_response[:1000]
-        return summary_response
+    
+    def parse_output(self, raw_output: str) -> AgentResponse:
+        """
+        Usage:
 
-    def speak_to_user(self, response: str) -> None:
+        - Parses the raw text output from the LLM into an AgentResponse.
+          Expects the LLM to follow the format instructions provided in `format_prompt()`.
+
+        Requires:
+
+        - `raw_output`:
+            - Type: str
+            - What: The raw text output from the LLM, expected to contain a JSON object
+
+        Returns:
+
+        - `response`:
+            - Type: AgentResponse
+            - What: Structured response extracted from the LLM's JSON output; falls back
+              to echoing `raw_output` in all fields on parse failure
+        """
+        text = raw_output.strip()
+        if text.startswith("```"):
+            newline = text.find("\n")
+            if newline != -1:
+                text = text[newline + 1:]
+            if text.endswith("```"):
+                text = text[:-3].strip()
+        # Try direct parse first, then fall back to extracting embedded JSON object
+        for candidate in (text, text[text.find("{"):text.rfind("}") + 1] if "{" in text else ""):
+            try:
+                data = json.loads(candidate)
+                return AgentResponse(
+                    response=str(data.get("response", raw_output)),
+                    summary=str(data.get("summary", raw_output)),
+                    requires_user_feedback=bool(
+                        data.get("requires_user_feedback", False)
+                    ),
+                )
+            except (json.JSONDecodeError, ValueError):
+                continue
+        return AgentResponse(
+            response=raw_output,
+            summary=raw_output,
+            requires_user_feedback=False,
+        )
+
+    def speak_to_user(self, text: str) -> None:
         try:
-            text = self.summarize_for_speech(response)
-            self._speech_text = text
-            if not self._speaker._interrupted.is_set():
-                self._speaker.speak(text)
+            if not self.speaker._interrupted.is_set():
+                self.speaker.speak(text)
         except Exception:
-            self._speech_text = ""
+            pass
         finally:
-            self._speech_complete.set()
+            self.speech_complete.set()
 
     def spoken_follow_up_loop(self) -> None:
         """
@@ -337,11 +376,14 @@ class BaseResponder(Notify):
         """
         while True:
             # Wait for the speech thread to finish (or for an interrupt to arrive).
-            self._speech_complete.wait()
-            if self._speaker._interrupted.is_set():
+            self.speech_complete.wait()
+            if self.speaker._interrupted.is_set():
                 self.wait_for_next_wake_word(divider=False)
                 return
-            if "?" not in self._speech_text:
+            if (
+                self._last_agent_response is None
+                or not self._last_agent_response.requires_user_feedback
+            ):
                 self.wait_for_next_wake_word(divider=False)
                 return
             # A question was spoken — start listening for the user's answer.
@@ -354,7 +396,7 @@ class BaseResponder(Notify):
                 duration=self.follow_up_listen_duration
             )
             self.on_listen_end()
-            if not follow_up_input or self._speaker._interrupted.is_set():
+            if not follow_up_input or self.speaker._interrupted.is_set():
                 self.wait_for_next_wake_word(divider=False)
                 return
             self.on_user_input(follow_up_input)
@@ -387,13 +429,16 @@ class BaseResponder(Notify):
         """
         return True
 
-    def respond(self, user_input: str) -> str:
+    def respond(self, user_input: str) -> AgentResponse:
         """
         Usage:
 
-        - Called with the transcribed (or typed) user input. Must return a response
-          string. All CLI chrome is handled by the base class; this method only needs
-          to produce the response.
+        - Called with the transcribed (or typed) user input. Must return an
+          AgentResponse. All CLI chrome is handled by the base class; this method
+          only needs to produce the structured response.
+
+        - Implementations should pass the prompt through `self.format_prompt()` before
+          sending to the LLM, then call `self.parse_output(raw_text)` on the result.
 
         - Use the public helper methods for UI feedback inside this method:
 
@@ -410,8 +455,8 @@ class BaseResponder(Notify):
         Returns:
 
         - `response`:
-            - Type: str
-            - What: The response string to print to the terminal
+            - Type: AgentResponse
+            - What: Structured response with display text, spoken summary, and follow-up flag
         """
         raise NotImplementedError(
             "Subclasses must implement the `respond` method"
@@ -432,7 +477,7 @@ class BaseResponder(Notify):
             - What: The enriched transcribed input (after optional clarification)
         """
 
-    def on_after_respond(self, user_input: str, response: str) -> None:
+    def on_after_respond(self, user_input: str, response: AgentResponse) -> None:
         """
         Usage:
 
@@ -447,8 +492,8 @@ class BaseResponder(Notify):
             - What: The enriched transcribed input passed to `respond()`
 
         - `response`:
-            - Type: str
-            - What: The raw string returned by `respond()`
+            - Type: AgentResponse
+            - What: The structured response returned by `respond()`
         """
 
     # ------------------------------------------------------------------ #
@@ -500,7 +545,7 @@ class BaseResponder(Notify):
             self.name, interval=15, spinner=Spinner.ZEN
         )
 
-    def on_response(self, response: str) -> None:
+    def on_response(self, response: AgentResponse) -> None:
         """
         Usage:
 
@@ -509,8 +554,8 @@ class BaseResponder(Notify):
         Requires:
 
         - `response`:
-            - Type: str
-            - What: The response string returned by the respond method
+            - Type: AgentResponse
+            - What: The structured response returned by `respond()`
 
         Notes:
 
@@ -519,16 +564,20 @@ class BaseResponder(Notify):
         """
         elapsed = time.time() - self._start_time
         self.spinner.stop()
-        if response:
-            CliPrinter.print_response(self.name, response)
+        summary_character_limit = 200
+        if response.response:
+            CliPrinter.print_response(self.name, response.response)
+            if len(response.response) > summary_character_limit and response.summary != response.response:
+                CliPrinter.print_summary(response.summary)
             CliPrinter.print_status(self.name, success=True, elapsed=elapsed)
-            if self.use_speaker and self._speaker is not None:
-                self._speech_text = ""
-                self._speech_complete.clear()
-                self._speaker._interrupted.clear()
+            if self.use_speaker and self.speaker is not None:
+                self._last_agent_response = response
+                self.speech_complete.clear()
+                self.speaker._interrupted.clear()
+                text_to_speak = response.response if len(response.response) <= summary_character_limit else response.summary
                 threading.Thread(
                     target=self.speak_to_user,
-                    args=(response,),
+                    args=(text_to_speak,),
                     daemon=True,
                 ).start()
         else:
@@ -562,7 +611,7 @@ class BaseResponder(Notify):
         self.spinner.start(spinner=Spinner.BRAILLE)
         self.spinner.stop()
 
-    def __call__(self) -> str:
+    def __call__(self) -> Optional[AgentResponse]:
         """
         Usage:
 
@@ -572,17 +621,18 @@ class BaseResponder(Notify):
         Returns:
 
         - `response`:
-            - Type: str
-            - What: The response string returned by `respond`
+            - Type: AgentResponse | None
+            - What: The structured response returned by `respond`, or None if
+              no user input was captured or an error occurred
         """
-        if self.use_speaker and self._speaker is not None:
-            self._speaker.interrupt()
+        if self.use_speaker and self.speaker is not None:
+            self.speaker.interrupt()
         self.on_listen_start()
         user_input = self.spych_object.listen(duration=self.listen_duration)
         self.on_listen_end()
         if not user_input:
             self.wait_for_next_wake_word(divider=False)
-            return ""
+            return None
         self.on_user_input(user_input)
         try:
             self.on_before_respond(user_input)
@@ -591,9 +641,9 @@ class BaseResponder(Notify):
         except Exception as exc:
             self.spinner.stop()
             print(f"  {theme.error}✗  Error: {exc}{theme.reset}\n")
-            return ""
+            return None
         self.on_response(response)
-        if self.use_speaker and self._speaker is not None:
+        if self.use_speaker and self.speaker is not None:
             CliPrinter.divider()
             self.spoken_follow_up_loop()
         else:

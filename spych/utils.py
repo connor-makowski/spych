@@ -290,3 +290,40 @@ class Notify:
             raise Exception(
                 f"Invalid notification type. Must be one of: {list(notification_types.keys())}"
             )
+
+
+def get_response_style(style: str) -> str:
+    """
+    Usage:
+
+    - Maps a high-level style descriptor to a prompt suffix that instructs the
+      model to stylize its response accordingly.
+
+    Requires:
+
+    - `style`:
+        - Type: str
+        - What: A high-level style descriptor (e.g. "concise", "detailed", "humorous")
+
+    Returns:
+
+    - `style_prompt`:
+        - Type: str
+        - What: A prompt suffix that can be appended to the user input to elicit
+          the desired response style from the model
+    """
+    styles: dict[str, str] = {
+        "concise": "Respond with a focus on key points and being direct.",
+        "friendly": "Use a friendly and approachable tone. Use simple language and be concise.",
+        "military": "Respond in military brevity style. Be concise and direct, using short sentences and clear language.",
+        "five_year_old": "Explain this like I'm 5 years old. Use simple words, be short and friendly.",
+        "fast": "Keep your responses as fast as reasonably possible. Be direct and concise.",
+        "pirate": "Style your responses in pirate speak. Keep it short and colorful. Arrr!",
+        "news_anchor": "Your speaking style should match how a professional TV news anchor would say it.",
+        "haiku": "Respond in the form of a haiku (5-7-5 syllables). Be concise and poetic.",
+        "shakespearean": "Respond in Shakespearean English. Brief and poetic.",
+        "robot": "Respond as a robot speaking. Monotone, literal, and short.",
+        "caveman": "Respond in the style of a caveman. Use very simple language, short sentences, and be direct.",
+        "yoda": "Respond in the style of Yoda from Star Wars. Use inverted sentence structure and be concise.",
+    }
+    return styles.get(style.lower(), style)

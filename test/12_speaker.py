@@ -1,5 +1,5 @@
-from spych import Speaker, SPEAKER_STYLES, Spych
-from spych.responders import BaseResponder
+from spych import Speaker, Spych
+from spych.responders import BaseResponder, AgentResponse
 
 # -- Basic TTS -----------------------------------------------------------
 
@@ -15,22 +15,17 @@ michael.speak("And I am your American male voice.")
 # george = Speaker(voice="bm_george")
 # george.speak("And I am your British male voice.")
 
-# -- Available styles ----------------------------------------------------
-
-# print("Available speaker styles:")
-# for style, prompt in SPEAKER_STYLES.items():
-#     print(f"  {style}: {prompt[:60]}...")
-
-# -- summarize_for_speech override demo ----------------------------------
-# Demonstrates that the hook is overridable without an LLM.
+# -- parse_output demo ---------------------------------------------------
+# Verify JSON parsing and fallback behavior without an LLM.
 
 
 class EchoResponder(BaseResponder):
-    def respond(self, user_input: str) -> str:
-        return f"Echo: {user_input}"
-
-    def summarize_for_speech(self, user_input: str, response: str) -> str:
-        return f"Heard: {user_input}"
+    def respond(self, user_input: str) -> AgentResponse:
+        return AgentResponse(
+            response=f"Echo: {user_input}",
+            summary=f"Heard: {user_input}",
+            requires_user_feedback=False,
+        )
 
 
 spych_object = Spych(whisper_model="base.en")
@@ -40,11 +35,24 @@ responder = EchoResponder(
     speaker_voice="am_michael",
 )
 
-# Manually invoke summarize_for_speech to verify the override
-speech_text = responder.summarize_for_speech("hello world", "Echo: hello world")
-print(f"summarize_for_speech returned: {speech_text!r}")
-assert speech_text == "Heard: hello world", f"Unexpected: {speech_text!r}"
+# Verify parse_output handles valid JSON
+json_text = '{"response": "The sky is blue.", "summary": "Sky is blue.", "requires_user_feedback": false}'
+parsed = responder.parse_output(json_text)
+assert parsed.response == "The sky is blue.", f"Unexpected response: {parsed.response!r}"
+assert parsed.summary == "Sky is blue.", f"Unexpected summary: {parsed.summary!r}"
+assert parsed.requires_user_feedback is False, f"Unexpected feedback flag: {parsed.requires_user_feedback!r}"
 
-michael.speak(speech_text)
+# Verify parse_output falls back gracefully on invalid JSON
+fallback = responder.parse_output("not json at all")
+assert fallback.response == "not json at all", f"Unexpected fallback: {fallback.response!r}"
+assert fallback.requires_user_feedback is False
+
+# Verify EchoResponder returns correct AgentResponse fields
+result = responder.respond("hello world")
+assert result.response == "Echo: hello world", f"Unexpected: {result.response!r}"
+assert result.summary == "Heard: hello world", f"Unexpected: {result.summary!r}"
+assert result.requires_user_feedback is False
+
+michael.speak(result.summary)
 
 print("test/12_speaker.py: all assertions passed")
