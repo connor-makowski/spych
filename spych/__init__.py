@@ -54,10 +54,17 @@ All agents and their parameters are supported as flags:
 
 ```bash
 spych ollama --model llama3.2:latest
-spych claude_sdk --setting-sources user project local
+spych claude --setting-sources user project local
 spych codex --listen-duration 8
 spych opencode --model anthropic/claude-sonnet-4-5
 spych gemini --wake-words gemini "hey gemini"
+```
+
+Personality presets bundle wake words, voice, name, and response style into a single flag:
+
+```bash
+spych claude --personality jarvis
+spych ollama --model llama3.2:latest --personality jarvis
 ```
 
 A global `--theme` flag controls the terminal colour output and must be placed before the agent name:
@@ -180,6 +187,9 @@ All agents accept a `terminate_words` list (default: `["terminate"]`). Say the w
 | `continue_conversation` | `True` | `True` | `True` | `True` | `True` | Resume the most recent session |
 | `setting_sources` | - | `["user", "project", "local"]` | - | - | - | Claude Code local settings to load |
 | `show_tool_events` | `True` | `True` | `True` | `True` | `True` | Print live tool start/end events |
+| `use_speaker` | `False` | `False` | `False` | `False` | `False` | Speak summary aloud via kokoro TTS |
+| `speaker_voice` | `"af_heart"` | `"af_heart"` | `"af_heart"` | `"af_heart"` | `"af_heart"` | Kokoro voice ID for spoken responses |
+| `response_style` | `""` | `""` | `""` | `""` | `""` | Style preset or custom instruction shaping the summary |
 | `spych_kwargs` | - | - | - | - | - | Extra kwargs passed to `Spych` |
 | `spych_wake_kwargs` | - | - | - | - | - | Extra kwargs passed to `SpychWake` |
 
@@ -194,8 +204,79 @@ All agents accept a `terminate_words` list (default: `["terminate"]`). Say the w
 | `listen_duration` | `0` | Seconds to listen after wake word (0 = VAD auto) |
 | `history_length` | `10` | Past interactions to include in context |
 | `host` | `"http://localhost:11434"` | Ollama instance URL |
+| `use_speaker` | `False` | Speak summary aloud via kokoro TTS |
+| `speaker_voice` | `"af_heart"` | Kokoro voice ID for spoken responses |
+| `response_style` | `""` | Style preset or custom instruction shaping the summary |
 | `spych_kwargs` | `None` | Extra kwargs passed to `Spych` |
 | `spych_wake_kwargs` | `None` | Extra kwargs passed to `SpychWake` |
+
+---
+
+# Summaries & Text-to-Speech (TTS)
+
+Every agent response includes both a full `response` (printed to the terminal) and a short `summary`. The summary is always printed below long responses (over ~200 characters) so you can quickly scan what was said without scrolling. It is written to be clean prose with no file paths or special characters.
+
+Any agent can also speak the summary aloud using the built-in [kokoro](https://github.com/hexgrad/kokoro) neural TTS engine. The model (~82 MB) is downloaded on first use and cached locally — all subsequent runs are fully offline.
+
+Enable TTS with `--use-speaker` (CLI) or `use_speaker=True` (Python):
+
+```bash
+spych claude --use-speaker --speaker-voice bm_george
+spych ollama --model llama3.2:latest --use-speaker
+```
+
+```python
+claude_code_sdk(use_speaker=True, speaker_voice="bm_george")
+```
+
+When TTS is active, short responses are spoken verbatim; longer ones use the `summary`. If the spoken response ends with a question, Spych automatically listens for a follow-up answer — no wake word required.
+
+### Response Styles
+
+The `response_style` parameter shapes how the LLM writes the `summary` field. This affects both the printed summary and what is spoken aloud. Named presets:
+
+| Style | Description |
+|---|---|
+| `concise` | Key points only, direct |
+| `friendly` | Warm, approachable, simple language |
+| `military` | Brevity-style, short sentences |
+| `five_year_old` | Simple words, very short |
+| `fast` | As brief as reasonably possible |
+| `pirate` | Pirate speak, colorful |
+| `news_anchor` | Professional broadcast tone |
+| `haiku` | 5-7-5 haiku form |
+| `shakespearean` | Elizabethan English |
+| `robot` | Monotone, literal |
+| `caveman` | Very simple, direct |
+| `yoda` | Inverted sentence structure |
+| `jarvis` | J.A.R.V.I.S. from Iron Man — precise, dry wit, addresses user as "sir" |
+
+You can also pass any custom instruction string directly: `response_style="Reply in exactly one sentence."`.
+
+---
+
+# Personalities
+
+Personalities are named presets that bundle a wake word list, voice, display name, and response style into a single flag. They are applied as defaults — any explicit flag overrides the preset.
+
+```bash
+spych claude --personality jarvis
+```
+
+```python
+from spych import PERSONALITIES
+print(PERSONALITIES)
+```
+
+### Available Personalities
+
+| Name | Wake words | Voice | Style |
+|---|---|---|---|
+| `jarvis` | `jarvis`, `jarves` | `bm_george` | `jarvis` — precise, dry wit, "sir" |
+| `pirate` | `blackbeard`, `pirate`, `ahoy` | `am_fenrir` | `pirate` — pirate speak, colorful |
+| `news_anchor` | `bella`, `news anchor`, `anchor` | `af_bella` | `news_anchor` — professional broadcast tone |
+| `robot` | `rob`, `robot` | `am_michael` | `robot` — monotone, literal |
+| `caveman` | `er`, `ur`, `caveman`, `cave man` | `am_puck` | `caveman` — very simple, direct |
 
 ---
 

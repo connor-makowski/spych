@@ -19,16 +19,18 @@ All core processing (VAD, transcription, wake word detection) runs fully offline
 
 ```
 spych/
-  __init__.py              # Public exports: Spych, SpychWake, SpychLive, SpychOrchestrator, BaseResponder
+  __init__.py              # Public exports: Spych, SpychWake, SpychOrchestrator, BaseResponder,
+                           #   AgentResponse, Speaker, PERSONALITIES, get_personality, get_response_style
   core.py                  # Spych — faster-whisper transcription engine with Silero VAD
   wake.py                  # SpychWake + SpychWakeListener — multi-threaded wake word detection
-  responders.py            # BaseResponder — abstract base class for all AI agents
+  responders.py            # BaseResponder, AgentResponse — abstract base + structured response dataclass
   orchestrator.py          # SpychOrchestrator — multi-agent coordinator with shared spinner
   live.py                  # SpychLive — continuous VAD-gated transcription to disk
+  speaker.py               # Speaker — kokoro neural TTS; speaks AgentResponse.summary aloud
   cli.py                   # CLI entry point (spych subcommands)
   cli_tools.py             # Theme, CliSpinner, CliPrinter — terminal UI utilities
   spinners.py              # Spinner frame definitions (BRAILLE, ARC, MOON, etc.)
-  utils.py                 # Recorder, Notify (logging base), get_clean_audio_buffer
+  utils.py                 # Recorder, Notify, get_response_style, PERSONALITIES, get_personality
   agents/
     __init__.py            # Exports all agent factories and responder classes
     claude.py              # LocalClaudeCodeCLIResponder + LocalClaudeCodeSDKResponder + factories
@@ -89,11 +91,18 @@ All commands use Docker via `./run.sh`:
 - Matches transcribed text against `wake_word_map` keys; fires the associated callback
 - `start()`: blocking loop; `stop()`: signals all listeners to exit
 
+**`AgentResponse`** (`responders.py`) — structured response dataclass:
+- `response: str` — full text printed to terminal
+- `summary: str` — short spoken-word-friendly version used by `Speaker`
+- `requires_user_feedback: bool` — True when the response ends with a question, triggering `spoken_follow_up_loop`
+
 **`BaseResponder`** (`responders.py`) — abstract agent base:
-- Subclass and implement `respond(user_input: str) -> str` — the only required method
-- Handles the full voice cycle: listen → transcribe → respond → print
+- Subclass and implement `respond(user_input: str) -> AgentResponse` — the only required method
+- `format_prompt(prompt)` — wraps user input with JSON schema + style hint; call before sending to LLM
+- `parse_output(raw_text)` — parses LLM JSON into `AgentResponse`; handles markdown fences and embedded JSON
+- Handles the full voice cycle: listen → transcribe → respond → print → (optional TTS speak)
 - Optional hooks: `healthcheck()`, `on_before_respond()`, `on_after_respond()`
-- `__call__() -> str`: runs one complete voice cycle
+- `__call__() -> AgentResponse | None`: runs one complete voice cycle
 
 **`SpychOrchestrator`** (`orchestrator.py`) — multi-agent coordinator:
 - Accepts a list of `OrchestratorEntry` dicts, each with `responder`, `wake_words`, and `terminate_words`
@@ -145,11 +154,34 @@ __call__()
 ├── on_listen_end()           # Brief spinner pause
 ├── on_user_input()           # Print user input, restart spinner
 ├── on_before_respond()       # (hook — optional override)
-├── respond()                 # ← subclass implements this
+├── respond()                 # ← subclass implements this; returns AgentResponse
+│   ├── format_prompt()       #   wraps input with JSON schema + style hint
+│   └── parse_output()        #   parses LLM JSON into AgentResponse
 ├── on_after_respond()        # (hook — optional override)
-├── on_response()             # Print response + elapsed time
-└── wait_for_next_wake_word() # Print divider, restart spinner
+├── on_response()             # Print response + summary + elapsed time
+└── if use_speaker:
+    ├── speak_to_user()       # Background thread: kokoro TTS speaks summary
+    └── spoken_follow_up_loop() # If requires_user_feedback, listen → respond loop
+    else:
+    └── wait_for_next_wake_word() # Print divider, restart spinner
 ```
+
+### Structured Agent Responses
+
+All built-in agents instruct the LLM to return a JSON object via `format_prompt()`. The LLM response is then parsed by `parse_output()` into an `AgentResponse`. This eliminates the extra LLM round-trip previously needed to generate a spoken summary.
+
+**Implementing a custom agent:**
+```python
+def respond(self, user_input: str) -> AgentResponse:
+    raw = call_my_llm(self.format_prompt(user_input))
+    return self.parse_output(raw)
+```
+
+### Personalities
+
+`PERSONALITIES` in `utils.py` maps preset names to agent kwargs bundles. Each entry contains `name`, `wake_words`, `speaker_voice`, `use_speaker`, and `response_style`. The `--personality` CLI flag applies these as defaults before any explicit CLI flags.
+
+**Adding a personality:** add an entry to `PERSONALITIES` and (optionally) a matching key in the `styles` dict inside `get_response_style()`.
 
 ---
 
@@ -265,6 +297,6 @@ def method(self, param1: str, param2: int = 0) -> str:
 
 ### Other Rules
 
-- **No new runtime dependencies**: runtime code must only import from `claude_agent_sdk`, `faster-whisper`, `pvrecorder`, `numpy`, `requests`, `silero_vad`, and the stdlib
+- **Runtime dependencies**: `claude_agent_sdk`, `faster-whisper`, `pvrecorder`, `numpy`, `requests`, `silero_vad`, `pygame`, `kokoro`, `huggingface_hub`, and the stdlib. Do not add new ones.
 - **No unnecessary abstractions**: don't extract a shared helper unless the same logic appears 3+ times
 - **DO NOT generate docs**: only the maintainer runs `./run.sh docs` at release time

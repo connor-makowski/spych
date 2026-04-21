@@ -37,6 +37,16 @@ def _parse_bool(value: str) -> bool:
 def _add_shared_args(parser: argparse.ArgumentParser) -> None:
     """Args shared by all agents."""
     parser.add_argument(
+        "--personality",
+        default=None,
+        metavar="NAME",
+        help=(
+            "Apply a named personality preset (e.g. jarvis). "
+            "Sets default wake words, voice, name, and response style. "
+            "Any explicit flag overrides the preset."
+        ),
+    )
+    parser.add_argument(
         "--name",
         metavar="NAME",
         help="Custom display name for the agent",
@@ -103,6 +113,11 @@ def _add_agent_args(parser: argparse.ArgumentParser) -> None:
 
 def _build_shared_kwargs(args: argparse.Namespace) -> dict:
     kwargs = {}
+    # Personality preset provides base defaults; explicit CLI flags override.
+    if getattr(args, "personality", None):
+        from spych.utils import get_personality
+
+        kwargs.update(get_personality(args.personality))
     if args.name is not None:
         kwargs["name"] = args.name
     if args.wake_words:
@@ -115,7 +130,7 @@ def _build_shared_kwargs(args: argparse.Namespace) -> dict:
         kwargs["use_speaker"] = True
     if args.speaker_voice != "af_heart":
         kwargs["speaker_voice"] = args.speaker_voice
-    if args.response_style is not None:
+    if args.response_style:
         kwargs["response_style"] = args.response_style
     return kwargs
 

@@ -49,7 +49,28 @@ class LocalCodexCLIResponder(BaseResponder):
 
         - `show_tool_events`:
             - Type: bool
+            - What: Whether to print tool start/end events in the CLI as they arrive from the subprocess
             - Default: True
+
+        - `use_speaker`:
+            - Type: bool
+            - What: Whether to speak responses aloud via kokoro TTS after printing them
+            - Default: False
+
+        - `speaker_voice`:
+            - Type: str
+            - What: A kokoro voice ID used for all spoken responses
+            - Default: "af_heart"
+            - Note: American English voices use prefix `am_` or `af_`; British English
+              use `bm_` or `bf_`. See spych.speaker.Speaker for the full voice list.
+
+        - `response_style`:
+            - Type: str | None
+            - What: Style preset or custom instruction shaping how the LLM formats its
+              summary. Named presets: concise, friendly, military, five_year_old, fast,
+              pirate, news_anchor, haiku, shakespearean, robot, caveman, yoda, jarvis.
+              Any other string is used verbatim as a custom instruction.
+            - Default: None
 
         Notes:
 
@@ -268,6 +289,21 @@ def codex_cli(
         - Type: str
         - What: A custom display name for the responder shown in printed messages
         - Default: None (uses "Codex")
+
+    - `use_speaker`:
+        - Type: bool
+        - What: Whether to speak responses aloud via kokoro TTS
+        - Default: False
+
+    - `speaker_voice`:
+        - Type: str
+        - What: Kokoro voice ID for spoken responses
+        - Default: "af_heart"
+
+    - `response_style`:
+        - Type: str | None
+        - What: Style preset or custom instruction for the LLM's summary output (e.g. "military", "jarvis")
+        - Default: None
 
     - `spych_kwargs`:
         - Type: dict

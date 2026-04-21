@@ -86,20 +86,10 @@ class BaseResponder(Notify):
 
         - `response_style`:
             - Type: str
-            - What: A style preset that formats the default prompt in a more stylized way.
-              - Options include: 
-                - concise
-                - friendly
-                - five_year_old
-                - fast
-                - pirate
-                - news_anchor
-                - haiku
-                - shakespearean
-                - robot
-                - caveman
-                - yoda
-              - You can also write your own custom style instructions as a string here.
+            - What: A style preset that shapes how the LLM formats its spoken summary.
+              Named presets: concise, friendly, military, five_year_old, fast, pirate,
+              news_anchor, haiku, shakespearean, robot, caveman, yoda, jarvis.
+              Any other string is used verbatim as a custom instruction.
             - Default: "" (no additional style instructions)
 
         - `follow_up_listen_duration`:
@@ -114,14 +104,14 @@ class BaseResponder(Notify):
 
         Notes:
 
-        - Subclasses must implement the `respond` method.
-        - The `__call__` method orchestrates the full voice listen -> transcribe -> respond
-          cycle; use `text_input` for the typed equivalent.
-        - When `use_speaker` is True, `summarize_for_speech()` is called in a background
-          thread after each response so audio playback does not block the main loop.
-        - When the spoken summary contains a question, `spoken_follow_up_loop()` listens for
-          a user answer and re-runs the respond cycle inline, chaining follow-ups until
-          no question remains or the user triggers the wake word to interrupt.
+        - Subclasses must implement `respond(user_input) -> AgentResponse`.
+        - Use `self.format_prompt(prompt)` to inject the JSON schema before sending to
+          the LLM, then `self.parse_output(raw)` to convert the result to AgentResponse.
+        - When `use_speaker` is True, the `summary` field of AgentResponse is spoken in a
+          background thread so audio playback does not block the main loop.
+        - When `AgentResponse.requires_user_feedback` is True, `spoken_follow_up_loop()`
+          listens for a follow-up answer and re-runs the respond cycle inline, chaining
+          turns until no question remains or the user triggers the wake word.
         """
         self.spych_object = spych_object
         self.listen_duration = listen_duration
@@ -282,7 +272,7 @@ class BaseResponder(Notify):
 
         - `response`: The full text of your response, which will be printed in the terminal. 
             - Type: String
-        - `summary`: A short summary of your response, that will be presented at the end of each response cycle, but may be spoken outloud. Keep as short as possible. Ask any follow up questions at the end of this summary.
+        - `summary`: A short summary of your response, that will be presented at the end of each response cycle, but may be spoken outloud. Keep as short as possible. Do not include any special characters or paths to files in this summary (in case it is read aloud).Ask any follow up questions at the end of this summary.
             - Type: String
         - `requires_user_feedback`: a boolean flag indicating whether your response contains a question or otherwise requires a user to follow up with additional information.
             - Type: Boolean

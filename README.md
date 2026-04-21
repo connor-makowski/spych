@@ -3,16 +3,19 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![PyPI Downloads](https://img.shields.io/pypi/dm/spych.svg?label=PyPI%20downloads)](https://pypi.org/project/spych/)
 
-**Spych** (pronounced "speech"): talk to your computer like its your personal assistant without sending your voice to the cloud.
+**Spych** (pronounced "speech"): talk to your computer like it's your personal assistant — and have it talk back — without sending your voice to the cloud.
 
-A lightweight, fully offline Python toolkit for wake word detection, audio transcription, and AI integrations. Built on [faster-whisper](https://github.com/SYSTRAN/faster-whisper) and [PvRecorder](https://github.com/Picovoice/pvrecorder).
+A lightweight, fully offline Python toolkit for wake word detection, audio transcription, spoken AI responses, and AI integrations. Built on [faster-whisper](https://github.com/SYSTRAN/faster-whisper), [PvRecorder](https://github.com/Picovoice/pvrecorder), and [Kokoro](https://github.com/hexgrad/kokoro).
 
 - **Fully offline**: no API keys, no cloud calls, no eavesdropping
 - **Multi-threaded wake word detection**: overlapping listener windows so you rarely miss a trigger
 - **Multiple wake words**: map different words to different actions in one listener
+- **Spoken responses**: neural text-to-speech via [Kokoro](https://github.com/hexgrad/kokoro) (~82 MB, downloaded once and cached); agents speak their summaries aloud
+- **Automatic follow-up listening**: when a response ends with a question, Spych listens for your reply automatically — no wake word needed
 - **Live transcription**: continuous VAD-gated transcription to `.txt` and/or `.srt` files
 - **Built-in agents**: for [Ollama](https://ollama.com), [Claude Code](https://docs.anthropic.com/en/docs/claude-code), [Codex](https://github.com/openai/codex), [Gemini CLI](https://github.com/google-gemini/gemini-cli), and [OpenCode](https://opencode.ai)
 - **Multi-agent orchestration**: run several agents simultaneously under a single listener, each with its own wake words
+- **Personalities**: named presets that bundle wake words, voice, name, and response style — e.g. `--personality jarvis`
 - **Extensible**: subclass `BaseResponder` to build your own agents with custom wake words and logic
 
 **API Docs**: https://connor-makowski.github.io/spych/spych.html
@@ -53,10 +56,25 @@ All agents and their parameters are supported as flags:
 
 ```bash
 spych ollama --model llama3.2:latest
-spych claude_sdk --setting-sources user project local
+spych claude --setting-sources user project local
 spych codex --listen-duration 8
 spych opencode --model anthropic/claude-sonnet-4-5
 spych gemini --wake-words gemini "hey gemini"
+```
+
+Enable spoken responses with `--use-speaker`. Kokoro (~82 MB) is downloaded on first use and cached locally — all subsequent runs are fully offline:
+
+```bash
+spych claude --use-speaker
+spych ollama --model llama3.2:latest --use-speaker --speaker-voice bm_george
+spych claude --use-speaker --response-style concise
+```
+
+Personality presets bundle wake words, voice, name, and response style into a single flag:
+
+```bash
+spych claude --personality jarvis
+spych ollama --model llama3.2:latest --personality jarvis
 ```
 
 A global `--theme` flag controls the terminal colour output and must be placed before the agent name:
@@ -179,6 +197,9 @@ All agents accept a `terminate_words` list (default: `["terminate"]`). Say the w
 | `continue_conversation` | `True` | `True` | `True` | `True` | `True` | Resume the most recent session |
 | `setting_sources` | - | `["user", "project", "local"]` | - | - | - | Claude Code local settings to load |
 | `show_tool_events` | `True` | `True` | `True` | `True` | `True` | Print live tool start/end events |
+| `use_speaker` | `False` | `False` | `False` | `False` | `False` | Speak responses aloud via kokoro TTS |
+| `speaker_voice` | `"af_heart"` | `"af_heart"` | `"af_heart"` | `"af_heart"` | `"af_heart"` | Kokoro voice ID for spoken responses |
+| `response_style` | `""` | `""` | `""` | `""` | `""` | Style preset or custom instruction for spoken output |
 | `spych_kwargs` | - | - | - | - | - | Extra kwargs passed to `Spych` |
 | `spych_wake_kwargs` | - | - | - | - | - | Extra kwargs passed to `SpychWake` |
 
@@ -193,8 +214,109 @@ All agents accept a `terminate_words` list (default: `["terminate"]`). Say the w
 | `listen_duration` | `0` | Seconds to listen after wake word (0 = VAD auto) |
 | `history_length` | `10` | Past interactions to include in context |
 | `host` | `"http://localhost:11434"` | Ollama instance URL |
+| `use_speaker` | `False` | Speak responses aloud via kokoro TTS |
+| `speaker_voice` | `"af_heart"` | Kokoro voice ID for spoken responses |
+| `response_style` | `""` | Style preset or custom instruction for spoken output |
 | `spych_kwargs` | `None` | Extra kwargs passed to `Spych` |
 | `spych_wake_kwargs` | `None` | Extra kwargs passed to `SpychWake` |
+
+---
+
+# Summaries & Text-to-Speech (TTS)
+
+Every agent response includes both a full `response` (printed to the terminal) and a short `summary`. The summary is always printed below long responses (over ~200 characters) so you can quickly scan what was said without scrolling. It is written to be clean prose with no file paths or special characters.
+
+Any agent can also speak the summary aloud using the built-in [kokoro](https://github.com/hexgrad/kokoro) neural TTS engine. The model (~82 MB) is downloaded on first use and cached locally — all subsequent runs are fully offline.
+
+Enable TTS with `--use-speaker` (CLI) or `use_speaker=True` (Python):
+
+```bash
+spych claude --use-speaker --speaker-voice bm_george
+spych ollama --model llama3.2:latest --use-speaker
+```
+
+```python
+claude_code_sdk(use_speaker=True, speaker_voice="bm_george")
+```
+
+When TTS is active, short responses are spoken verbatim; longer ones use the `summary`. If the spoken response ends with a question, Spych automatically listens for a follow-up answer — no wake word required.
+
+### Available Voices
+
+American English (`am_` / `af_`):
+
+| Voice | Gender | Grade |
+|---|---|---|
+| `af_heart` | F | A (default) |
+| `af_bella` | F | A- |
+| `af_nicole` | F | B- |
+| `am_michael` | M | C+ |
+| `am_fenrir` | M | C+ |
+| `am_puck` | M | C+ |
+
+British English (`bm_` / `bf_`):
+
+| Voice | Gender | Grade |
+|---|---|---|
+| `bf_emma` | F | B- |
+| `bf_isabella` | F | C |
+| `bm_george` | M | C |
+
+Full list: https://huggingface.co/hexgrad/Kokoro-82M/blob/main/VOICES.md
+
+---
+
+# Personalities
+
+Personalities are named presets that bundle a wake word list, voice, display name, and response style into a single flag. They are applied as defaults — any explicit flag overrides the preset.
+
+```bash
+spych claude --personality jarvis
+# equivalent to:
+spych claude --name "J.A.R.V.I.S." --wake-words jarvis jarves \
+             --speaker-voice bm_george --use-speaker \
+             --response-style jarvis
+```
+
+```python
+from spych import PERSONALITIES
+print(PERSONALITIES)
+# {'jarvis': {'name': 'J.A.R.V.I.S.', 'wake_words': ['jarvis', 'jarves'],
+#             'speaker_voice': 'bm_george', 'use_speaker': True,
+#             'response_style': 'jarvis'}}
+```
+
+### Available Personalities
+
+| Name | Wake words | Voice | Style |
+|---|---|---|---|
+| `jarvis` | `jarvis`, `jarves` | `bm_george` | `jarvis` — precise, dry wit, "sir" |
+| `pirate` | `blackbeard`, `pirate`, `ahoy` | `am_fenrir` | `pirate` — pirate speak, colorful |
+| `news_anchor` | `bella`, `news anchor`, `anchor` | `af_bella` | `news_anchor` — professional broadcast tone |
+| `robot` | `rob`, `robot` | `am_michael` | `robot` — monotone, literal |
+| `caveman` | `er`, `ur`, `caveman`, `cave man` | `am_puck` | `caveman` — very simple, direct |
+
+### Response Styles
+
+The `response_style` parameter shapes how the LLM formats its output. Named presets:
+
+| Style | Description |
+|---|---|
+| `concise` | Key points only, direct |
+| `friendly` | Warm, approachable, simple language |
+| `military` | Brevity-style, short sentences |
+| `five_year_old` | Simple words, very short |
+| `fast` | As brief as reasonably possible |
+| `pirate` | Pirate speak, colorful |
+| `news_anchor` | Professional broadcast tone |
+| `haiku` | 5-7-5 haiku form |
+| `shakespearean` | Elizabethan English |
+| `robot` | Monotone, literal |
+| `caveman` | Very simple, direct |
+| `yoda` | Inverted sentence structure |
+| `jarvis` | J.A.R.V.I.S. from Iron Man — precise, dry wit, addresses user as "sir" |
+
+You can also pass any custom instruction string directly: `response_style="Reply in exactly one sentence."`.
 
 ---
 
@@ -328,28 +450,50 @@ SpychOrchestrator(
 
 # Building Your Own Agent
 
-Not using any of the above? No problem. Subclass `BaseResponder`, implement `respond`, and you're done. Spych handles the rest: listening, transcription, spinner UI, timing, error handling, all of it.
+Not using any of the above? No problem. Subclass `BaseResponder`, implement `respond`, and you're done. Spych handles the rest: listening, transcription, spinner UI, timing, TTS, error handling, all of it.
+
+`respond()` must return an `AgentResponse`. Use `self.format_prompt()` to inject the JSON schema into your outgoing prompt and `self.parse_output()` to parse the result:
+
 ```python
-from spych.responders import BaseResponder
+from spych.responders import BaseResponder, AgentResponse
 
 class MyResponder(BaseResponder):
-    def respond(self, user_input: str) -> str:
-        return f"'{self.name}' heard: {user_input}"
+    def respond(self, user_input: str) -> AgentResponse:
+        raw = call_my_llm(self.format_prompt(user_input))
+        return self.parse_output(raw)
+```
+
+If you just want to echo input (e.g. for testing), construct `AgentResponse` directly:
+
+```python
+from spych.responders import BaseResponder, AgentResponse
+
+class EchoResponder(BaseResponder):
+    def respond(self, user_input: str) -> AgentResponse:
+        return AgentResponse(
+            response=f"'{self.name}' heard: {user_input}",
+            summary=f"Heard: {user_input}",
+            requires_user_feedback=False,
+        )
 ```
 
 A complete working example with a custom wake word:
 ```python
-from spych import Spych,SpychOrchestrator
-from spych.responders import BaseResponder
+from spych import Spych, SpychOrchestrator
+from spych.responders import BaseResponder, AgentResponse
 
-class MyResponder(BaseResponder):
-    def respond(self, user_input: str) -> str:
-        return f"'{self.name}' heard: {user_input}"
+class EchoResponder(BaseResponder):
+    def respond(self, user_input: str) -> AgentResponse:
+        return AgentResponse(
+            response=f"'{self.name}' heard: {user_input}",
+            summary=f"Heard: {user_input}",
+            requires_user_feedback=False,
+        )
 
 SpychOrchestrator(
     entries=[
         {
-            "responder": MyResponder(
+            "responder": EchoResponder(
                 spych_object=Spych(whisper_model="base.en"),
                 listen_duration=5,
                 name="TestResponder",
@@ -366,20 +510,19 @@ The orchestrator can also handle multiple custom agents at once, each with their
 > Note: To run this example, you will need to have Ollama running and an Ollama model that can do translations. You can use `llama3.2:latest` or any other model you have set up for this purpose.
 
 ```python
-from spych import Spych,SpychOrchestrator
+from spych import Spych, SpychOrchestrator
 from spych.agents import OllamaResponder
+from spych.responders import AgentResponse
 
 class Spanish(OllamaResponder):
-    def respond(self, user_input: str) -> str:
+    def respond(self, user_input: str) -> AgentResponse:
         user_input = f"Translate the following text to Spanish and return only the translated text: '{user_input}'"
-        response = super().respond(user_input)
-        return response
-    
+        return super().respond(user_input)
+
 class German(OllamaResponder):
-    def respond(self, user_input: str) -> str:
+    def respond(self, user_input: str) -> AgentResponse:
         user_input = f"Translate the following text to German and return only the translated text: '{user_input}'"
-        response = super().respond(user_input)
-        return response
+        return super().respond(user_input)
 
 SpychOrchestrator(
     entries=[

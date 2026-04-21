@@ -325,5 +325,74 @@ def get_response_style(style: str) -> str:
         "robot": "Respond as a robot speaking. Monotone, literal, and short.",
         "caveman": "Respond in the style of a caveman. Use very simple language, short sentences, and be direct.",
         "yoda": "Respond in the style of Yoda from Star Wars. Use inverted sentence structure and be concise.",
+        "jarvis": (
+            "Respond as J.A.R.V.I.S. (Just A Rather Very Intelligent System), "
+            "Tony Stark's AI assistant from Iron Man. Be precise, efficient, and "
+            "professionally deferential with understated dry wit. Address the user "
+            "as 'sir'. Keep responses brief and to the point — never verbose."
+        ),
     }
     return styles.get(style.lower(), style)
+
+
+PERSONALITIES: dict[str, dict] = {
+    "jarvis": {
+        "name": "J.A.R.V.I.S.",
+        "wake_words": ["jarvis", "jarves"],
+        "speaker_voice": "bm_george",
+        "use_speaker": True,
+        "response_style": "jarvis",
+    },
+    "pirate": {
+        "name": "Blackbeard the Pirate",
+        "wake_words": ["blackbeard", "pirate", "ahoy"],
+        "speaker_voice": "am_fenrir",
+        "use_speaker": True,
+        "response_style": "pirate",
+    },
+    "news_anchor": {
+        "name": "Bella the News Anchor",
+        "wake_words": ["bella", "news anchor", "anchor"],
+        "speaker_voice": "af_bella",
+        "use_speaker": True,
+        "response_style": "news_anchor",
+    },
+    "robot": {
+        "name": "Rob the Robot",
+        "wake_words": ["rob", "robot"],
+        "speaker_voice": "am_michael",
+        "use_speaker": True,
+        "response_style": "robot",
+    },
+    "caveman": {
+        "name": "Ur the Caveman",
+        "wake_words": ["er", "ur", "caveman", "cave man"],
+        "speaker_voice": "am_puck",
+        "use_speaker": True,
+        "response_style": "caveman",
+    },
+}
+
+
+def get_personality(name: str) -> dict:
+    """
+    Usage:
+
+    - Returns a personality preset dict containing default kwargs (name,
+      wake_words, speaker_voice, use_speaker, response_style) for the named
+      personality. Unknown names return an empty dict.
+
+    Requires:
+
+    - `name`:
+        - Type: str
+        - What: The personality preset name (e.g. "jarvis")
+
+    Returns:
+
+    - `preset`:
+        - Type: dict
+        - What: A dict of agent kwargs to apply as defaults. Empty dict if the
+          name is not recognized.
+    """
+    return dict(PERSONALITIES.get(name.lower(), {}))
