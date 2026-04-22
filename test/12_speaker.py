@@ -1,4 +1,5 @@
-from spych import Speaker, Spych
+from spych import Spych
+from spych.speaker import Speaker
 from spych.responders import BaseResponder, AgentResponse
 
 # -- Basic TTS -----------------------------------------------------------
@@ -9,11 +10,23 @@ speaker.speak("Hello! I am your default voice.")
 michael = Speaker(voice="am_michael")
 michael.speak("And I am your American male voice.")
 
-# emma = Speaker(voice="bf_emma")
-# emma.speak("And I am your British female voice.")
+# Test explicit backend selection (assuming both are installed or skip on failure)
+try:
+    kokoro = Speaker(voice="af_heart", backend="kokoro")
+    kokoro.speak("I am explicitly using the Kokoro backend.")
+except (ImportError, NotImplementedError):
+    print("Skipping Kokoro explicit test (not installed)")
 
-# george = Speaker(voice="bm_george")
-# george.speak("And I am your British male voice.")
+try:
+    chatterbox = Speaker(voice="af_heart", backend="chatterbox")
+    chatterbox.speak("I am explicitly using the Chatterbox backend.")
+except (ImportError, NotImplementedError):
+    print("Skipping Chatterbox explicit test (not installed)")
+
+# Test fallback from an unavailable explicit backend
+# (Providing an invalid name should trigger priority fallback)
+fallback_speaker = Speaker(voice="af_heart", backend="invalid_backend")
+fallback_speaker.speak("I fell back to an available backend because 'invalid_backend' was requested.")
 
 # -- parse_output demo ---------------------------------------------------
 # Verify JSON parsing and fallback behavior without an LLM.
@@ -33,7 +46,12 @@ responder = EchoResponder(
     spych_object=spych_object,
     use_speaker=True,
     speaker_voice="am_michael",
+    speaker_backend="kokoro", # Test passing backend to responder
 )
+
+# Verify responder initialized its speaker with the requested backend
+if responder.speaker:
+    print(f"Responder speaker backend: {type(responder.speaker.backend).__name__}")
 
 # Verify parse_output handles valid JSON
 json_text = '{"response": "The sky is blue.", "summary": "Sky is blue.", "requires_user_feedback": false}'

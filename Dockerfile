@@ -4,6 +4,8 @@
 # FROM python:3.11-bookworm
 FROM python:3.12-bookworm
 # FROM python:3.13-bookworm
+
+## Can not test fully or build docs on 3.15 since kokoro does not support it yet
 # FROM python:3.14-bookworm
 
 
@@ -17,6 +19,8 @@ RUN mkdir -p /app/spych
 RUN touch /app/spych/__init__.py
 
 RUN pip install -r requirements.txt
+# Install chatterbox-tts for testing and documentation purposes
+RUN pip install chatterbox-tts
 
 # Drop into a shell by default
 CMD ["/bin/bash"]

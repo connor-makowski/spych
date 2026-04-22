@@ -7,7 +7,7 @@
 
 A lightweight, fully offline Python toolkit for wake word detection, audio transcription, spoken AI responses, and AI integrations. Built on [faster-whisper](https://github.com/SYSTRAN/faster-whisper), [PvRecorder](https://github.com/Picovoice/pvrecorder), and [Kokoro](https://github.com/hexgrad/kokoro).
 
-- **Fully offline**: no API keys, no cloud calls, no eavesdropping
+- **Can Run Fully offline**: no API keys, no cloud calls, no eavesdropping (after initial setup - voice and model downloads require internet, but are cached locally for offline use thereafter)
 - **Multi-threaded wake word detection**: overlapping listener windows so you rarely miss a trigger
 - **Multiple wake words**: map different words to different actions in one listener
 - **Spoken responses**: neural text-to-speech via [Chatterbox Turbo](https://github.com/resemble-ai/chatterbox) (high quality, zero-shot voice cloning) or [Kokoro](https://github.com/hexgrad/kokoro) (lightweight); agents speak their summaries aloud
@@ -234,7 +234,6 @@ Spych uses a tiered fallback system for TTS to balance quality and performance:
 
 1.  **Chatterbox** (High Quality / Priority): Best for natural sounding voices and zero-shot cloning. Slower and requires more resources. **Required for Python 3.14+.**
 2.  **Kokoro** (Lightweight): Very fast and efficient. Ideal for edge devices (like a Raspberry Pi). *Note: Not supported on Python 3.14+.*
-3.  **Silent Fallback**: If no TTS engine is installed, Spych will simply print the summary to the terminal without attempting to speak.
 
 ### Installation Recommendations
 
@@ -248,15 +247,17 @@ Choose **Chatterbox** if:
 #### Install and Run with your preferred TTS engine:
 
 Note: If you are using python 3.14+, you will automatically install chatterbox on `pip install spych`
+
 Note: If you are using python 3.13-, you will automatically install kokoro on `pip install spych`
+
 By default, you will use chatterbox first if it is installed, otherwise, you will use kokoro if it is installed.
 
 ```bash
 # Recommended for most users (Fast, lightweight)
-pip install "spych[kokoro]"
+pipx install "spych[kokoro]"
 
 # For high-quality voice cloning or Python 3.14+
-pip install "spych[chatterbox]"
+pipx install "spych[chatterbox]"
 
 ```
 
@@ -267,7 +268,7 @@ spych claude --use-speaker --speaker-backend kokoro
 spych ollama --use-speaker --speaker-backend chatterbox
 ```
 
-When TTS is active, short responses are spoken verbatim; longer ones use the `summary`. If the spoken response ends with a question, Spych automatically listens for a follow-up answer — no wake word required.
+When TTS is active, short responses are spoken verbatim; longer ones use the `summary`. If the spoken response requires user feedback, Spych automatically listens for a follow-up answer — no wake word required.
 
 ### One-Shot Voice Cloning (Personalization)
 
@@ -333,17 +334,9 @@ Personalities are named presets that bundle a wake word list, voice, display nam
 ```bash
 spych claude --personality jarvis
 # equivalent to:
-spych claude --name "J.A.R.V.I.S." --wake-words jarvis jarves \
-             --speaker-voice bm_george --use-speaker \
+spych claude --name "J.A.R.V.I.S." --wake-words jarvis jarves \\
+             --speaker-voice bm_george --use-speaker \\
              --response-style jarvis
-```
-
-```python
-from spych import PERSONALITIES
-print(PERSONALITIES)
-# {'jarvis': {'name': 'J.A.R.V.I.S.', 'wake_words': ['jarvis', 'jarves'],
-#             'speaker_voice': 'bm_george', 'use_speaker': True,
-#             'response_style': 'jarvis'}}
 ```
 
 ### Available Personalities
