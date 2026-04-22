@@ -13,7 +13,7 @@ echo "from .orchestrator import SpychOrchestrator" >> spych/__init__.py
 
 
 # Specify versions for documentation purposes
-VERSION="4.0.0b1"
+VERSION="4.0.0b2"
 OLD_DOC_VERSIONS="3.6.0 3.5.0 3.4.0 3.3.0 3.2.0 3.1.0 3.0.0 2.0.2 1.0.0"
 export version_options="$VERSION $OLD_DOC_VERSIONS"
 

@@ -63,12 +63,17 @@ spych opencode --model anthropic/claude-sonnet-4-5
 spych gemini --wake-words gemini "hey gemini"
 ```
 
-Enable spoken responses with `--use-speaker`. The TTS backend (Chatterbox Turbo or Kokoro) is downloaded on first use and cached locally — all subsequent runs are fully offline:
+Spoken responses are enabled by default with the **af_heart** voice. The TTS backend (Chatterbox Turbo or Kokoro) is downloaded on first use and cached locally — all subsequent runs are fully offline.
 
 ```bash
-spych claude --use-speaker
-spych ollama --model llama3.2:latest --use-speaker --speaker-voice bm_george
-spych claude --use-speaker --response-style concise
+# Uses default settings (Speaker ON, af_heart voice)
+spych claude
+
+# Change the voice
+spych ollama --model llama3.2:latest --speaker_voice bm_george
+
+# Disable spoken responses explicitly
+spych claude --use-speaker false
 ```
 
 Personality presets bundle wake words, voice, name, and response style into a single flag:
@@ -236,9 +241,23 @@ Spych uses a tiered fallback system for TTS to balance quality and performance:
 1.  **Chatterbox** (High Quality / Priority): Best for natural sounding voices and zero-shot cloning. Slower and requires more resources. **Required for Python 3.14+.**
 2.  **Kokoro** (Lightweight): Very fast and efficient. Ideal for edge devices (like a Raspberry Pi). *Note: Not supported on Python 3.14+.*
 
-### Installation Recommendations
+### Python Runtimes
 
-We recommend installing with **Kokoro** for most users (Python <= 3.13) as it is significantly faster and uses fewer resources.
+Spych supports **Python 3.11+**. However, due to backend dependencies, we have the following recommendations:
+
+- **Recommended: Python 3.12** — Best stability and performance using the Kokoro backend.
+- **Python 3.14+** — **Does not support Kokoro.** You must use the Chatterbox backend.
+
+If your system's default Python is 3.14 or newer, you can force `pipx` to use a specific older version (if installed on your system):
+
+```bash
+# Force pipx to use Python 3.12
+pipx install --python python3.12 "spych[kokoro]"
+```
+
+### Installation Recommendations
+...
+We recommend installing with **Kokoro** for most users (Python < 3.13) as it is significantly faster and uses fewer resources.
 
 Choose **Chatterbox** if:
 - You need high-quality voice cloning (zero-shot)
@@ -247,9 +266,9 @@ Choose **Chatterbox** if:
 
 #### Install and Run with your preferred TTS engine:
 
-Note: If you are using python 3.14+, you will automatically install chatterbox on `pip install spych`
+Note: If you are using python 3.13+, you will automatically install chatterbox on `pip install spych`
 
-Note: If you are using python 3.13-, you will automatically install kokoro on `pip install spych`
+Note: If you are using python 3.12-, you will automatically install kokoro on `pip install spych`
 
 By default, you will use chatterbox first if it is installed, otherwise, you will use kokoro if it is installed.
 
@@ -344,11 +363,13 @@ spych claude --name "J.A.R.V.I.S." --wake-words jarvis jarves \\
 
 | Name | Wake words | Voice | Style |
 |---|---|---|---|
-| `jarvis` | `jarvis`, `jarves` | `bm_george` | `jarvis` — precise, dry wit, "sir" |
-| `pirate` | `blackbeard`, `pirate`, `ahoy` | `am_fenrir` | `pirate` — pirate speak, colorful |
+| `assistant` | `assistant` | `af_heart` | `concise` — direct and focused |
+| `friend` | `friend`, `buddy`, `pal` | `af_amy` | `friendly` — warm and simple |
+| `jarvis` | `jarvis`, `jarves`, `jargus`, `jervis` | `bm_george` | `jarvis` — precise, dry wit, "sir" |
+| `pirate` | `blackbeard`, `pirate`, `ahoy` | `am_michael` | `pirate` — pirate speak, colorful |
 | `news_anchor` | `bella`, `news anchor`, `anchor` | `af_bella` | `news_anchor` — professional broadcast tone |
-| `robot` | `rob`, `robot` | `am_michael` | `robot` — monotone, literal |
-| `caveman` | `er`, `ur`, `caveman`, `cave man` | `am_puck` | `caveman` — very simple, direct |
+| `robot` | `rob`, `robot` | `am_adam` | `robot` — monotone, literal |
+| `caveman` | `er`, `ur`, `caveman`, `cave man` | `am_onyx` | `caveman` — very simple, direct |
 
 ### Response Styles
 

@@ -362,7 +362,7 @@ spych claude --name "J.A.R.V.I.S." --wake-words jarvis jarves \\
 
 | Name | Wake words | Voice | Style |
 |---|---|---|---|
-| `assistant` | `assistant` | `af_heart` | `concise` — direct and focused |
+| `assistant` | `assistant`, `helper`, `computer` | `af_heart` | `assistant` — helpful, precise, informative |
 | `friend` | `friend`, `buddy`, `pal` | `af_amy` | `friendly` — warm and simple |
 | `jarvis` | `jarvis`, `jarves`, `jargus`, `jervis` | `bm_george` | `jarvis` — precise, dry wit, "sir" |
 | `pirate` | `blackbeard`, `pirate`, `ahoy` | `am_michael` | `pirate` — pirate speak, colorful |
@@ -376,6 +376,7 @@ The `response_style` parameter shapes how the LLM formats its output. Named pres
 
 | Style | Description |
 |---|---|
+| `assistant` | Helpful and precise assistant, concise and informative |
 | `concise` | Key points only, direct |
 | `friendly` | Warm, approachable, simple language |
 | `military` | Brevity-style, short sentences |

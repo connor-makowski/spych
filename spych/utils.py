@@ -387,10 +387,10 @@ def get_response_style(style: Optional[str]) -> str:
 PERSONALITIES: dict[str, dict] = {
     "assistant": {
         "name": "Assistant",
-        "wake_words": ["assistant"],
+        "wake_words": ["assistant", "helper", "computer"],
         "speaker_voice": "af_heart",
         "use_speaker": True,
-        "response_style": "concise",
+        "response_style": "assistant",
     },
     "friend": {
         "name": "Friend",
