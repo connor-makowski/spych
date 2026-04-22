@@ -23,11 +23,11 @@ class BaseResponder(Notify):
         name: Optional[str] = None,
         spinner: Optional[CliSpinner] = None,
         response_style: str = "",
-        use_speaker: bool = False,
+        use_speaker: bool = True,
         speaker_voice: str = "af_heart",
         speaker_backend: str = "",
         follow_up_listen_duration: int | float = 0,
-        inactivity_timeout: Optional[float] = 8.0,
+        inactivity_timeout: Optional[float] = 4.0,
     ) -> None:
         """
         Usage:
@@ -76,7 +76,7 @@ class BaseResponder(Notify):
         - `use_speaker`:
             - Type: bool
             - What: Whether to speak responses aloud via kokoro TTS after printing them
-            - Default: False
+            - Default: True
 
         - `speaker_voice`:
             - Type: str
@@ -112,7 +112,7 @@ class BaseResponder(Notify):
             - What: Seconds to wait for speech onset during a listen loop
               before pivoting back to the wake word. Only applied when using VAD-gated
               recording (duration 0).
-            - Default: 8.0 (wait for 8 seconds of inactivity)
+            - Default: 4.0 (wait for 4 seconds of inactivity)
 
 
         Notes:

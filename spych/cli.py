@@ -83,9 +83,9 @@ def _add_shared_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--inactivity-timeout",
         type=float,
-        default=8.0,
+        default=4.0,
         metavar="SECONDS",
-        help="Seconds of inactivity before pivoting back to wake word (default: 8.0)",
+        help="Seconds of inactivity before pivoting back to wake word (default: 4.0)",
     )
     parser.add_argument(
         "--response-style",
@@ -100,9 +100,10 @@ def _add_shared_args(parser: argparse.ArgumentParser) -> None:
     )
     parser.add_argument(
         "--use-speaker",
-        action="store_true",
-        default=False,
-        help="Speak responses aloud via TTS (default: false)",
+        type=_parse_bool,
+        default=True,
+        metavar="BOOL",
+        help="Speak responses aloud via TTS (default: true)",
     )
     parser.add_argument(
         "--speaker-voice",
@@ -158,10 +159,10 @@ def _build_shared_kwargs(args: argparse.Namespace) -> dict:
         kwargs["listen_duration"] = args.listen_duration
     if getattr(args, "follow_up_listen_duration", None) is not None:
         kwargs["follow_up_listen_duration"] = args.follow_up_listen_duration
-    if getattr(args, "inactivity_timeout", 10.0) is not None:
+    if getattr(args, "inactivity_timeout", 4.0) is not None:
         kwargs["inactivity_timeout"] = args.inactivity_timeout
-    if args.use_speaker:
-        kwargs["use_speaker"] = True
+    if args.use_speaker is not None:
+        kwargs["use_speaker"] = args.use_speaker
     if args.speaker_voice != "af_heart":
         kwargs["speaker_voice"] = args.speaker_voice
     if getattr(args, "speaker_backend", ""):
@@ -184,6 +185,13 @@ def main():
         description="Launch a voice agent from the terminal.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=__doc__,
+    )
+
+    parser.add_argument(
+        "--version",
+        action="version",
+        version="spych 3.6.0",
+        help="Show the version number and exit",
     )
 
     parser.add_argument(
@@ -485,9 +493,9 @@ def main():
     p_multi.add_argument(
         "--inactivity-timeout",
         type=float,
-        default=8.0,
+        default=4.0,
         metavar="SECONDS",
-        help="Seconds of inactivity before pivoting back to wake word (default: 8.0)",
+        help="Seconds of inactivity before pivoting back to wake word (default: 4.0)",
     )
     p_multi.add_argument(
         "--continue-conversation",
@@ -509,6 +517,13 @@ def main():
         choices=["chatterbox", "kokoro"],
         metavar="BACKEND",
         help="Explicit TTS backend to use (default: priority Chatterbox then Kokoro)",
+    )
+    p_multi.add_argument(
+        "--use-speaker",
+        type=_parse_bool,
+        default=True,
+        metavar="BOOL",
+        help="Speak responses aloud via TTS (default: true)",
     )
     # ollama-specific flags (only used when 'ollama' is in --agents)
     p_multi.add_argument(
@@ -686,6 +701,7 @@ def main():
                             follow_up_listen_duration=args.follow_up_listen_duration,
                             inactivity_timeout=args.inactivity_timeout,
                             speaker_backend=args.speaker_backend,
+                            use_speaker=args.use_speaker,
                             show_tool_events=args.show_tool_events,
                         ),
                         "wake_words": ["claude", "clod", "cloud", "clawed"],
@@ -705,6 +721,7 @@ def main():
                             follow_up_listen_duration=args.follow_up_listen_duration,
                             inactivity_timeout=args.inactivity_timeout,
                             speaker_backend=args.speaker_backend,
+                            use_speaker=args.use_speaker,
                             setting_sources=args.setting_sources,
                             show_tool_events=args.show_tool_events,
                         ),
@@ -725,6 +742,7 @@ def main():
                             follow_up_listen_duration=args.follow_up_listen_duration,
                             inactivity_timeout=args.inactivity_timeout,
                             speaker_backend=args.speaker_backend,
+                            use_speaker=args.use_speaker,
                             show_tool_events=args.show_tool_events,
                         ),
                         "wake_words": ["codex"],
@@ -744,6 +762,7 @@ def main():
                             follow_up_listen_duration=args.follow_up_listen_duration,
                             inactivity_timeout=args.inactivity_timeout,
                             speaker_backend=args.speaker_backend,
+                            use_speaker=args.use_speaker,
                             show_tool_events=args.show_tool_events,
                         ),
                         "wake_words": ["gemini"],
@@ -763,6 +782,7 @@ def main():
                             follow_up_listen_duration=args.follow_up_listen_duration,
                             inactivity_timeout=args.inactivity_timeout,
                             speaker_backend=args.speaker_backend,
+                            use_speaker=args.use_speaker,
                             show_tool_events=args.show_tool_events,
                             model=args.opencode_model,
                         ),
@@ -785,6 +805,7 @@ def main():
                             follow_up_listen_duration=args.follow_up_listen_duration,
                             inactivity_timeout=args.inactivity_timeout,
                             speaker_backend=args.speaker_backend,
+                            use_speaker=args.use_speaker,
                         ),
                         "wake_words": ["llama", "ollama", "lama"],
                         "terminate_words": args.terminate_words,

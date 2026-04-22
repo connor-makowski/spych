@@ -101,7 +101,7 @@ class Spych(Notify):
         self,
         duration: Union[int, float, str] = 0,
         device_index: int = -1,
-        inactivity_timeout: Optional[float] = 8.0,
+        inactivity_timeout: Optional[float] = 4.0,
     ) -> str:
         """
         Usage:
@@ -133,7 +133,7 @@ class Spych(Notify):
             - Type: float | None
             - What: Seconds to wait for speech onset before returning an empty string
               when using VAD-gated recording (`duration="auto"` or `0`)
-            - Default: 8.0 (wait for 8 seconds of inactivity)
+            - Default: 4.0 (wait for 4 seconds of inactivity)
 
         Returns:
 

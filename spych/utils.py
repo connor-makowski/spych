@@ -359,6 +359,7 @@ def get_response_style(style: Optional[str]) -> str:
           the desired response style from the model
     """
     styles: dict[str, str] = {
+        "assistant": "Respond as a helpful and precise assistant. Be concise and informative.",
         "concise": "Respond with a focus on key points and being direct.",
         "friendly": "Use a friendly and approachable tone. Use simple language and be concise.",
         "military": "Respond in military brevity style. Be concise and direct, using short sentences and clear language.",
@@ -384,6 +385,20 @@ def get_response_style(style: Optional[str]) -> str:
 
 
 PERSONALITIES: dict[str, dict] = {
+    "assistant": {
+        "name": "Assistant",
+        "wake_words": ["assistant"],
+        "speaker_voice": "af_heart",
+        "use_speaker": True,
+        "response_style": "concise",
+    },
+    "friend": {
+        "name": "Friend",
+        "wake_words": ["friend", "buddy", "pal"],
+        "speaker_voice": "af_amy",
+        "use_speaker": True,
+        "response_style": "friendly",
+    },
     "jarvis": {
         "name": "J.A.R.V.I.S.",
         "wake_words": ["jarvis", "jarves", "jargus", "jervis"],
@@ -392,12 +407,13 @@ PERSONALITIES: dict[str, dict] = {
         "response_style": "jarvis",
     },
     "pirate": {
-        "name": "Blackbeard the Pirate",
+        "name": "Blackbeard",
         "wake_words": ["blackbeard", "pirate", "ahoy"],
-        "speaker_voice": "am_fenrir",
+        "speaker_voice": "am_michael",
         "use_speaker": True,
         "response_style": "pirate",
     },
+
     "news_anchor": {
         "name": "Bella the News Anchor",
         "wake_words": ["bella", "news anchor", "anchor"],
@@ -408,14 +424,14 @@ PERSONALITIES: dict[str, dict] = {
     "robot": {
         "name": "Rob the Robot",
         "wake_words": ["rob", "robot"],
-        "speaker_voice": "am_michael",
+        "speaker_voice": "am_adam",
         "use_speaker": True,
         "response_style": "robot",
     },
     "caveman": {
         "name": "Ur the Caveman",
         "wake_words": ["er", "ur", "caveman", "cave man"],
-        "speaker_voice": "am_puck",
+        "speaker_voice": "am_onyx",
         "use_speaker": True,
         "response_style": "caveman",
     },
