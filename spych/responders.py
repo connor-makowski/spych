@@ -25,6 +25,7 @@ class BaseResponder(Notify):
         response_style: str = "",
         use_speaker: bool = False,
         speaker_voice: str = "af_heart",
+        speaker_backend: str = "",
         follow_up_listen_duration: int | float = 0,
         inactivity_timeout: Optional[float] = 8.0,
     ) -> None:
@@ -84,6 +85,11 @@ class BaseResponder(Notify):
             - Note: American English voices use prefix `am_` or `af_`; British English
               use `bm_` or `bf_`. See spych.speaker.Speaker for the full voice list.
 
+        - `speaker_backend`:
+            - Type: str
+            - What: Explicit TTS backend to use ("chatterbox" or "kokoro")
+            - Default: "" (priority order: Chatterbox → Kokoro)
+
         - `response_style`:
             - Type: str
             - What: A style preset that shapes how the LLM formats its spoken summary.
@@ -132,6 +138,7 @@ class BaseResponder(Notify):
         self._current_user_input: str = ""
         self.use_speaker = use_speaker
         self.speaker_voice = speaker_voice
+        self.speaker_backend = speaker_backend
         self.response_style = response_style
         self.style_hint = get_response_style(response_style)
         self.follow_up_listen_duration = follow_up_listen_duration
@@ -140,7 +147,7 @@ class BaseResponder(Notify):
         self.summary_character_limit = 200
 
         if use_speaker:
-            self.speaker = Speaker(speaker_voice)
+            self.speaker = Speaker(speaker_voice, backend=speaker_backend)
 
     # ------------------------------------------------------------------ #
     #  Public helper API — safe to call from inside respond()             #

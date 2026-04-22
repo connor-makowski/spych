@@ -23,6 +23,8 @@ classifiers = [
 ]
 dependencies = [
     "claude_agent_sdk>=0.1.45,<1.0.0",
+    "kokoro>=0.9.4,<1.0.0; python_version < '3.14'",
+    "chatterbox-tts>=0.1.7,<1.0.0; python_version >= '3.14'",
     "faster-whisper>=1.2.1,<2.0.0",
     "pvrecorder>=1.2.7,<2.0.0",
     "numpy>=2.4.2,<3.0.0",
@@ -32,8 +34,8 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-chatterbox = ["chatterbox-tts"]
-kokoro = ["kokoro"]
+chatterbox = ["chatterbox-tts>=0.1.7,<1.0.0"]
+kokoro = ["kokoro>=0.9.4,<1.0.0"]
 
 [project.scripts]
 spych = "spych.cli:main"

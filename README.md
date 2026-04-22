@@ -232,33 +232,71 @@ Any agent can also speak the summary aloud using the built-in neural TTS engine.
 
 Spych uses a tiered fallback system for TTS to balance quality and performance:
 
-1.  **Chatterbox** (Default / High Quality): Best for natural sounding voices and zero-shot cloning. Slower and requires more resources.
+1.  **Chatterbox** (High Quality / Priority): Best for natural sounding voices and zero-shot cloning. Slower and requires more resources. **Required for Python 3.14+.**
 2.  **Kokoro** (Lightweight): Very fast and efficient. Ideal for edge devices (like a Raspberry Pi). *Note: Not supported on Python 3.14+.*
 3.  **Silent Fallback**: If no TTS engine is installed, Spych will simply print the summary to the terminal without attempting to speak.
 
-### Installation of TTS Engines
+### Installation Recommendations
 
-TTS engines are optional to keep the core package lightweight. Install your preferred engine:
+We recommend installing with **Kokoro** for most users (Python <= 3.13) as it is significantly faster and uses fewer resources.
+
+Choose **Chatterbox** if:
+- You need high-quality voice cloning (zero-shot)
+- You want to use custom voice samples (`.wav` files)
+- You are running on **Python 3.14+**
+
+#### Install and Run with your preferred TTS engine:
+
+Note: If you are using python 3.14+, you will automatically install chatterbox on `pip install spych`
+Note: If you are using python 3.13-, you will automatically install kokoro on `pip install spych`
+By default, you will use chatterbox first if it is installed, otherwise, you will use kokoro if it is installed.
 
 ```bash
-# For high-quality Chatterbox TTS
-pip install "spych[chatterbox]"
-
-# For lightweight Kokoro TTS (python<=3.13)
+# Recommended for most users (Fast, lightweight)
 pip install "spych[kokoro]"
 
-# For both
-pip install "spych[all]"
+# For high-quality voice cloning or Python 3.14+
+pip install "spych[chatterbox]"
+
 ```
 
-Enable TTS with `--use-speaker` (CLI) or `use_speaker=True` (Python):
+Enable TTS with `--use-speaker` (CLI) or `use_speaker=True` (Python). You can explicitly choose a backend with `--speaker-backend`:
 
 ```bash
-spych claude --use-speaker --speaker-voice bm_george
-spych ollama --model llama3.2:latest --use-speaker
+spych claude --use-speaker --speaker-backend kokoro
+spych ollama --use-speaker --speaker-backend chatterbox
 ```
 
 When TTS is active, short responses are spoken verbatim; longer ones use the `summary`. If the spoken response ends with a question, Spych automatically listens for a follow-up answer — no wake word required.
+
+### One-Shot Voice Cloning (Personalization)
+
+One-shot cloning allows you to create a digital twin of any voice from a short audio sample. This feature is powered by **Chatterbox Turbo** and is not supported by the lightweight Kokoro backend.
+
+#### 1. Record your profile
+Run the following command to record a 10-second sample of your voice. Spych will prompt you with a specific passage to read:
+
+```bash
+spych profile_my_voice --name my_voice
+```
+
+#### 2. Use your custom voice
+Once recorded, your voice profile is saved to the local cache and can be used by any agent. You must specify the **Chatterbox** backend to use custom voices:
+
+```bash
+spych claude --use-speaker --speaker-voice my_voice --speaker-backend chatterbox
+```
+
+### Using an alternative custom voice
+You can also use any `.wav` file as a voice profile with Chatterbox.
+
+Simply specify the path to your `.wav` file instead of a profile name:
+
+```bash
+spych claude --use-speaker --speaker-voice /path/to/my_voice.wav --speaker-backend chatterbox
+```
+
+*Note: Custom `.wav` profiles are only compatible with the Chatterbox backend. If you attempt to use a custom voice with Kokoro, it will fall back to using chatterbox if installed. If chatterbox is not installed, it will fall back to the default voice for kokoro.* 
 
 ### Available Voices
 
@@ -285,8 +323,6 @@ British English (`bm_` / `bf_`):
 | `bf_emma` | F | B- |
 | `bf_isabella` | F | C |
 | `bm_george` | M | C |
-
-Full Kokoro voice list: https://huggingface.co/hexgrad/Kokoro-82M/blob/main/VOICES.md
 
 ---
 

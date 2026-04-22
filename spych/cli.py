@@ -112,6 +112,13 @@ def _add_shared_args(parser: argparse.ArgumentParser) -> None:
             "See: https://github.com/connor-makowski/spych/tree/main/voices"
         ),
     )
+    parser.add_argument(
+        "--speaker-backend",
+        default="",
+        choices=["chatterbox", "kokoro"],
+        metavar="BACKEND",
+        help="Explicit TTS backend to use (default: priority Chatterbox then Kokoro)",
+    )
 
 
 def _add_agent_args(parser: argparse.ArgumentParser) -> None:
@@ -155,6 +162,8 @@ def _build_shared_kwargs(args: argparse.Namespace) -> dict:
         kwargs["use_speaker"] = True
     if args.speaker_voice != "af_heart":
         kwargs["speaker_voice"] = args.speaker_voice
+    if getattr(args, "speaker_backend", ""):
+        kwargs["speaker_backend"] = args.speaker_backend
     if args.response_style:
         kwargs["response_style"] = args.response_style
     return kwargs
@@ -492,6 +501,13 @@ def main():
         metavar="BOOL",
         help="Print live tool start/end events (default: true)",
     )
+    p_multi.add_argument(
+        "--speaker-backend",
+        default="",
+        choices=["chatterbox", "kokoro"],
+        metavar="BACKEND",
+        help="Explicit TTS backend to use (default: priority Chatterbox then Kokoro)",
+    )
     # ollama-specific flags (only used when 'ollama' is in --agents)
     p_multi.add_argument(
         "--ollama-model",
@@ -526,14 +542,6 @@ def main():
         metavar="SOURCE",
         default=["user", "project", "local"],
         help="Claude Code SDK setting sources (default: user project local). Only used when claude_code_sdk is in --agents.",
-    )
-
-    # ------------------------------------------------------------------ #
-    # sync_voices — Download or copy default voices                      #
-    # ------------------------------------------------------------------ #
-    subparsers.add_parser(
-        "sync_voices",
-        help="Download or copy default voices to the voice cache directory",
     )
 
     # ------------------------------------------------------------------ #
@@ -675,6 +683,7 @@ def main():
                             listen_duration=args.listen_duration,
                             follow_up_listen_duration=args.follow_up_listen_duration,
                             inactivity_timeout=args.inactivity_timeout,
+                            speaker_backend=args.speaker_backend,
                             show_tool_events=args.show_tool_events,
                         ),
                         "wake_words": ["claude", "clod", "cloud", "clawed"],
@@ -693,6 +702,7 @@ def main():
                             listen_duration=args.listen_duration,
                             follow_up_listen_duration=args.follow_up_listen_duration,
                             inactivity_timeout=args.inactivity_timeout,
+                            speaker_backend=args.speaker_backend,
                             setting_sources=args.setting_sources,
                             show_tool_events=args.show_tool_events,
                         ),
@@ -712,6 +722,7 @@ def main():
                             listen_duration=args.listen_duration,
                             follow_up_listen_duration=args.follow_up_listen_duration,
                             inactivity_timeout=args.inactivity_timeout,
+                            speaker_backend=args.speaker_backend,
                             show_tool_events=args.show_tool_events,
                         ),
                         "wake_words": ["codex"],
@@ -730,6 +741,7 @@ def main():
                             listen_duration=args.listen_duration,
                             follow_up_listen_duration=args.follow_up_listen_duration,
                             inactivity_timeout=args.inactivity_timeout,
+                            speaker_backend=args.speaker_backend,
                             show_tool_events=args.show_tool_events,
                         ),
                         "wake_words": ["gemini"],
@@ -748,6 +760,7 @@ def main():
                             listen_duration=args.listen_duration,
                             follow_up_listen_duration=args.follow_up_listen_duration,
                             inactivity_timeout=args.inactivity_timeout,
+                            speaker_backend=args.speaker_backend,
                             show_tool_events=args.show_tool_events,
                             model=args.opencode_model,
                         ),
@@ -769,6 +782,7 @@ def main():
                             listen_duration=args.listen_duration,
                             follow_up_listen_duration=args.follow_up_listen_duration,
                             inactivity_timeout=args.inactivity_timeout,
+                            speaker_backend=args.speaker_backend,
                         ),
                         "wake_words": ["llama", "ollama", "lama"],
                         "terminate_words": args.terminate_words,

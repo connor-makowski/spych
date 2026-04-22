@@ -229,14 +229,17 @@ class KokoroBackend(BaseBackend):
             self.speaker.play_pcm_array(audio.numpy(), self.sample_rate)
 
 
-def get_backend(speaker: "Speaker", voice: str) -> BaseBackend:
+def get_backend(
+    speaker: "Speaker", voice: str, backend_name: str = ""
+) -> BaseBackend:
     """
     Usage:
 
     - Returns the first available TTS backend, tried in priority order:
-      Chatterbox Turbo → Kokoro.
-    - Chatterbox is tried first; if unavailable or not installed, falls back to Kokoro.
-    - Raises NotImplementedError if neither backend is available.
+      Explicit Choice → Chatterbox Turbo → Kokoro.
+    - If backend_name is provided, that backend is tried first.
+    - If unavailable or not installed, falls back to the others.
+    - Raises NotImplementedError if no requested or fallback backend is available.
 
     Requires:
 
@@ -247,20 +250,41 @@ def get_backend(speaker: "Speaker", voice: str) -> BaseBackend:
         - Type: str
         - What: Voice name or .wav file path passed to the backend.
 
+    Optional:
+
+    - `backend_name`:
+        - Type: str
+        - What: Explicit backend to try first ("chatterbox" or "kokoro").
+        - Default: "" (priority order: Chatterbox → Kokoro)
+
     Returns:
 
     - `backend`:
         - Type: BaseBackend
         - What: An initialized backend ready to call `speak(text)`.
     """
-    try:
-        return ChatterboxBackend(speaker, voice)
-    except (ImportError, Exception):
-        pass
-    try:
-        return KokoroBackend(speaker, voice)
-    except (ImportError, Exception):
-        pass
+    backends = [ChatterboxBackend, KokoroBackend]
+    if backend_name.lower() == "chatterbox":
+        backends = [ChatterboxBackend, KokoroBackend]
+    elif backend_name.lower() == "kokoro":
+        backends = [KokoroBackend, ChatterboxBackend]
+
+    errors = []
+    for backend_class in backends:
+        try:
+            return backend_class(speaker, voice)
+        except ImportError:
+            continue
+        except Exception as e:
+            errors.append(f"{backend_class.__name__}: {str(e)}")
+            continue
+
+    if errors:
+        error_msg = "\n".join([f"  - {e}" for e in errors])
+        print(
+            f"\033[91m[spych] Failed to initialize TTS backends:\n{error_msg}\033[0m"
+        )
+
     raise NotImplementedError(
         "No TTS backend available. Install one with `pip install spych[chatterbox]` or `pip install spych[kokoro]`."
     )

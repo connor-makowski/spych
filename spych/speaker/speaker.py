@@ -11,7 +11,7 @@ import pygame
 from spych.speaker.backends import get_backend
 
 class Speaker:
-    def __init__(self, voice: str = "") -> None:
+    def __init__(self, voice: str = "", backend: str = "") -> None:
         """
         Usage:
 
@@ -31,6 +31,11 @@ class Speaker:
               The same short names (af_heart, bm_george, etc.) work for both backends.
             - Default: "" — Chatterbox requires a voice and will raise ValueError if
               empty; Kokoro defaults to "af_heart".
+
+        - `backend`:
+            - Type: str
+            - What: Explicit backend to use ("chatterbox" or "kokoro").
+            - Default: "" (priority order: Chatterbox → Kokoro)
         """
         pygame.mixer.init()
         self.voice = voice
@@ -38,7 +43,9 @@ class Speaker:
         self.speaking_complete = threading.Event()
         self.speaking_complete.set()
 
-        self.backend = get_backend(speaker=self, voice=voice)
+        self.backend = get_backend(
+            speaker=self, voice=voice, backend_name=backend
+        )
 
     def play_pcm_array(self, audio: np.ndarray, sample_rate: int) -> None:
         """Helper to play a numpy PCM array via pygame."""
