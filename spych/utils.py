@@ -1,9 +1,32 @@
-import traceback, sys
+import traceback, sys, os, wave
 from pvrecorder import PvRecorder
 import numpy as np
-from typing import Union
+from typing import Union, Optional
 from silero_vad import load_silero_vad
 import torch
+
+
+def get_voice_cache_dir() -> str:
+    """Returns the path to the project's voice cache directory."""
+    if os.name == "nt":  # Windows
+        base_dir = os.environ.get("LOCALAPPDATA", os.path.expanduser("~"))
+    elif sys.platform == "darwin":  # macOS
+        base_dir = os.path.expanduser("~/Library/Caches")
+    else:  # Linux/Unix
+        base_dir = os.environ.get("XDG_CACHE_HOME", os.path.expanduser("~/.cache"))
+
+    path = os.path.join(base_dir, "spych", "voices")
+    os.makedirs(path, exist_ok=True)
+    return path
+
+
+def save_wav(path: str, buffer: list[int], sample_rate: int = 16000) -> None:
+    """Saves a raw PCM buffer to a .wav file."""
+    with wave.open(path, "wb") as wf:
+        wf.setnchannels(1)
+        wf.setsampwidth(2)
+        wf.setframerate(sample_rate)
+        wf.writeframes(np.array(buffer, dtype=np.int16).tobytes())
 
 
 def get_clean_audio_buffer(buffer: list[int]) -> np.ndarray:
@@ -292,7 +315,7 @@ class Notify:
             )
 
 
-def get_response_style(style: str) -> str:
+def get_response_style(style: Optional[str]) -> str:
     """
     Usage:
 
@@ -332,6 +355,8 @@ def get_response_style(style: str) -> str:
             "as 'sir'. Keep responses brief and to the point — never verbose."
         ),
     }
+    if not style:
+        return ""
     return styles.get(style.lower(), style)
 
 

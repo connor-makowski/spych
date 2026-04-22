@@ -129,9 +129,8 @@ class BaseResponder(Notify):
         self.style_hint = get_response_style(response_style)
         self.follow_up_listen_duration = follow_up_listen_duration
         self.speaker = None
-        self._last_agent_response: Optional[AgentResponse] = None
-        self.speech_complete: threading.Event = threading.Event()
-        self.speech_complete.set()
+        self.summary_character_limit = 200
+
         if use_speaker:
             self.speaker = Speaker(speaker_voice)
 
@@ -331,77 +330,6 @@ class BaseResponder(Notify):
             requires_user_feedback=False,
         )
 
-    def speak_to_user(self, text: str) -> None:
-        try:
-            if not self.speaker._interrupted.is_set():
-                self.speaker.speak(text)
-        except Exception:
-            pass
-        finally:
-            self.speech_complete.set()
-
-    def spoken_follow_up_loop(self) -> None:
-        """
-        Usage:
-
-        - Called at the end of each `__call__` cycle when `use_speaker` is True.
-          Waits for the background speech thread to finish, then checks whether the
-          spoken summary contained a question. If so, enters a follow-up listen →
-          respond loop that continues until one of the following:
-
-            1. The spoken summary has no question.
-            2. The user does not respond (VAD returns empty string).
-            3. The speaker is interrupted by the wake word.
-
-        Notes:
-
-        - The follow-up cycle re-uses `on_user_input`, `respond`, `on_response`, and
-          `on_before_respond` / `on_after_respond`, so all hooks fire normally.
-        - Each follow-up response is itself summarized and spoken; if that summary also
-          contains a question the loop continues, enabling natural multi-turn dialogue
-          without requiring the user to repeat the wake word.
-        - Interrupting via the wake word (which calls `Speaker.interrupt()`) causes
-          `_speech_complete` to be set and `_interrupted` to be flagged, so the loop
-          exits cleanly and the new `__call__` cycle takes over.
-        """
-        while True:
-            # Wait for the speech thread to finish (or for an interrupt to arrive).
-            self.speech_complete.wait()
-            if self.speaker._interrupted.is_set():
-                self.wait_for_next_wake_word(divider=False)
-                return
-            if (
-                self._last_agent_response is None
-                or not self._last_agent_response.requires_user_feedback
-            ):
-                self.wait_for_next_wake_word(divider=False)
-                return
-            # A question was spoken — start listening for the user's answer.
-            self.spinner.start(
-                f"{theme.bold}{theme.highlight}{self.name}{theme.reset} "
-                f"{theme.success}is listening for follow-up{theme.reset}",
-                spinner=Spinner.EQUALIZER,
-            )
-            follow_up_input = self.spych_object.listen(
-                duration=self.follow_up_listen_duration
-            )
-            self.on_listen_end()
-            if not follow_up_input or self.speaker._interrupted.is_set():
-                self.wait_for_next_wake_word(divider=False)
-                return
-            self.on_user_input(follow_up_input)
-            try:
-                self.on_before_respond(follow_up_input)
-                follow_up_response = self.respond(follow_up_input)
-                self.on_after_respond(follow_up_input, follow_up_response)
-            except Exception as exc:
-                self.spinner.stop()
-                print(f"  {theme.error}✗  Error: {exc}{theme.reset}\n")
-                self.wait_for_next_wake_word(divider=False)
-                return
-            self.on_response(follow_up_response)
-            CliPrinter.divider()
-            # Loop: check whether the new spoken response also contains a question.
 
     # ------------------------------------------------------------------ #
     #  Extension hooks — override in subclasses for custom behaviour      #
@@ -490,7 +418,7 @@ class BaseResponder(Notify):
     #  Orchestration — not intended for override; use the hooks above     #
     # ------------------------------------------------------------------ #
 
-    def on_listen_start(self) -> None:
+    def on_listen_start(self, duration: Optional[int] = None) -> None:
         """
         Usage:
 
@@ -501,8 +429,12 @@ class BaseResponder(Notify):
         - This method is called automatically at the start of each listen cycle.
         - It updates the spinner label to show the responder name and listening duration.
         """
+        if duration is not None:
+            listen_duration = duration        
+        else:
+            listen_duration = self.listen_duration
         listen_string = (
-            f" for {self.listen_duration}s" if self.listen_duration > 0 else ""
+            f" for {listen_duration}s" if listen_duration > 0 else ""
         )
         self.spinner.start(
             f"{theme.bold}{theme.highlight}{self.name}{theme.reset} "
@@ -554,22 +486,11 @@ class BaseResponder(Notify):
         """
         elapsed = time.time() - self._start_time
         self.spinner.stop()
-        summary_character_limit = 200
         if response.response:
             CliPrinter.print_response(self.name, response.response)
-            if len(response.response) > summary_character_limit and response.summary != response.response:
+            if len(response.response) > self.summary_character_limit and response.summary != response.response:
                 CliPrinter.print_summary(response.summary)
             CliPrinter.print_status(self.name, success=True, elapsed=elapsed)
-            if self.use_speaker and self.speaker is not None:
-                self._last_agent_response = response
-                self.speech_complete.clear()
-                self.speaker._interrupted.clear()
-                text_to_speak = response.response if len(response.response) <= summary_character_limit else response.summary
-                threading.Thread(
-                    target=self.speak_to_user,
-                    args=(text_to_speak,),
-                    daemon=True,
-                ).start()
         else:
             CliPrinter.print_status(self.name, success=False, elapsed=elapsed)
 
@@ -600,7 +521,6 @@ class BaseResponder(Notify):
         """
         self.spinner.start(spinner=Spinner.BRAILLE)
         self.spinner.stop()
-
     def __call__(self) -> Optional[AgentResponse]:
         """
         Usage:
@@ -615,30 +535,49 @@ class BaseResponder(Notify):
             - What: The structured response returned by `respond`, or None if
               no user input was captured or an error occurred
         """
-        if self.use_speaker and self.speaker is not None:
+        # Interrupt any ongoing speak event when calling the responder
+        if self.speaker is not None:
             self.speaker.interrupt()
-        self.on_listen_start()
-        user_input = self.spych_object.listen(duration=self.listen_duration)
-        self.on_listen_end()
-        if not user_input:
-            self.wait_for_next_wake_word(divider=False)
-            return None
-        self.on_user_input(user_input)
-        try:
-            self.on_before_respond(user_input)
-            response = self.respond(user_input)
-            self.on_after_respond(user_input, response)
-        except Exception as exc:
-            self.spinner.stop()
-            print(f"  {theme.error}✗  Error: {exc}{theme.reset}\n")
-            return None
-        self.on_response(response)
-        if self.use_speaker and self.speaker is not None:
-            CliPrinter.divider()
-            self.spoken_follow_up_loop()
-        else:
-            self.wait_for_next_wake_word()
-        return response
+
+        # Set the default state for follow-up listening
+        is_follow_up = False
+
+        while True:
+            duration = self.follow_up_listen_duration if is_follow_up else self.listen_duration
+
+            self.on_listen_start(duration=duration)
+            user_input = self.spych_object.listen(duration=duration)
+            self.on_listen_end()
+
+            if not user_input:
+                self.wait_for_next_wake_word(divider=False)
+                return None
+
+            self.on_user_input(user_input)
+            try:
+                self.on_before_respond(user_input)
+                response = self.respond(user_input)
+                self.on_after_respond(user_input, response)
+            except Exception as exc:
+                self.spinner.stop()
+                print(f"  {theme.error}✗  Error: {exc}{theme.reset}\n")
+                self.wait_for_next_wake_word(divider=False)
+                return None
+
+            self.on_response(response)
+
+            if self.speaker and response.response:
+                text_to_speak = response.response if len(response.response) <= self.summary_character_limit else response.summary
+                self.speaker.speak_async(text_to_speak)
+
+            if response.requires_user_feedback:
+                if self.speaker:
+                    self.speaker.wait_for_speak()
+                CliPrinter.divider()
+                is_follow_up = True
+            else:
+                self.wait_for_next_wake_word()
+                return response
 
     def ready_message(self, show_wait_for_wake: bool = True, **kwargs) -> None:
         """

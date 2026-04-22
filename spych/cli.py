@@ -20,6 +20,11 @@ Examples:
 
     # Multi-agent: run several agents under different wake words at once
     spych multi --agents claude_code_sdk ollama --ollama-model llama3.2:latest
+
+    # Voice management
+    spych sync_voices
+    spych profile_my_voice --name my_voice
+    spych profile_my_voice --name my_voice --alternate-output-file ./my_voice_backup.wav
 """
 
 import argparse
@@ -490,6 +495,41 @@ def main():
     )
 
     # ------------------------------------------------------------------ #
+    # sync_voices — Download or copy default voices                      #
+    # ------------------------------------------------------------------ #
+    subparsers.add_parser(
+        "sync_voices",
+        help="Download or copy default voices to the voice cache directory",
+    )
+
+    # ------------------------------------------------------------------ #
+    # profile_my_voice — Record a custom voice profile                   #
+    # ------------------------------------------------------------------ #
+    p_profile = subparsers.add_parser(
+        "profile_my_voice",
+        help="Record a 10-second voice sample to create a custom profile",
+    )
+    p_profile.add_argument(
+        "--name",
+        required=True,
+        metavar="NAME",
+        help="The name to save this voice profile as (e.g. 'my_voice')",
+    )
+    p_profile.add_argument(
+        "--device-index",
+        type=int,
+        default=-1,
+        metavar="N",
+        help="Microphone device index; -1 uses system default (default: -1)",
+    )
+    p_profile.add_argument(
+        "--alternate-output-file",
+        default=None,
+        metavar="PATH",
+        help="An alternate file path to save the voice profile to (e.g. './my_voice.wav')",
+    )
+
+    # ------------------------------------------------------------------ #
     # Dispatch                                                             #
     # ------------------------------------------------------------------ #
     args = parser.parse_args()
@@ -567,6 +607,20 @@ def main():
             max_speech_duration_s=args.max_speech_duration,
             context_words=args.context_words,
         ).start()
+
+    elif args.agent == "sync_voices":
+        from spych.voice_manager import sync_default_voices
+
+        sync_default_voices()
+
+    elif args.agent == "profile_my_voice":
+        from spych.voice_manager import profile_my_voice
+
+        profile_my_voice(
+            name=args.name,
+            device_index=args.device_index,
+            alternate_output_file=args.alternate_output_file,
+        )
 
     # ------------------------------------------------------------------ #
     # Multi-agent dispatch                                                 #

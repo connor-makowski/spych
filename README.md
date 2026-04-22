@@ -226,17 +226,36 @@ All agents accept a `terminate_words` list (default: `["terminate"]`). Say the w
 
 Every agent response includes both a full `response` (printed to the terminal) and a short `summary`. The summary is always printed below long responses (over ~200 characters) so you can quickly scan what was said without scrolling. It is written to be clean prose with no file paths or special characters.
 
-Any agent can also speak the summary aloud using the built-in [kokoro](https://github.com/hexgrad/kokoro) neural TTS engine. The model (~82 MB) is downloaded on first use and cached locally — all subsequent runs are fully offline.
+Any agent can also speak the summary aloud using the built-in neural TTS engine. 
+
+### TTS Backends & Fallback
+
+Spych uses a tiered fallback system for TTS to balance quality and performance:
+
+1.  **Chatterbox** (Default / High Quality): Best for natural sounding voices and zero-shot cloning. Slower and requires more resources.
+2.  **Kokoro** (Lightweight): Very fast and efficient. Ideal for edge devices (like a Raspberry Pi). *Note: Not supported on Python 3.14+.*
+3.  **Silent Fallback**: If no TTS engine is installed, Spych will simply print the summary to the terminal without attempting to speak.
+
+### Installation of TTS Engines
+
+TTS engines are optional to keep the core package lightweight. Install your preferred engine:
+
+```bash
+# For high-quality Chatterbox TTS
+pip install "spych[chatterbox]"
+
+# For lightweight Kokoro TTS (python<=3.13)
+pip install "spych[kokoro]"
+
+# For both
+pip install "spych[all]"
+```
 
 Enable TTS with `--use-speaker` (CLI) or `use_speaker=True` (Python):
 
 ```bash
 spych claude --use-speaker --speaker-voice bm_george
 spych ollama --model llama3.2:latest --use-speaker
-```
-
-```python
-claude_code_sdk(use_speaker=True, speaker_voice="bm_george")
 ```
 
 When TTS is active, short responses are spoken verbatim; longer ones use the `summary`. If the spoken response ends with a question, Spych automatically listens for a follow-up answer — no wake word required.
