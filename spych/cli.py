@@ -22,7 +22,6 @@ Examples:
     spych multi --agents claude_code_sdk ollama --ollama-model llama3.2:latest
 
     # Voice management
-    spych sync_voices
     spych profile_my_voice --name my_voice
     spych profile_my_voice --name my_voice --alternate-output-file ./my_voice_backup.wav
 """
@@ -607,11 +606,6 @@ def main():
             max_speech_duration_s=args.max_speech_duration,
             context_words=args.context_words,
         ).start()
-
-    elif args.agent == "sync_voices":
-        from spych.voice_manager import sync_default_voices
-
-        sync_default_voices()
 
     elif args.agent == "profile_my_voice":
         from spych.voice_manager import profile_my_voice

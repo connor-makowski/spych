@@ -4,3 +4,6 @@
 *.egg-info
 *.pyc
 build
+/venv312/
+
+chatterbox
