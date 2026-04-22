@@ -1,7 +1,7 @@
 import os
 import time
 import requests
-from spych.utils import Recorder, save_wav, get_voice_cache_dir
+from spych.utils import Recorder, save_wav, get_cache_dir
 
 DEFAULT_VOICES_URL = "https://raw.githubusercontent.com/connor-makowski/spych/main/voices/{voice}.wav"
 KOKORO_VOICES = [
@@ -17,7 +17,7 @@ def profile_my_voice(name: str, device_index: int = -1, alternate_output_file: s
     Prompts the user to record a short voice sample, then saves it to the
     voice cache directory for use with zero-shot cloning.
     """
-    cache_dir = get_voice_cache_dir()
+    cache_dir = get_cache_dir(folder='voices')
     output_path = os.path.join(cache_dir, f"{name}.wav")
 
     print(f"\n[spych] Preparing to record voice profile for: {name}")
@@ -69,7 +69,7 @@ def sync_default_voices() -> None:
     voice cache directory. If a local 'voices/' directory exists in the project
     root, it copies from there first.
     """
-    cache_dir = get_voice_cache_dir()
+    cache_dir = get_cache_dir(folder='voices')
     project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     local_voices_dir = os.path.join(project_root, "voices")
 

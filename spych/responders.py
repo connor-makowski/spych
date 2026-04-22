@@ -5,7 +5,6 @@ from spych.speaker import Speaker
 from dataclasses import dataclass
 from typing import Optional
 import json
-import threading
 import time
 
 
