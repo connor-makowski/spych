@@ -9,6 +9,7 @@ warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=FutureWarning)
 
 import torch
+
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
 KOKORO_VOICES = [
@@ -211,15 +212,23 @@ class KokoroBackend(BaseBackend):
 
         for fname in ["config.json", "kokoro-v1_0.pth"]:
             if not os.path.isfile(os.path.join(kokoro_dir, fname)):
-                hf_hub_download(repo_id=self.REPO_ID, filename=fname, local_dir=kokoro_dir)
+                hf_hub_download(
+                    repo_id=self.REPO_ID, filename=fname, local_dir=kokoro_dir
+                )
 
-        kmodel = self.KModel(
-            repo_id=self.REPO_ID,
-            config=os.path.join(kokoro_dir, "config.json"),
-            model=os.path.join(kokoro_dir, "kokoro-v1_0.pth"),
-        ).to(device).eval()
+        kmodel = (
+            self.KModel(
+                repo_id=self.REPO_ID,
+                config=os.path.join(kokoro_dir, "config.json"),
+                model=os.path.join(kokoro_dir, "kokoro-v1_0.pth"),
+            )
+            .to(device)
+            .eval()
+        )
 
-        self.pipeline = self.KPipeline(lang_code=lang_code, repo_id=self.REPO_ID, model=kmodel)
+        self.pipeline = self.KPipeline(
+            lang_code=lang_code, repo_id=self.REPO_ID, model=kmodel
+        )
         self.pipeline.load_voice(self.voice_path)
 
     def speak(self, text: str):

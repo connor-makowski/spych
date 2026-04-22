@@ -93,7 +93,9 @@ def _add_shared_args(parser: argparse.ArgumentParser) -> None:
         metavar="STYLE",
         help=(
             "Style for reformatting output. "
-            "Choices: military, five_year_old, fast, pirate, news_anchor, haiku, shakespearean, robot", "caveman", "yoda"
+            "Choices: military, five_year_old, fast, pirate, news_anchor, haiku, shakespearean, robot",
+            "caveman",
+            "yoda",
         ),
     )
     parser.add_argument(

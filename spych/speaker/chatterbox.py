@@ -31,10 +31,12 @@ logger = logging.getLogger(__name__)
 
 REPO_ID = "ResembleAI/chatterbox-turbo"
 
+
 @contextlib.contextmanager
 def _quiet():
     """Suppresses tqdm progress bars and stray print statements during inference."""
     from unittest.mock import patch
+
     noop_tqdm = lambda iterable, *args, **kwargs: iterable
     with (
         patch("chatterbox.models.t3.t3.tqdm", noop_tqdm),
@@ -197,9 +199,9 @@ class SpychChatterboxTTS:
         conds = None
         builtin_voice = cache_dir / "conds.pt"
         if builtin_voice.exists():
-            conds = Conditionals.load(builtin_voice, map_location=map_location).to(
-                device
-            )
+            conds = Conditionals.load(
+                builtin_voice, map_location=map_location
+            ).to(device)
 
         return cls(t3, s3gen, ve, tokenizer, device, conds=conds)
 
@@ -224,7 +226,9 @@ class SpychChatterboxTTS:
             - Type: SpychChatterboxTTS
             - What: Fully initialized model ready for `prepare_conditionals` and `generate`.
         """
-        model_cache_dir = os.path.join(get_cache_dir(folder="models"), "chatterbox-turbo")
+        model_cache_dir = os.path.join(
+            get_cache_dir(folder="models"), "chatterbox-turbo"
+        )
         for fname in [
             "ve.safetensors",
             "t3_turbo_v1.safetensors",
@@ -233,10 +237,12 @@ class SpychChatterboxTTS:
             "added_tokens.json",
             "merges.txt",
             "vocab.json",
-            "special_tokens_map.json"
+            "special_tokens_map.json",
         ]:
             if not os.path.isfile(os.path.join(model_cache_dir, fname)):
-                logger.info(f"Model file '{fname}' not found in cache. Downloading from Hugging Face Hub...")
+                logger.info(
+                    f"Model file '{fname}' not found in cache. Downloading from Hugging Face Hub..."
+                )
                 hf_hub_download(
                     repo_id=REPO_ID,
                     filename=fname,
@@ -244,7 +250,9 @@ class SpychChatterboxTTS:
                 )
         return cls.from_local(model_cache_dir, device)
 
-    def norm_loudness(self, wav: np.ndarray, sr: int, target_lufs: float = -27) -> np.ndarray:
+    def norm_loudness(
+        self, wav: np.ndarray, sr: int, target_lufs: float = -27
+    ) -> np.ndarray:
         try:
             meter = ln.Meter(sr)
             loudness = meter.integrated_loudness(wav)
@@ -289,15 +297,21 @@ class SpychChatterboxTTS:
         """
         s3gen_ref_wav, _sr = librosa.load(wav_fpath, sr=S3GEN_SR)
 
-        assert len(s3gen_ref_wav) / _sr > 5.0, "Audio prompt must be longer than 5 seconds!"
+        assert (
+            len(s3gen_ref_wav) / _sr > 5.0
+        ), "Audio prompt must be longer than 5 seconds!"
 
         if norm_loudness:
             s3gen_ref_wav = self.norm_loudness(s3gen_ref_wav, _sr)
 
-        ref_16k_wav = librosa.resample(s3gen_ref_wav, orig_sr=S3GEN_SR, target_sr=S3_SR).astype(np.float32)
+        ref_16k_wav = librosa.resample(
+            s3gen_ref_wav, orig_sr=S3GEN_SR, target_sr=S3_SR
+        ).astype(np.float32)
 
         s3gen_ref_wav = s3gen_ref_wav[: self.DEC_COND_LEN]
-        s3gen_ref_dict = self.s3gen.embed_ref(s3gen_ref_wav, S3GEN_SR, device=self.device)
+        s3gen_ref_dict = self.s3gen.embed_ref(
+            s3gen_ref_wav, S3GEN_SR, device=self.device
+        )
 
         if plen := self.t3.hp.speech_cond_prompt_len:
             s3_tokzr = self.s3gen.tokenizer
@@ -404,7 +418,11 @@ class SpychChatterboxTTS:
 
             speech_tokens = speech_tokens[speech_tokens < 6561]
             speech_tokens = speech_tokens.to(self.device)
-            silence = torch.tensor([S3GEN_SIL, S3GEN_SIL, S3GEN_SIL]).long().to(self.device)
+            silence = (
+                torch.tensor([S3GEN_SIL, S3GEN_SIL, S3GEN_SIL])
+                .long()
+                .to(self.device)
+            )
             speech_tokens = torch.cat([speech_tokens, silence])
 
             wav, _ = self.s3gen.inference(

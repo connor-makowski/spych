@@ -26,7 +26,9 @@ except (ImportError, NotImplementedError):
 # Test fallback from an unavailable explicit backend
 # (Providing an invalid name should trigger priority fallback)
 fallback_speaker = Speaker(voice="af_heart", backend="invalid_backend")
-fallback_speaker.speak("I fell back to an available backend because 'invalid_backend' was requested.")
+fallback_speaker.speak(
+    "I fell back to an available backend because 'invalid_backend' was requested."
+)
 
 # -- parse_output demo ---------------------------------------------------
 # Verify JSON parsing and fallback behavior without an LLM.
@@ -46,28 +48,40 @@ responder = EchoResponder(
     spych_object=spych_object,
     use_speaker=True,
     speaker_voice="am_michael",
-    speaker_backend="kokoro", # Test passing backend to responder
+    speaker_backend="kokoro",  # Test passing backend to responder
 )
 
 # Verify responder initialized its speaker with the requested backend
 if responder.speaker:
-    print(f"Responder speaker backend: {type(responder.speaker.backend).__name__}")
+    print(
+        f"Responder speaker backend: {type(responder.speaker.backend).__name__}"
+    )
 
 # Verify parse_output handles valid JSON
 json_text = '{"response": "The sky is blue.", "summary": "Sky is blue.", "requires_user_feedback": false}'
 parsed = responder.parse_output(json_text)
-assert parsed.response == "The sky is blue.", f"Unexpected response: {parsed.response!r}"
-assert parsed.summary == "Sky is blue.", f"Unexpected summary: {parsed.summary!r}"
-assert parsed.requires_user_feedback is False, f"Unexpected feedback flag: {parsed.requires_user_feedback!r}"
+assert (
+    parsed.response == "The sky is blue."
+), f"Unexpected response: {parsed.response!r}"
+assert (
+    parsed.summary == "Sky is blue."
+), f"Unexpected summary: {parsed.summary!r}"
+assert (
+    parsed.requires_user_feedback is False
+), f"Unexpected feedback flag: {parsed.requires_user_feedback!r}"
 
 # Verify parse_output falls back gracefully on invalid JSON
 fallback = responder.parse_output("not json at all")
-assert fallback.response == "not json at all", f"Unexpected fallback: {fallback.response!r}"
+assert (
+    fallback.response == "not json at all"
+), f"Unexpected fallback: {fallback.response!r}"
 assert fallback.requires_user_feedback is False
 
 # Verify EchoResponder returns correct AgentResponse fields
 result = responder.respond("hello world")
-assert result.response == "Echo: hello world", f"Unexpected: {result.response!r}"
+assert (
+    result.response == "Echo: hello world"
+), f"Unexpected: {result.response!r}"
 assert result.summary == "Heard: hello world", f"Unexpected: {result.summary!r}"
 assert result.requires_user_feedback is False
 

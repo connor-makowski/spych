@@ -235,7 +235,9 @@ class LocalCodexCLIResponder(BaseResponder):
 
         active_tools: dict[str, tuple[str, float]] = {}
         raw = self.__run_turn__(
-            self.format_prompt(user_input), is_first=is_first, active_tools=active_tools
+            self.format_prompt(user_input),
+            is_first=is_first,
+            active_tools=active_tools,
         )
         return self.parse_output(raw)
 

@@ -6,14 +6,16 @@ from silero_vad import load_silero_vad
 import torch
 
 
-def get_cache_dir(folder='voices') -> str:
+def get_cache_dir(folder="voices") -> str:
     """Returns the path to the project's voice cache directory."""
     if os.name == "nt":  # Windows
         base_dir = os.environ.get("LOCALAPPDATA", os.path.expanduser("~"))
     elif sys.platform == "darwin":  # macOS
         base_dir = os.path.expanduser("~/Library/Caches")
     else:  # Linux/Unix
-        base_dir = os.environ.get("XDG_CACHE_HOME", os.path.expanduser("~/.cache"))
+        base_dir = os.environ.get(
+            "XDG_CACHE_HOME", os.path.expanduser("~/.cache")
+        )
 
     path = os.path.join(base_dir, "spych", folder)
     os.makedirs(path, exist_ok=True)

@@ -57,8 +57,8 @@ def get_wave_voice(voice: str) -> str:
     """
     if os.path.isfile(voice):
         return voice  # If it's already a valid file path, just return it
-    cache_dir = get_cache_dir(folder='voices')
-    wave_dir = os.path.join(cache_dir, 'wave')
+    cache_dir = get_cache_dir(folder="voices")
+    wave_dir = os.path.join(cache_dir, "wave")
     os.makedirs(wave_dir, exist_ok=True)
     local_path = os.path.join(wave_dir, f"{voice}.wav")
 
@@ -72,9 +72,14 @@ def get_wave_voice(voice: str) -> str:
                 f.write(response.content)
             print(f"[spych] Voice '{voice}' downloaded and saved to cache.")
         except Exception as e:
-            print(f"\033[91m[spych] Failed to download voice '{voice}': {e}\033[0m")
-            raise FileNotFoundError(f"Voice '{voice}' not found in cache and failed to download from {url}.")
+            print(
+                f"\033[91m[spych] Failed to download voice '{voice}': {e}\033[0m"
+            )
+            raise FileNotFoundError(
+                f"Voice '{voice}' not found in cache and failed to download from {url}."
+            )
     return local_path
+
 
 def get_pt_voice(voice: str) -> str:
     """
@@ -105,8 +110,8 @@ def get_pt_voice(voice: str) -> str:
     """
     if os.path.isfile(voice):
         return voice  # If it's already a valid file path, just return it
-    cache_dir = get_cache_dir(folder='voices')
-    pt_dir = os.path.join(cache_dir, 'pt')
+    cache_dir = get_cache_dir(folder="voices")
+    pt_dir = os.path.join(cache_dir, "pt")
     os.makedirs(pt_dir, exist_ok=True)
     local_path = os.path.join(pt_dir, f"{voice}.pt")
 
@@ -120,9 +125,14 @@ def get_pt_voice(voice: str) -> str:
                 f.write(response.content)
             print(f"[spych] Voice '{voice}' downloaded and saved to cache.")
         except Exception as e:
-            print(f"\033[91m[spych] Failed to download voice '{voice}': {e}\033[0m")
-            raise FileNotFoundError(f"Voice '{voice}' not found in cache and failed to download from {url}.")
+            print(
+                f"\033[91m[spych] Failed to download voice '{voice}': {e}\033[0m"
+            )
+            raise FileNotFoundError(
+                f"Voice '{voice}' not found in cache and failed to download from {url}."
+            )
     return local_path
+
 
 def get_model(name: str) -> str:
     """
@@ -151,8 +161,8 @@ def get_model(name: str) -> str:
     """
     if os.path.isfile(name):
         return name  # If it's already a valid file path, just return it
-    cache_dir = get_cache_dir(folder='voices')
-    model_dir = os.path.join(cache_dir, 'model')
+    cache_dir = get_cache_dir(folder="voices")
+    model_dir = os.path.join(cache_dir, "model")
     os.makedirs(model_dir, exist_ok=True)
     local_path = os.path.join(model_dir, f"{name}")
     if not os.path.isfile(local_path):
@@ -165,18 +175,24 @@ def get_model(name: str) -> str:
                 f.write(response.content)
             print(f"[spych] Model '{name}' downloaded and saved to cache.")
         except Exception as e:
-            print(f"\033[91m[spych] Failed to download model '{name}': {e}\033[0m")
-            raise FileNotFoundError(f"Model '{name}' not found in cache and failed to download from {url}.")
+            print(
+                f"\033[91m[spych] Failed to download model '{name}': {e}\033[0m"
+            )
+            raise FileNotFoundError(
+                f"Model '{name}' not found in cache and failed to download from {url}."
+            )
     return local_path
 
 
-def profile_my_voice(name: str, device_index: int = -1, alternate_output_file: str | None = None) -> None:
+def profile_my_voice(
+    name: str, device_index: int = -1, alternate_output_file: str | None = None
+) -> None:
     """
     Prompts the user to record a short voice sample, then saves it to the
     voice cache directory for use with zero-shot cloning.
     """
-    cache_dir = get_cache_dir(folder='voices')
-    wave_dir = os.path.join(cache_dir, 'wave')
+    cache_dir = get_cache_dir(folder="voices")
+    wave_dir = os.path.join(cache_dir, "wave")
     os.makedirs(wave_dir, exist_ok=True)
     output_path = os.path.join(wave_dir, f"{name}.wav")
 
@@ -184,9 +200,9 @@ def profile_my_voice(name: str, device_index: int = -1, alternate_output_file: s
     print("[spych] Please prepare to read the following passage aloud:")
     print("--------------------------------------------------")
     print(
-        "The wild dogs are howling in the woods and even if this \n"\
-        "fort will not shelter our shamans, it isn't doomed to repeat \n"\
-        "their history of past, so let's just eat like free kings if only \n"\
+        "The wild dogs are howling in the woods and even if this \n"
+        "fort will not shelter our shamans, it isn't doomed to repeat \n"
+        "their history of past, so let's just eat like free kings if only \n"
         "for tonight"
     )
     print("--------------------------------------------------")
@@ -207,17 +223,29 @@ def profile_my_voice(name: str, device_index: int = -1, alternate_output_file: s
         speech_threshold=0.5,
         silence_threshold=0.35,
         silence_frames_threshold=30,  # ~1 second of silence to end
-        speech_pad_frames=10,         # ~320ms pre-roll
-        max_speech_duration_s=15.0,    # Max 15 seconds
+        speech_pad_frames=10,  # ~320ms pre-roll
+        max_speech_duration_s=15.0,  # Max 15 seconds
     )
 
     if not buffer:
-        print("\033[91m" + "[spych] No speech detected. Profile creation failed." + "\033[0m")
+        print(
+            "\033[91m"
+            + "[spych] No speech detected. Profile creation failed."
+            + "\033[0m"
+        )
         return
 
     save_wav(output_path, buffer)
-    print(f"\033[92m" + f"[spych] Success! Voice profile saved to: {output_path}" + "\033[0m")
+    print(
+        f"\033[92m"
+        + f"[spych] Success! Voice profile saved to: {output_path}"
+        + "\033[0m"
+    )
     if alternate_output_file:
         save_wav(alternate_output_file, buffer)
-        print(f"\033[92m" + f"[spych] Also saved a copy to: {alternate_output_file}" + "\033[0m")
+        print(
+            f"\033[92m"
+            + f"[spych] Also saved a copy to: {alternate_output_file}"
+            + "\033[0m"
+        )
     print(f"[spych] You can now use this voice with: --speaker-voice {name}")

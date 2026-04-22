@@ -298,7 +298,7 @@ class BaseResponder(Notify):
 
         {prompt}
         """
-    
+
     def parse_output(self, raw_output: str) -> AgentResponse:
         """
         Usage:
@@ -323,11 +323,14 @@ class BaseResponder(Notify):
         if text.startswith("```"):
             newline = text.find("\n")
             if newline != -1:
-                text = text[newline + 1:]
+                text = text[newline + 1 :]
             if text.endswith("```"):
                 text = text[:-3].strip()
         # Try direct parse first, then fall back to extracting embedded JSON object
-        for candidate in (text, text[text.find("{"):text.rfind("}") + 1] if "{" in text else ""):
+        for candidate in (
+            text,
+            text[text.find("{") : text.rfind("}") + 1] if "{" in text else "",
+        ):
             try:
                 data = json.loads(candidate)
                 return AgentResponse(
@@ -344,7 +347,6 @@ class BaseResponder(Notify):
             summary=raw_output,
             requires_user_feedback=False,
         )
-
 
     # ------------------------------------------------------------------ #
     #  Extension hooks — override in subclasses for custom behaviour      #
@@ -410,7 +412,9 @@ class BaseResponder(Notify):
             - What: The enriched transcribed input (after optional clarification)
         """
 
-    def on_after_respond(self, user_input: str, response: AgentResponse) -> None:
+    def on_after_respond(
+        self, user_input: str, response: AgentResponse
+    ) -> None:
         """
         Usage:
 
@@ -445,7 +449,7 @@ class BaseResponder(Notify):
         - It updates the spinner label to show the responder name and listening duration.
         """
         if duration is not None:
-            listen_duration = duration        
+            listen_duration = duration
         else:
             listen_duration = self.listen_duration
         listen_string = (
@@ -503,7 +507,10 @@ class BaseResponder(Notify):
         self.spinner.stop()
         if response.response:
             CliPrinter.print_response(self.name, response.response)
-            if len(response.response) > self.summary_character_limit and response.summary != response.response:
+            if (
+                len(response.response) > self.summary_character_limit
+                and response.summary != response.response
+            ):
                 CliPrinter.print_summary(response.summary)
             CliPrinter.print_status(self.name, success=True, elapsed=elapsed)
         else:
@@ -536,6 +543,7 @@ class BaseResponder(Notify):
         """
         self.spinner.start(spinner=Spinner.BRAILLE)
         self.spinner.stop()
+
     def __call__(self) -> Optional[AgentResponse]:
         """
         Usage:
@@ -558,7 +566,11 @@ class BaseResponder(Notify):
         is_follow_up = False
 
         while True:
-            duration = self.follow_up_listen_duration if is_follow_up and self.follow_up_listen_duration != 0 else self.listen_duration
+            duration = (
+                self.follow_up_listen_duration
+                if is_follow_up and self.follow_up_listen_duration != 0
+                else self.listen_duration
+            )
             inactivity_timeout = self.inactivity_timeout
 
             self.on_listen_start(duration=duration)
@@ -585,7 +597,11 @@ class BaseResponder(Notify):
             self.on_response(response)
 
             if self.speaker and response.response:
-                text_to_speak = response.response if len(response.response) <= self.summary_character_limit else response.summary
+                text_to_speak = (
+                    response.response
+                    if len(response.response) <= self.summary_character_limit
+                    else response.summary
+                )
                 self.speaker.speak_async(text_to_speak)
 
             if response.requires_user_feedback:

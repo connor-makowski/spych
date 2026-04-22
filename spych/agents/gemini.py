@@ -270,7 +270,13 @@ class LocalGeminiCLIResponder(BaseResponder):
         is_first = self.first_call
         self.first_call = False
 
-        cmd = ["gemini", "-p", self.format_prompt(user_input), "--output-format", "stream-json"]
+        cmd = [
+            "gemini",
+            "-p",
+            self.format_prompt(user_input),
+            "--output-format",
+            "stream-json",
+        ]
 
         if self.continue_conversation:
             if self._last_session_id:

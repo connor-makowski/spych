@@ -162,11 +162,8 @@ class OllamaResponder(BaseResponder):
             - What: Parsed structured response from the Ollama model
         """
         self.history.append({"role": "user", "content": user_input})
-        prompt_history = (
-            "\n".join(
-                f"{e['role'].capitalize()}: {e['content']}"
-                for e in self.history
-            )
+        prompt_history = "\n".join(
+            f"{e['role'].capitalize()}: {e['content']}" for e in self.history
         )
         prompt = f"""
         Your conversation history:
@@ -181,15 +178,17 @@ class OllamaResponder(BaseResponder):
         output = requests.post(
             f"{self.host}/api/generate",
             json={
-                "model": self.model, 
+                "model": self.model,
                 "prompt": prompt,
                 "format": "json",
-                "stream": False
+                "stream": False,
             },
         )
 
         agent_response = self.parse_output(output.json().get("response", ""))
-        self.history.append({"role": "assistant", "content": agent_response.response})
+        self.history.append(
+            {"role": "assistant", "content": agent_response.response}
+        )
         self.history = self.history[-self.history_length * 2 :]
         return agent_response
 

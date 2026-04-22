@@ -10,6 +10,7 @@ import numpy as np
 import pygame
 from spych.speaker.backends import get_backend
 
+
 class Speaker:
     def __init__(self, voice: str = "", backend: str = "") -> None:
         """
