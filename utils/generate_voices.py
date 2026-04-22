@@ -3,67 +3,80 @@ import wave
 import numpy as np
 from kokoro import KPipeline
 
-# Original Kokoro voices to preserve as defaults
-# Source: https://huggingface.co/hexgrad/Kokoro-82M/blob/main/VOICES.md
-VOICES = [
-    "af_heart",
-    "af_bella",
-    "af_nicole",
-    "af_aoede",
-    "af_kore",
-    "af_sarah",
-    "am_michael",
-    "am_fenrir",
-    "am_puck",
-    "bf_emma",
-    "bf_isabella",
-    "bm_george",
-]
-
 SAMPLE_TEXT = (
-    "The wild dogs are howling in the woods and even if this fort will not shelter our shamans, it isn't doomed to repeat their history of past, so let's just eat like free kings if only for tonight",
+    "The wild dogs are howling in the woods and even if this fort will not shelter our shamans, it isn't doomed to repeat their history of past, so let's just eat like free kings if only for tonight"
 )
 
 
 def generate_samples():
-    if not os.path.exists("voices"):
-        os.makedirs("voices")
+    pt_dir = "voices/pt"
+    wave_dir = "voices/wave"
 
-    print("Initializing Kokoro pipelines...")
-    # American English ('a') and British English ('b')
-    pipeline_a = KPipeline(lang_code="a")
-    pipeline_b = KPipeline(lang_code="b")
+    if not os.path.exists(pt_dir):
+        print(f"Error: Directory '{pt_dir}' not found.")
+        return
 
-    for voice in VOICES:
-        lang = "b" if voice.startswith(("bm_", "bf_")) else "a"
-        pipeline = pipeline_b if lang == "b" else pipeline_a
-        print(f"Generating sample for: {voice} ({lang})...")
+    if not os.path.exists(wave_dir):
+        os.makedirs(wave_dir)
 
-        output_path = f"voices/{voice}.wav"
+    # Find all .pt files and use their base names as voice IDs
+    voices = sorted([
+        os.path.splitext(f)[0]
+        for f in os.listdir(pt_dir)
+        if f.endswith(".pt")
+    ])
 
-        # Generate audio
-        # Note: pipeline yields (graphemes, phonemes, audio)
-        all_audio = []
-        for _, _, audio in pipeline(SAMPLE_TEXT, voice=voice):
-            all_audio.append(audio.numpy())
+    if not voices:
+        print(f"No .pt voice files found in {pt_dir}")
+        return
 
-        if not all_audio:
-            print(f"Warning: No audio generated for {voice}")
-            continue
+    print(f"Found {len(voices)} voices to generate.")
 
-        # Concatenate parts if multiple were yielded
-        combined_audio = np.concatenate(all_audio)
+    # Cache pipelines by language code to avoid redundant initialization
+    # lang_code is the first character of the voice name (a, b, e, f, h, i, j, p, z)
+    pipelines = {}
 
-        # Convert to 16-bit PCM
-        pcm = (combined_audio * 32767).astype(np.int16)
+    for voice in voices:
+        lang_code = voice[0]
+        if lang_code not in pipelines:
+            print(f"Initializing Kokoro pipeline for language: {lang_code}...")
+            try:
+                pipelines[lang_code] = KPipeline(lang_code=lang_code)
+            except Exception as e:
+                print(f"Failed to initialize pipeline for '{lang_code}': {e}")
+                continue
 
-        with wave.open(output_path, "wb") as wf:
-            wf.setnchannels(1)
-            wf.setsampwidth(2)
-            wf.setframerate(24000)
-            wf.writeframes(pcm.tobytes())
+        pipeline = pipelines[lang_code]
+        print(f"Generating sample for: {voice}...")
 
-        print(f"Saved: {output_path}")
+        output_path = os.path.join(wave_dir, f"{voice}.wav")
+
+        try:
+            all_audio = []
+            # Note: pipeline yields (graphemes, phonemes, audio)
+            for _, _, audio in pipeline(SAMPLE_TEXT, voice=voice):
+                if audio is not None:
+                    all_audio.append(audio.numpy())
+
+            if not all_audio:
+                print(f"Warning: No audio generated for {voice}")
+                continue
+
+            # Concatenate parts if multiple were yielded
+            combined_audio = np.concatenate(all_audio)
+
+            # Convert to 16-bit PCM
+            pcm = (combined_audio * 32767).astype(np.int16)
+
+            with wave.open(output_path, "wb") as wf:
+                wf.setnchannels(1)
+                wf.setsampwidth(2)
+                wf.setframerate(24000)
+                wf.writeframes(pcm.tobytes())
+
+            print(f"Saved: {output_path}")
+        except Exception as e:
+            print(f"Error generating {voice}: {e}")
 
 
 if __name__ == "__main__":
