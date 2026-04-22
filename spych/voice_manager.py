@@ -64,7 +64,7 @@ def get_wave_voice(voice: str) -> str:
 
     if not os.path.isfile(local_path):
         print(f"[spych] Downloading voice '{voice}' from wave voices...")
-        url = f"https://raw.githubusercontent.com/connor-makowski/spych/speaker/voices/wave/{voice}.wav"
+        url = f"https://raw.githubusercontent.com/connor-makowski/spych/main/voices/wave/{voice}.wav"
         try:
             response = requests.get(url)
             response.raise_for_status()
@@ -112,7 +112,7 @@ def get_pt_voice(voice: str) -> str:
 
     if not os.path.isfile(local_path):
         print(f"[spych] Downloading voice '{voice}' from pt voices...")
-        url = f"https://raw.githubusercontent.com/connor-makowski/spych/speaker/voices/pt/{voice}.pt"
+        url = f"https://raw.githubusercontent.com/connor-makowski/spych/main/voices/pt/{voice}.pt"
         try:
             response = requests.get(url)
             response.raise_for_status()
@@ -157,7 +157,7 @@ def get_model(name: str) -> str:
     local_path = os.path.join(model_dir, f"{name}")
     if not os.path.isfile(local_path):
         print(f"[spych] Downloading model '{name}' from voices/model...")
-        url = f"https://raw.githubusercontent.com/connor-makowski/spych/speaker/voices/model/{name}"
+        url = f"https://raw.githubusercontent.com/connor-makowski/spych/main/voices/model/{name}"
         try:
             response = requests.get(url)
             response.raise_for_status()
