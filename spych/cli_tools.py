@@ -532,6 +532,13 @@ class CliPrinter:
         print(text)
 
     @staticmethod
+    def print_summary(text: str) -> None:
+        """Render a condensed summary line below the full response."""
+        print(
+            f"\n  {theme.dim}Summary:{theme.reset} {theme.body}{text}{theme.reset}"
+        )
+
+    @staticmethod
     def print_status(name: str, success: bool, elapsed: float) -> None:
         icon = "✓" if success else "✗"
         color = theme.success if success else theme.error

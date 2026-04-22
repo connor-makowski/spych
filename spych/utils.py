@@ -1,9 +1,34 @@
-import traceback, sys
+import traceback, sys, os, wave
 from pvrecorder import PvRecorder
 import numpy as np
-from typing import Union
+from typing import Union, Optional
 from silero_vad import load_silero_vad
 import torch
+
+
+def get_cache_dir(folder="voices") -> str:
+    """Returns the path to the project's voice cache directory."""
+    if os.name == "nt":  # Windows
+        base_dir = os.environ.get("LOCALAPPDATA", os.path.expanduser("~"))
+    elif sys.platform == "darwin":  # macOS
+        base_dir = os.path.expanduser("~/Library/Caches")
+    else:  # Linux/Unix
+        base_dir = os.environ.get(
+            "XDG_CACHE_HOME", os.path.expanduser("~/.cache")
+        )
+
+    path = os.path.join(base_dir, "spych", folder)
+    os.makedirs(path, exist_ok=True)
+    return path
+
+
+def save_wav(path: str, buffer: list[int], sample_rate: int = 16000) -> None:
+    """Saves a raw PCM buffer to a .wav file."""
+    with wave.open(path, "wb") as wf:
+        wf.setnchannels(1)
+        wf.setsampwidth(2)
+        wf.setframerate(sample_rate)
+        wf.writeframes(np.array(buffer, dtype=np.int16).tobytes())
 
 
 def get_clean_audio_buffer(buffer: list[int]) -> np.ndarray:
@@ -117,6 +142,7 @@ class Recorder:
         silence_frames_threshold: int,
         speech_pad_frames: int,
         max_speech_duration_s: float,
+        inactivity_timeout: Optional[float] = None,
         stop_event=None,
     ) -> list[int]:
         """
@@ -156,6 +182,13 @@ class Recorder:
             - What: Hard cap on utterance duration in seconds; forces a return
               even if the speaker never pauses
 
+        Optional:
+
+        - `inactivity_timeout`:
+            - Type: float | None
+            - What: Seconds to wait for speech onset before returning an empty buffer
+            - Default: None (wait indefinitely)
+
         Returns:
 
         - `buffer`:
@@ -165,6 +198,11 @@ class Recorder:
         self.ensure_vad()
         frame_ms = self.frame_length / self.sample_rate * 1000
         max_speech_frames = int(max_speech_duration_s * 1000 / frame_ms)
+        inactivity_frames = (
+            int(inactivity_timeout * 1000 / frame_ms)
+            if inactivity_timeout
+            else None
+        )
 
         recorder = PvRecorder(
             device_index=device_index, frame_length=self.frame_length
@@ -175,11 +213,13 @@ class Recorder:
         in_speech: bool = False
         voiced_frame_count: int = 0
         silent_frame_count: int = 0
+        total_frames: int = 0
 
         try:
             recorder.start()
             while stop_event is None or not stop_event.is_set():
                 frame = recorder.read()
+                total_frames += 1
                 tensor = (
                     torch.tensor(frame, dtype=torch.float32).unsqueeze(0)
                     / 32768.0
@@ -191,6 +231,12 @@ class Recorder:
                     ).item()
 
                 if not in_speech:
+                    if (
+                        inactivity_frames is not None
+                        and total_frames >= inactivity_frames
+                    ):
+                        break
+
                     pre_roll.append(frame)
                     if len(pre_roll) > speech_pad_frames:
                         pre_roll.pop(0)
@@ -290,3 +336,111 @@ class Notify:
             raise Exception(
                 f"Invalid notification type. Must be one of: {list(notification_types.keys())}"
             )
+
+
+def get_response_style(style: Optional[str]) -> str:
+    """
+    Usage:
+
+    - Maps a high-level style descriptor to a prompt suffix that instructs the
+      model to stylize its response accordingly.
+
+    Requires:
+
+    - `style`:
+        - Type: str
+        - What: A high-level style descriptor (e.g. "concise", "detailed", "humorous")
+
+    Returns:
+
+    - `style_prompt`:
+        - Type: str
+        - What: A prompt suffix that can be appended to the user input to elicit
+          the desired response style from the model
+    """
+    styles: dict[str, str] = {
+        "concise": "Respond with a focus on key points and being direct.",
+        "friendly": "Use a friendly and approachable tone. Use simple language and be concise.",
+        "military": "Respond in military brevity style. Be concise and direct, using short sentences and clear language.",
+        "five_year_old": "Explain this like I'm 5 years old. Use simple words, be short and friendly.",
+        "fast": "Keep your responses as fast as reasonably possible. Be direct and concise.",
+        "pirate": "Style your responses in pirate speak. Keep it short and colorful. Arrr!",
+        "news_anchor": "Your speaking style should match how a professional TV news anchor would say it.",
+        "haiku": "Respond in the form of a haiku (5-7-5 syllables). Be concise and poetic.",
+        "shakespearean": "Respond in Shakespearean English. Brief and poetic.",
+        "robot": "Respond as a robot speaking. Monotone, literal, and short.",
+        "caveman": "Respond in the style of a caveman. Use very simple language, short sentences, and be direct.",
+        "yoda": "Respond in the style of Yoda from Star Wars. Use inverted sentence structure and be concise.",
+        "jarvis": (
+            "Respond as J.A.R.V.I.S. (Just A Rather Very Intelligent System), "
+            "Tony Stark's AI assistant from Iron Man. Be precise, efficient, and "
+            "professionally deferential with understated dry wit. Address the user "
+            "as 'sir'. Keep responses brief and to the point — never verbose."
+        ),
+    }
+    if not style:
+        return ""
+    return styles.get(style.lower(), style)
+
+
+PERSONALITIES: dict[str, dict] = {
+    "jarvis": {
+        "name": "J.A.R.V.I.S.",
+        "wake_words": ["jarvis", "jarves", "jargus", "jervis"],
+        "speaker_voice": "bm_george",
+        "use_speaker": True,
+        "response_style": "jarvis",
+    },
+    "pirate": {
+        "name": "Blackbeard the Pirate",
+        "wake_words": ["blackbeard", "pirate", "ahoy"],
+        "speaker_voice": "am_fenrir",
+        "use_speaker": True,
+        "response_style": "pirate",
+    },
+    "news_anchor": {
+        "name": "Bella the News Anchor",
+        "wake_words": ["bella", "news anchor", "anchor"],
+        "speaker_voice": "af_bella",
+        "use_speaker": True,
+        "response_style": "news_anchor",
+    },
+    "robot": {
+        "name": "Rob the Robot",
+        "wake_words": ["rob", "robot"],
+        "speaker_voice": "am_michael",
+        "use_speaker": True,
+        "response_style": "robot",
+    },
+    "caveman": {
+        "name": "Ur the Caveman",
+        "wake_words": ["er", "ur", "caveman", "cave man"],
+        "speaker_voice": "am_puck",
+        "use_speaker": True,
+        "response_style": "caveman",
+    },
+}
+
+
+def get_personality(name: str) -> dict:
+    """
+    Usage:
+
+    - Returns a personality preset dict containing default kwargs (name,
+      wake_words, speaker_voice, use_speaker, response_style) for the named
+      personality. Unknown names return an empty dict.
+
+    Requires:
+
+    - `name`:
+        - Type: str
+        - What: The personality preset name (e.g. "jarvis")
+
+    Returns:
+
+    - `preset`:
+        - Type: dict
+        - What: A dict of agent kwargs to apply as defaults. Empty dict if the
+          name is not recognized.
+    """
+    return dict(PERSONALITIES.get(name.lower(), {}))

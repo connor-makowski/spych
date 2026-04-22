@@ -1,6 +1,6 @@
 from spych.core import Spych
 from spych.orchestrator import SpychOrchestrator
-from spych.responders import BaseResponder
+from spych.responders import BaseResponder, AgentResponse
 from typing import Optional, Any
 import subprocess, json, re, time
 
@@ -14,6 +14,10 @@ class LocalOpenCodeCLIResponder(BaseResponder):
         name: Optional[str] = None,
         show_tool_events: bool = True,
         model: Optional[str] = None,
+        use_speaker: bool = False,
+        speaker_voice: str = "af_heart",
+        response_style: Optional[str] = None,
+        **kwargs,
     ) -> None:
         """
         Usage:
@@ -60,6 +64,26 @@ class LocalOpenCodeCLIResponder(BaseResponder):
             - What: Model to use in provider/model format (e.g. "anthropic/claude-sonnet-4-5")
             - Default: None (uses opencode default)
 
+        - `use_speaker`:
+            - Type: bool
+            - What: Whether to speak responses aloud via kokoro TTS after printing them
+            - Default: False
+
+        - `speaker_voice`:
+            - Type: str
+            - What: A kokoro voice ID used for all spoken responses
+            - Default: "af_heart"
+            - Note: American English voices use prefix `am_` or `af_`; British English
+              use `bm_` or `bf_`. See spych.speaker.Speaker for the full voice list.
+
+        - `response_style`:
+            - Type: str | None
+            - What: Style preset or custom instruction shaping how the LLM formats its
+              summary. Named presets: concise, friendly, military, five_year_old, fast,
+              pirate, news_anchor, haiku, shakespearean, robot, caveman, yoda, jarvis.
+              Any other string is used verbatim as a custom instruction.
+            - Default: None
+
         Notes:
 
         - Uses `opencode run --format json` to stream newline-delimited JSON events
@@ -80,6 +104,10 @@ class LocalOpenCodeCLIResponder(BaseResponder):
             spych_object=spych_object,
             listen_duration=listen_duration,
             name=name,
+            use_speaker=use_speaker,
+            speaker_voice=speaker_voice,
+            response_style=response_style,
+            **kwargs,
         )
         self.continue_conversation = continue_conversation
         self.show_tool_events = show_tool_events
@@ -98,12 +126,12 @@ class LocalOpenCodeCLIResponder(BaseResponder):
         """Strip inline tool-call XML from text, return clean prose only."""
         return self.TOOL_CALL_RE.sub("", text).strip()
 
-    def respond(self, user_input: str) -> str:
+    def respond(self, user_input: str) -> AgentResponse:
         """
         Usage:
 
         - Pipes the transcribed user input into `opencode run --format json`
-          and returns the final response after all tool calls have completed.
+          and returns a structured AgentResponse after all tool calls complete.
           Fires tool events live as they arrive from text deltas.
 
         Requires:
@@ -115,8 +143,8 @@ class LocalOpenCodeCLIResponder(BaseResponder):
         Returns:
 
         - `response`:
-            - Type: str
-            - What: The final clean response string (inline tool XML stripped)
+            - Type: AgentResponse
+            - What: Parsed structured response (inline tool XML stripped before parse)
         """
         is_first = self.first_call
         self.first_call = False
@@ -133,7 +161,7 @@ class LocalOpenCodeCLIResponder(BaseResponder):
         if self.model:
             cmd.extend(["--model", self.model])
 
-        cmd.append(user_input)
+        cmd.append(self.format_prompt(user_input))
 
         proc = subprocess.Popen(
             cmd,
@@ -223,7 +251,7 @@ class LocalOpenCodeCLIResponder(BaseResponder):
                 )
         active_tools.clear()
 
-        return self.__strip_tool_calls__(accumulated_text)
+        return self.parse_output(self.__strip_tool_calls__(accumulated_text))
 
 
 def opencode_cli(
@@ -234,8 +262,12 @@ def opencode_cli(
     show_tool_events: bool = True,
     model: Optional[str] = None,
     name: Optional[str] = None,
+    use_speaker: bool = False,
+    speaker_voice: str = "af_heart",
+    response_style: Optional[str] = None,
     spych_kwargs: Optional[dict[str, Any]] = None,
     spych_wake_kwargs: Optional[dict[str, Any]] = None,
+    **kwargs,
 ) -> None:
     """
     Usage:
@@ -281,6 +313,21 @@ def opencode_cli(
         - What: A custom display name for the responder shown in printed messages
         - Default: None (uses "OpenCode")
 
+    - `use_speaker`:
+        - Type: bool
+        - What: Whether to speak responses aloud via kokoro TTS
+        - Default: False
+
+    - `speaker_voice`:
+        - Type: str
+        - What: Kokoro voice ID for spoken responses
+        - Default: "af_heart"
+
+    - `response_style`:
+        - Type: str | None
+        - What: Style preset or custom instruction for the LLM's summary output (e.g. "military", "jarvis")
+        - Default: None
+
     - `spych_kwargs`:
         - Type: dict
         - What: Additional keyword arguments to pass to the Spych constructor
@@ -301,6 +348,10 @@ def opencode_cli(
         show_tool_events=show_tool_events,
         model=model,
         name=name,
+        use_speaker=use_speaker,
+        speaker_voice=speaker_voice,
+        response_style=response_style,
+        **kwargs,
     )
 
     SpychOrchestrator(

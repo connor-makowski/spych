@@ -1,6 +1,6 @@
 from spych.core import Spych
 from spych.orchestrator import SpychOrchestrator
-from spych.responders import BaseResponder
+from spych.responders import BaseResponder, AgentResponse
 from spych.cli_tools import CliPrinter, theme
 from typing import Optional
 import requests
@@ -15,6 +15,10 @@ class OllamaResponder(BaseResponder):
         host: str = "http://localhost:11434",
         listen_duration: int | float | str = 0,
         name: Optional[str] = None,
+        use_speaker: bool = False,
+        speaker_voice: str = "af_heart",
+        response_style: Optional[str] = None,
+        **kwargs,
     ) -> None:
         """
         Usage:
@@ -62,12 +66,36 @@ class OllamaResponder(BaseResponder):
             - Type: str
             - What: A custom name for the responder to use in printed messages
             - Default: "Ollama"
+
+        - `use_speaker`:
+            - Type: bool
+            - What: Whether to speak responses aloud via kokoro TTS after printing them
+            - Default: False
+
+        - `speaker_voice`:
+            - Type: str
+            - What: A kokoro voice ID used for all spoken responses
+            - Default: "af_heart"
+            - Note: American English voices use prefix `am_` or `af_`; British English
+              use `bm_` or `bf_`. See spych.speaker.Speaker for the full voice list.
+
+        - `response_style`:
+            - Type: str | None
+            - What: Style preset or custom instruction shaping how the LLM formats its
+              summary. Named presets: concise, friendly, military, five_year_old, fast,
+              pirate, news_anchor, haiku, shakespearean, robot, caveman, yoda, jarvis.
+              Any other string is used verbatim as a custom instruction.
+            - Default: None
         """
         name = name or "Ollama"
         super().__init__(
             spych_object=spych_object,
             listen_duration=listen_duration,
             name=name,
+            use_speaker=use_speaker,
+            speaker_voice=speaker_voice,
+            response_style=response_style,
+            **kwargs,
         )
         self.model = model
         self.history_length = history_length
@@ -114,12 +142,12 @@ class OllamaResponder(BaseResponder):
             )
             return False
 
-    def respond(self, user_input: str) -> str:
+    def respond(self, user_input: str) -> AgentResponse:
         """
         Usage:
 
-        - Sends the transcribed user input to Ollama and returns the model's response.
-        - Maintains a rolling conversation history across calls.
+        - Sends the transcribed user input to Ollama and returns a structured
+          response. Maintains a rolling conversation history across calls.
 
         Requires:
 
@@ -130,27 +158,39 @@ class OllamaResponder(BaseResponder):
         Returns:
 
         - `response`:
-            - Type: str
-            - What: The response string from the Ollama model
+            - Type: AgentResponse
+            - What: Parsed structured response from the Ollama model
         """
         self.history.append({"role": "user", "content": user_input})
-        prompt = (
-            "\n".join(
-                f"{e['role'].capitalize()}: {e['content']}"
-                for e in self.history
-            )
-            + "\nAssistant:"
+        prompt_history = "\n".join(
+            f"{e['role'].capitalize()}: {e['content']}" for e in self.history
         )
+        prompt = f"""
+        Your conversation history:
+
+        {prompt_history}
+
+        Now here is your current prompt:
+
+        {self.format_prompt(user_input)}
+        """
 
         output = requests.post(
             f"{self.host}/api/generate",
-            json={"model": self.model, "prompt": prompt, "stream": False},
+            json={
+                "model": self.model,
+                "prompt": prompt,
+                "format": "json",
+                "stream": False,
+            },
         )
 
-        response = output.json().get("response", "").strip()
-        self.history.append({"role": "assistant", "content": response})
+        agent_response = self.parse_output(output.json().get("response", ""))
+        self.history.append(
+            {"role": "assistant", "content": agent_response.response}
+        )
         self.history = self.history[-self.history_length * 2 :]
-        return response
+        return agent_response
 
 
 def ollama(
@@ -161,8 +201,12 @@ def ollama(
     history_length: int = 10,
     host: str = "http://localhost:11434",
     name: Optional[str] = None,
+    use_speaker: bool = False,
+    speaker_voice: str = "af_heart",
+    response_style: Optional[str] = None,
     spych_kwargs: dict[str, any] | None = None,
     spych_wake_kwargs: dict[str, any] | None = None,
+    **kwargs,
 ) -> None:
     """
     Usage:
@@ -216,6 +260,21 @@ def ollama(
         - What: A custom display name for the responder shown in printed messages
         - Default: None (uses "Ollama")
 
+    - `use_speaker`:
+        - Type: bool
+        - What: Whether to speak responses aloud via kokoro TTS
+        - Default: False
+
+    - `speaker_voice`:
+        - Type: str
+        - What: Kokoro voice ID for spoken responses
+        - Default: "af_heart"
+
+    - `response_style`:
+        - Type: str | None
+        - What: Style preset for reformatting spoken output (e.g. "military", "fast")
+        - Default: None
+
     - `spych_kwargs`:
         - Type: dict
         - What: Additional keyword arguments to pass to the Spych constructor
@@ -236,6 +295,10 @@ def ollama(
         history_length=history_length,
         host=host,
         name=name,
+        use_speaker=use_speaker,
+        speaker_voice=speaker_voice,
+        response_style=response_style,
+        **kwargs,
     )
 
     SpychOrchestrator(

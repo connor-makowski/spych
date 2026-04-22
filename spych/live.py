@@ -242,7 +242,7 @@ class Transcriber(Notify):
         segment_queue: Queue,
         model: WhisperModel,
         stop_event: threading.Event,
-        no_speech_threshold: float = 0.3,
+        no_speech_threshold: float = 0.4,
         context_words: int = 32,
     ):
         """
@@ -258,7 +258,7 @@ class Transcriber(Notify):
         - `no_speech_threshold`:
             - Type: float
             - What: Segments with no_speech_prob above this are discarded
-            - Default: 0.3
+            - Default: 0.4
 
         - `context_words`:
             - Type: int
@@ -515,7 +515,7 @@ class SpychLive(Notify):
         whisper_model: str = "base.en",
         whisper_device: str = "cpu",
         whisper_compute_type: str = "int8",
-        no_speech_threshold: float = 0.3,
+        no_speech_threshold: float = 0.4,
         speech_threshold: float = 0.5,
         silence_threshold: float = 0.35,
         silence_frames_threshold: int = 20,
@@ -598,7 +598,7 @@ class SpychLive(Notify):
         - `no_speech_threshold`:
             - Type: float
             - What: Whisper segments with no_speech_prob above this are discarded
-            - Default: 0.3
+            - Default: 0.4
 
         - `speech_threshold`:
             - Type: float (0.0–1.0)

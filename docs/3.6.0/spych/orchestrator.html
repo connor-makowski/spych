@@ -87,6 +87,7 @@
 <footer>
 <select id="version-selector">
     <option value="latest">latest</option>
+        <option value="4.0.0b1">4.0.0b1</option>
         <option value="3.6.0">3.6.0</option>
         <option value="3.5.0">3.5.0</option>
         <option value="3.4.0">3.4.0</option>
@@ -431,7 +432,7 @@
 
                             <div id="OrchestratorEntry.responder" class="classattr">
                                 <div class="attr variable">
-            <span class="name">responder</span><span class="annotation">: &#39;BaseResponder&#39;</span>
+            <span class="name">responder</span><span class="annotation">: ForwardRef(&#34;&#39;BaseResponder&#39;&#34;, module=&#39;<a href="">spych.orchestrator</a>&#39;)</span>
 
         
     </div>
@@ -730,7 +731,7 @@
                                         <input id="SpychOrchestrator.__init__-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
 <div class="attr function">
             
-        <span class="name">SpychOrchestrator</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="n">entries</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n"><a href="#OrchestratorEntry">OrchestratorEntry</a></span><span class="p">]</span>,</span><span class="param">	<span class="n">spych_wake_kwargs</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span></span>)</span>
+        <span class="name">SpychOrchestrator</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="n">entries</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n"><a href="#OrchestratorEntry">OrchestratorEntry</a></span><span class="p">]</span>,</span><span class="param">	<span class="n">spych_wake_kwargs</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span></span>)</span>
 
                 <label class="view-source-button" for="SpychOrchestrator.__init__-view-source"><span>View Source</span></label>
 
@@ -1105,7 +1106,7 @@ is wrapped so the most recently triggered responder is always tracked.</p></li>
 <div class="attr function">
             
         <span class="def">def</span>
-        <span class="name">build_spych_wake</span><span class="signature pdoc-code condensed">(<span class="param"><span class="bp">self</span>, </span><span class="param"><span class="n">spych_wake_kwargs</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span></span><span class="return-annotation">) -> <span class="n"><a href="wake.html#SpychWake">spych.wake.SpychWake</a></span>:</span></span>
+        <span class="name">build_spych_wake</span><span class="signature pdoc-code condensed">(<span class="param"><span class="bp">self</span>, </span><span class="param"><span class="n">spych_wake_kwargs</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span></span><span class="return-annotation">) -> <span class="n"><a href="wake.html#SpychWake">spych.wake.SpychWake</a></span>:</span></span>
 
                 <label class="view-source-button" for="SpychOrchestrator.build_spych_wake-view-source"><span>View Source</span></label>
 

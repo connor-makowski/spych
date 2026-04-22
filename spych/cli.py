@@ -20,6 +20,10 @@ Examples:
 
     # Multi-agent: run several agents under different wake words at once
     spych multi --agents claude_code_sdk ollama --ollama-model llama3.2:latest
+
+    # Voice management
+    spych profile_my_voice --name my_voice
+    spych profile_my_voice --name my_voice --alternate-output-file ./my_voice_backup.wav
 """
 
 import argparse
@@ -36,6 +40,16 @@ def _parse_bool(value: str) -> bool:
 
 def _add_shared_args(parser: argparse.ArgumentParser) -> None:
     """Args shared by all agents."""
+    parser.add_argument(
+        "--personality",
+        default=None,
+        metavar="NAME",
+        help=(
+            "Apply a named personality preset (e.g. jarvis). "
+            "Sets default wake words, voice, name, and response style. "
+            "Any explicit flag overrides the preset."
+        ),
+    )
     parser.add_argument(
         "--name",
         metavar="NAME",
@@ -60,6 +74,53 @@ def _add_shared_args(parser: argparse.ArgumentParser) -> None:
         metavar="SECONDS",
         help="Seconds to listen after wake word (default: 5)",
     )
+    parser.add_argument(
+        "--follow-up-listen-duration",
+        type=float,
+        metavar="SECONDS",
+        help="Seconds to listen for follow-up answers (default: 0)",
+    )
+    parser.add_argument(
+        "--inactivity-timeout",
+        type=float,
+        default=8.0,
+        metavar="SECONDS",
+        help="Seconds of inactivity before pivoting back to wake word (default: 8.0)",
+    )
+    parser.add_argument(
+        "--response-style",
+        default="",
+        metavar="STYLE",
+        help=(
+            "Style for reformatting output. "
+            "Choices: military, five_year_old, fast, pirate, news_anchor, haiku, shakespearean, robot",
+            "caveman",
+            "yoda",
+        ),
+    )
+    parser.add_argument(
+        "--use-speaker",
+        action="store_true",
+        default=False,
+        help="Speak responses aloud via TTS (default: false)",
+    )
+    parser.add_argument(
+        "--speaker-voice",
+        default="af_heart",
+        metavar="VOICE",
+        help=(
+            "Voice name for spoken responses (default: af_heart). "
+            "Works for both Chatterbox (wave voices) and Kokoro (pt voices). "
+            "See: https://github.com/connor-makowski/spych/tree/main/voices"
+        ),
+    )
+    parser.add_argument(
+        "--speaker-backend",
+        default="",
+        choices=["chatterbox", "kokoro"],
+        metavar="BACKEND",
+        help="Explicit TTS backend to use (default: priority Chatterbox then Kokoro)",
+    )
 
 
 def _add_agent_args(parser: argparse.ArgumentParser) -> None:
@@ -82,6 +143,11 @@ def _add_agent_args(parser: argparse.ArgumentParser) -> None:
 
 def _build_shared_kwargs(args: argparse.Namespace) -> dict:
     kwargs = {}
+    # Personality preset provides base defaults; explicit CLI flags override.
+    if getattr(args, "personality", None):
+        from spych.utils import get_personality
+
+        kwargs.update(get_personality(args.personality))
     if args.name is not None:
         kwargs["name"] = args.name
     if args.wake_words:
@@ -90,6 +156,18 @@ def _build_shared_kwargs(args: argparse.Namespace) -> dict:
         kwargs["terminate_words"] = args.terminate_words
     if args.listen_duration is not None:
         kwargs["listen_duration"] = args.listen_duration
+    if getattr(args, "follow_up_listen_duration", None) is not None:
+        kwargs["follow_up_listen_duration"] = args.follow_up_listen_duration
+    if getattr(args, "inactivity_timeout", 10.0) is not None:
+        kwargs["inactivity_timeout"] = args.inactivity_timeout
+    if args.use_speaker:
+        kwargs["use_speaker"] = True
+    if args.speaker_voice != "af_heart":
+        kwargs["speaker_voice"] = args.speaker_voice
+    if getattr(args, "speaker_backend", ""):
+        kwargs["speaker_backend"] = args.speaker_backend
+    if args.response_style:
+        kwargs["response_style"] = args.response_style
     return kwargs
 
 
@@ -124,7 +202,7 @@ def main():
 
     # Aliases → canonical name; used to normalise args.agent after parsing.
     _AGENT_ALIASES: dict[str, str] = {
-        "claude": "claude_code_cli",
+        "claude": "claude_code_sdk",
         "codex": "codex_cli",
         "gemini": "gemini_cli",
         "opencode": "opencode_cli",
@@ -162,7 +240,6 @@ def main():
     # ------------------------------------------------------------------ #
     p_claude_cli = subparsers.add_parser(
         "claude_code_cli",
-        aliases=["claude"],
         help="Voice-control Claude Code via the CLI",
     )
     _add_shared_args(p_claude_cli)
@@ -173,6 +250,7 @@ def main():
     # ------------------------------------------------------------------ #
     p_claude_sdk = subparsers.add_parser(
         "claude_code_sdk",
+        aliases=["claude"],
         help="Voice-control Claude Code via the Agent SDK",
     )
     _add_shared_args(p_claude_sdk)
@@ -398,6 +476,20 @@ def main():
         help="Seconds to listen after a wake word (default: 5)",
     )
     p_multi.add_argument(
+        "--follow-up-listen-duration",
+        type=float,
+        default=0,
+        metavar="SECONDS",
+        help="Seconds to listen for follow-up answers (default: 0)",
+    )
+    p_multi.add_argument(
+        "--inactivity-timeout",
+        type=float,
+        default=8.0,
+        metavar="SECONDS",
+        help="Seconds of inactivity before pivoting back to wake word (default: 8.0)",
+    )
+    p_multi.add_argument(
         "--continue-conversation",
         type=_parse_bool,
         default=True,
@@ -410,6 +502,13 @@ def main():
         default=True,
         metavar="BOOL",
         help="Print live tool start/end events (default: true)",
+    )
+    p_multi.add_argument(
+        "--speaker-backend",
+        default="",
+        choices=["chatterbox", "kokoro"],
+        metavar="BACKEND",
+        help="Explicit TTS backend to use (default: priority Chatterbox then Kokoro)",
     )
     # ollama-specific flags (only used when 'ollama' is in --agents)
     p_multi.add_argument(
@@ -445,6 +544,33 @@ def main():
         metavar="SOURCE",
         default=["user", "project", "local"],
         help="Claude Code SDK setting sources (default: user project local). Only used when claude_code_sdk is in --agents.",
+    )
+
+    # ------------------------------------------------------------------ #
+    # profile_my_voice — Record a custom voice profile                   #
+    # ------------------------------------------------------------------ #
+    p_profile = subparsers.add_parser(
+        "profile_my_voice",
+        help="Record a 10-second voice sample to create a custom profile",
+    )
+    p_profile.add_argument(
+        "--name",
+        required=True,
+        metavar="NAME",
+        help="The name to save this voice profile as (e.g. 'my_voice')",
+    )
+    p_profile.add_argument(
+        "--device-index",
+        type=int,
+        default=-1,
+        metavar="N",
+        help="Microphone device index; -1 uses system default (default: -1)",
+    )
+    p_profile.add_argument(
+        "--alternate-output-file",
+        default=None,
+        metavar="PATH",
+        help="An alternate file path to save the voice profile to (e.g. './my_voice.wav')",
     )
 
     # ------------------------------------------------------------------ #
@@ -526,6 +652,15 @@ def main():
             context_words=args.context_words,
         ).start()
 
+    elif args.agent == "profile_my_voice":
+        from spych.voice_manager import profile_my_voice
+
+        profile_my_voice(
+            name=args.name,
+            device_index=args.device_index,
+            alternate_output_file=args.alternate_output_file,
+        )
+
     # ------------------------------------------------------------------ #
     # Multi-agent dispatch                                                 #
     # ------------------------------------------------------------------ #
@@ -548,6 +683,9 @@ def main():
                             spych_object=spych_object,
                             continue_conversation=args.continue_conversation,
                             listen_duration=args.listen_duration,
+                            follow_up_listen_duration=args.follow_up_listen_duration,
+                            inactivity_timeout=args.inactivity_timeout,
+                            speaker_backend=args.speaker_backend,
                             show_tool_events=args.show_tool_events,
                         ),
                         "wake_words": ["claude", "clod", "cloud", "clawed"],
@@ -564,6 +702,9 @@ def main():
                             spych_object=spych_object,
                             continue_conversation=args.continue_conversation,
                             listen_duration=args.listen_duration,
+                            follow_up_listen_duration=args.follow_up_listen_duration,
+                            inactivity_timeout=args.inactivity_timeout,
+                            speaker_backend=args.speaker_backend,
                             setting_sources=args.setting_sources,
                             show_tool_events=args.show_tool_events,
                         ),
@@ -581,6 +722,9 @@ def main():
                             spych_object=spych_object,
                             continue_conversation=args.continue_conversation,
                             listen_duration=args.listen_duration,
+                            follow_up_listen_duration=args.follow_up_listen_duration,
+                            inactivity_timeout=args.inactivity_timeout,
+                            speaker_backend=args.speaker_backend,
                             show_tool_events=args.show_tool_events,
                         ),
                         "wake_words": ["codex"],
@@ -597,6 +741,9 @@ def main():
                             spych_object=spych_object,
                             continue_conversation=args.continue_conversation,
                             listen_duration=args.listen_duration,
+                            follow_up_listen_duration=args.follow_up_listen_duration,
+                            inactivity_timeout=args.inactivity_timeout,
+                            speaker_backend=args.speaker_backend,
                             show_tool_events=args.show_tool_events,
                         ),
                         "wake_words": ["gemini"],
@@ -613,6 +760,9 @@ def main():
                             spych_object=spych_object,
                             continue_conversation=args.continue_conversation,
                             listen_duration=args.listen_duration,
+                            follow_up_listen_duration=args.follow_up_listen_duration,
+                            inactivity_timeout=args.inactivity_timeout,
+                            speaker_backend=args.speaker_backend,
                             show_tool_events=args.show_tool_events,
                             model=args.opencode_model,
                         ),
@@ -632,6 +782,9 @@ def main():
                             history_length=args.ollama_history_length,
                             host=args.ollama_host,
                             listen_duration=args.listen_duration,
+                            follow_up_listen_duration=args.follow_up_listen_duration,
+                            inactivity_timeout=args.inactivity_timeout,
+                            speaker_backend=args.speaker_backend,
                         ),
                         "wake_words": ["llama", "ollama", "lama"],
                         "terminate_words": args.terminate_words,

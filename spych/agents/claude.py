@@ -1,7 +1,7 @@
 import sys, json, time, subprocess, importlib, re
 from spych.core import Spych
 from spych.orchestrator import SpychOrchestrator
-from spych.responders import BaseResponder
+from spych.responders import BaseResponder, AgentResponse
 from typing import Optional, Any
 
 CLAUDE_SDK_WORKER_PATH = importlib.util.find_spec(
@@ -18,6 +18,10 @@ class LocalClaudeCodeSDKResponder(BaseResponder):
         name: str | None = None,
         setting_sources: list[str] = ["user", "project", "local"],
         show_tool_events: bool = True,
+        use_speaker: bool = False,
+        speaker_voice: str = "af_heart",
+        response_style: Optional[str] = None,
+        **kwargs,
     ) -> None:
         """
         Usage:
@@ -48,11 +52,39 @@ class LocalClaudeCodeSDKResponder(BaseResponder):
 
         - `name`:
             - Type: str
-            - Default: "Claude Code"
+            - What: A custom name for the responder to use in printed messages
+            - Default: "Claude"
 
         - `setting_sources`:
             - Type: list[str]
+            - What: Which local Claude Code settings to load. Any combination of
+              "user", "project", and "local".
             - Default: ["user", "project", "local"]
+
+        - `show_tool_events`:
+            - Type: bool
+            - What: Whether to print tool start/end events as they arrive from the subprocess worker
+            - Default: True
+
+        - `use_speaker`:
+            - Type: bool
+            - What: Whether to speak responses aloud via kokoro TTS after printing them
+            - Default: False
+
+        - `speaker_voice`:
+            - Type: str
+            - What: A kokoro voice ID used for all spoken responses
+            - Default: "af_heart"
+            - Note: American English voices use prefix `am_` or `af_`; British English
+              use `bm_` or `bf_`. See spych.speaker.Speaker for the full voice list.
+
+        - `response_style`:
+            - Type: str | None
+            - What: Style preset or custom instruction shaping how the LLM formats its
+              summary. Named presets: concise, friendly, military, five_year_old, fast,
+              pirate, news_anchor, haiku, shakespearean, robot, caveman, yoda, jarvis.
+              Any other string is used verbatim as a custom instruction.
+            - Default: None
 
         Notes:
 
@@ -64,6 +96,10 @@ class LocalClaudeCodeSDKResponder(BaseResponder):
             spych_object=spych_object,
             listen_duration=listen_duration,
             name=name,
+            use_speaker=use_speaker,
+            speaker_voice=speaker_voice,
+            response_style=response_style,
+            **kwargs,
         )
         self.continue_conversation = continue_conversation
         self.setting_sources = list(setting_sources) if setting_sources else []
@@ -71,20 +107,20 @@ class LocalClaudeCodeSDKResponder(BaseResponder):
         self._first_call = True
         self._last_session_id: str | None = None
 
-    def respond(self, user_input: str) -> str:
+    def respond(self, user_input: str) -> AgentResponse:
         """
         Spawns _sdk_worker.py as a subprocess, writes the request payload to
         its stdin, then reads newline-delimited JSON events from its stdout.
 
         Tool start/end events are fired live as they arrive so the user sees
-        real-time feedback. The final result is returned as a string.
+        real-time feedback. The final result is parsed into an AgentResponse.
         """
         is_first = self._first_call
         self._first_call = False
 
         payload = json.dumps(
             {
-                "user_input": user_input,
+                "user_input": self.format_prompt(user_input),
                 "is_first": is_first,
                 "continue_conversation": self.continue_conversation,
                 "last_session_id": self._last_session_id,
@@ -154,7 +190,7 @@ class LocalClaudeCodeSDKResponder(BaseResponder):
             elif etype == "error":
                 final_result = f"Error: {event.get('text', 'unknown error')}"
         proc.wait()
-        return final_result
+        return self.parse_output(final_result)
 
 
 def claude_code_sdk(
@@ -165,8 +201,12 @@ def claude_code_sdk(
     setting_sources: list[str] = ["user", "project", "local"],
     show_tool_events: bool = True,
     name: Optional[str] = None,
+    use_speaker: bool = False,
+    speaker_voice: str = "af_heart",
+    response_style: Optional[str] = None,
     spych_kwargs: dict[str, any] | None = None,
     spych_wake_kwargs: dict[str, any] | None = None,
+    **kwargs,
 ) -> None:
     """
     Usage:
@@ -215,6 +255,21 @@ def claude_code_sdk(
         - What: A custom display name for the responder shown in printed messages
         - Default: None (uses "Claude")
 
+    - `use_speaker`:
+        - Type: bool
+        - What: Whether to speak responses aloud via kokoro TTS
+        - Default: False
+
+    - `speaker_voice`:
+        - Type: str
+        - What: Kokoro voice ID for spoken responses
+        - Default: "af_heart"
+
+    - `response_style`:
+        - Type: str | None
+        - What: Style preset or custom instruction for spoken output (e.g. "military", "jarvis")
+        - Default: None
+
     - `spych_kwargs`:
         - Type: dict
         - What: Additional keyword arguments to pass to the Spych constructor
@@ -235,6 +290,10 @@ def claude_code_sdk(
         setting_sources=setting_sources,
         show_tool_events=show_tool_events,
         name=name,
+        use_speaker=use_speaker,
+        speaker_voice=speaker_voice,
+        response_style=response_style,
+        **kwargs,
     )
 
     SpychOrchestrator(
@@ -257,6 +316,10 @@ class LocalClaudeCodeCLIResponder(BaseResponder):
         listen_duration: int | float | str = 0,
         name: Optional[str] = None,
         show_tool_events: bool = True,
+        use_speaker: bool = False,
+        speaker_voice: str = "af_heart",
+        response_style: Optional[str] = None,
+        **kwargs,
     ) -> None:
         """
         Usage:
@@ -286,11 +349,33 @@ class LocalClaudeCodeCLIResponder(BaseResponder):
 
         - `name`:
             - Type: str
+            - What: A custom name for the responder to use in printed messages
             - Default: "Claude"
 
         - `show_tool_events`:
             - Type: bool
+            - What: Whether to print tool start/end events as they arrive from the subprocess
             - Default: True
+
+        - `use_speaker`:
+            - Type: bool
+            - What: Whether to speak responses aloud via kokoro TTS after printing them
+            - Default: False
+
+        - `speaker_voice`:
+            - Type: str
+            - What: A kokoro voice ID used for all spoken responses
+            - Default: "af_heart"
+            - Note: American English voices use prefix `am_` or `af_`; British English
+              use `bm_` or `bf_`. See spych.speaker.Speaker for the full voice list.
+
+        - `response_style`:
+            - Type: str | None
+            - What: Style preset or custom instruction shaping how the LLM formats its
+              summary. Named presets: concise, friendly, military, five_year_old, fast,
+              pirate, news_anchor, haiku, shakespearean, robot, caveman, yoda, jarvis.
+              Any other string is used verbatim as a custom instruction.
+            - Default: None
 
         Notes:
 
@@ -309,6 +394,10 @@ class LocalClaudeCodeCLIResponder(BaseResponder):
             spych_object=spych_object,
             listen_duration=listen_duration,
             name=name,
+            use_speaker=use_speaker,
+            speaker_voice=speaker_voice,
+            response_style=response_style,
+            **kwargs,
         )
         self.continue_conversation = continue_conversation
         self.show_tool_events = show_tool_events
@@ -453,18 +542,17 @@ class LocalClaudeCodeCLIResponder(BaseResponder):
 
         return False, self.__strip_tool_calls__(result_text).strip()
 
-    def respond(self, user_input: str) -> str:
+    def respond(self, user_input: str) -> AgentResponse:
         """
         Runs one or more `claude -p` subprocess turns until a clean result is
         received. Intermediate turns (where tool calls are in flight) print
-        assistant text live. The final answer is returned for the base class
-        to print, preventing double-printing.
+        assistant text live. The final answer is parsed into an AgentResponse.
         """
         is_first = self.first_call
         self.first_call = False
 
         active_tools: dict[str, float] = {}
-        current_input = user_input
+        current_input = self.format_prompt(user_input)
 
         while True:
             needs_continuation, result_text = self.__run_turn__(
@@ -478,7 +566,7 @@ class LocalClaudeCodeCLIResponder(BaseResponder):
             is_first = False
 
             if not needs_continuation:
-                return result_text
+                return self.parse_output(result_text)
 
             current_input = result_text
 
@@ -490,8 +578,12 @@ def claude_code_cli(
     continue_conversation: bool = True,
     show_tool_events: bool = True,
     name: Optional[str] = None,
+    use_speaker: bool = False,
+    speaker_voice: str = "af_heart",
+    response_style: Optional[str] = None,
     spych_kwargs: Optional[dict[str, Any]] = None,
     spych_wake_kwargs: Optional[dict[str, Any]] = None,
+    **kwargs,
 ) -> None:
     """
     Usage:
@@ -525,6 +617,21 @@ def claude_code_cli(
         - What: A custom display name for the responder shown in printed messages
         - Default: None (uses "Claude")
 
+    - `use_speaker`:
+        - Type: bool
+        - What: Whether to speak responses aloud via kokoro TTS
+        - Default: False
+
+    - `speaker_voice`:
+        - Type: str
+        - What: Kokoro voice ID for spoken responses
+        - Default: "af_heart"
+
+    - `response_style`:
+        - Type: str | None
+        - What: Style preset or custom instruction for spoken output (e.g. "military", "jarvis")
+        - Default: None
+
     - `spych_kwargs`:
         - Type: dict
         - Default: None
@@ -542,6 +649,10 @@ def claude_code_cli(
         listen_duration=listen_duration,
         show_tool_events=show_tool_events,
         name=name,
+        use_speaker=use_speaker,
+        speaker_voice=speaker_voice,
+        response_style=response_style,
+        **kwargs,
     )
 
     SpychOrchestrator(
