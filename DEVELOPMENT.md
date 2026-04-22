@@ -26,7 +26,11 @@ spych/
   responders.py            # BaseResponder, AgentResponse — abstract base + structured response dataclass
   orchestrator.py          # SpychOrchestrator — multi-agent coordinator with shared spinner
   live.py                  # SpychLive — continuous VAD-gated transcription to disk
-  speaker.py               # Speaker — kokoro neural TTS; speaks AgentResponse.summary aloud
+  speaker/
+    __init__.py            # Re-exports Speaker
+    speaker.py             # Speaker — Chatterbox Turbo (primary) or Kokoro (fallback) TTS
+    backends.py            # ChatterboxBackend, KokoroBackend, get_backend — backend selection
+    chatterbox.py          # SpychChatterboxTTS — standalone Chatterbox Turbo implementation
   cli.py                   # CLI entry point (spych subcommands)
   cli_tools.py             # Theme, CliSpinner, CliPrinter — terminal UI utilities
   spinners.py              # Spinner frame definitions (BRAILLE, ARC, MOON, etc.)
@@ -160,7 +164,7 @@ __call__()
 ├── on_after_respond()        # (hook — optional override)
 ├── on_response()             # Print response + summary + elapsed time
 └── if use_speaker:
-    ├── speak_to_user()       # Background thread: kokoro TTS speaks summary
+    ├── speak_to_user()       # Background thread: TTS speaks summary
     └── spoken_follow_up_loop() # If requires_user_feedback, listen → respond loop
     else:
     └── wait_for_next_wake_word() # Print divider, restart spinner
@@ -297,6 +301,6 @@ def method(self, param1: str, param2: int = 0) -> str:
 
 ### Other Rules
 
-- **Runtime dependencies**: `claude_agent_sdk`, `faster-whisper`, `pvrecorder`, `numpy`, `requests`, `silero_vad`, `pygame`, `kokoro`, `huggingface_hub`, and the stdlib. Do not add new ones.
+- **Runtime dependencies**: `claude_agent_sdk`, `faster-whisper`, `pvrecorder`, `numpy`, `requests`, `silero_vad`, `pygame`, `kokoro`, `huggingface_hub`, `chatterbox`, and the stdlib. Do not add new ones.
 - **No unnecessary abstractions**: don't extract a shared helper unless the same logic appears 3+ times
 - **DO NOT generate docs**: only the maintainer runs `./run.sh docs` at release time

@@ -24,8 +24,13 @@ class Speaker:
 
         - `voice`:
             - Type: str
-            - What: A voice name (e.g., "af_heart") or a path to a .wav file.
-            - Default: "" (uses the backend's default built-in voice)
+            - What: Voice name used by the active backend.
+              For Chatterbox: a wave voice name (e.g. "af_heart") or a path to a
+              .wav file. Wave voices are downloaded from the spych repo on first use.
+              For Kokoro: a Kokoro voice name (e.g. "af_heart", "bm_george").
+              The same short names (af_heart, bm_george, etc.) work for both backends.
+            - Default: "" — Chatterbox requires a voice and will raise ValueError if
+              empty; Kokoro defaults to "af_heart".
         """
         pygame.mixer.init()
         self.voice = voice

@@ -87,13 +87,17 @@ def _add_shared_args(parser: argparse.ArgumentParser) -> None:
         "--use-speaker",
         action="store_true",
         default=False,
-        help="Speak responses aloud via kokoro TTS (default: false)",
+        help="Speak responses aloud via TTS (default: false)",
     )
     parser.add_argument(
         "--speaker-voice",
         default="af_heart",
         metavar="VOICE",
-        help="Kokoro voice ID for spoken responses (default: af_heart)",
+        help=(
+            "Voice name for spoken responses (default: af_heart). "
+            "Works for both Chatterbox (wave voices) and Kokoro (pt voices). "
+            "See: https://github.com/connor-makowski/spych/tree/main/voices"
+        ),
     )
 
 

@@ -5,6 +5,19 @@ from spych.utils import Recorder, save_wav, get_cache_dir
 
 
 def list_cached_wave_voices() -> list:
+    """
+    Usage:
+
+    - Returns a sorted list of wave voice names that are already present in the
+      local voice cache (~/.cache/spych/voices/wave/).
+
+    Returns:
+
+    - `voice_names`:
+        - Type: list
+        - What: Sorted list of voice name strings (without the .wav extension),
+          or an empty list if the cache directory does not exist.
+    """
     cache_wave_dir = os.path.join(get_cache_dir(folder="voices"), "wave")
     if not os.path.exists(cache_wave_dir):
         return []
@@ -16,7 +29,32 @@ def list_cached_wave_voices() -> list:
 
 
 def get_wave_voice(voice: str) -> str:
-    """Downloads a voice from the wave voices repo if it doesn't exist in the cache, and returns the local path."""
+    """
+    Usage:
+
+    - Returns the local path to a wave voice .wav file, downloading it from the
+      spych voices repo if it is not already in the cache.
+    - Used by ChatterboxBackend to resolve voice names to file paths.
+
+    Requires:
+
+    - `voice`:
+        - Type: str
+        - What: Voice name (e.g. "af_heart") or an existing file path to a .wav file.
+          If a valid file path is given it is returned as-is without downloading.
+
+    Returns:
+
+    - `local_path`:
+        - Type: str
+        - What: Absolute path to the cached .wav file.
+
+    Notes:
+
+    - Raises FileNotFoundError if the voice is not found locally and cannot be
+      downloaded from the repo.
+    - Browse available voices: https://github.com/connor-makowski/spych/tree/main/voices/wave
+    """
     if os.path.isfile(voice):
         return voice  # If it's already a valid file path, just return it
     cache_dir = get_cache_dir(folder='voices')
@@ -26,7 +64,7 @@ def get_wave_voice(voice: str) -> str:
 
     if not os.path.isfile(local_path):
         print(f"[spych] Downloading voice '{voice}' from wave voices...")
-        url = f"https://raw.githubusercontent.com/connor-makowski/spych/main/voices/wave/{voice}.wav"
+        url = f"https://raw.githubusercontent.com/connor-makowski/spych/speaker/voices/wave/{voice}.wav"
         try:
             response = requests.get(url)
             response.raise_for_status()
@@ -39,7 +77,32 @@ def get_wave_voice(voice: str) -> str:
     return local_path
 
 def get_pt_voice(voice: str) -> str:
-    """Downloads a voice from the pt voices repo if it doesn't exist in the cache, and returns the local path."""
+    """
+    Usage:
+
+    - Returns the local path to a Kokoro voice .pt file, downloading it from the
+      spych voices repo if it is not already in the cache.
+    - Used by KokoroBackend to resolve voice names to file paths.
+
+    Requires:
+
+    - `voice`:
+        - Type: str
+        - What: Kokoro voice name (e.g. "af_heart") or an existing file path to a .pt file.
+          If a valid file path is given it is returned as-is without downloading.
+
+    Returns:
+
+    - `local_path`:
+        - Type: str
+        - What: Absolute path to the cached .pt file.
+
+    Notes:
+
+    - Raises FileNotFoundError if the voice is not found locally and cannot be
+      downloaded from the repo.
+    - Browse available voices: https://github.com/connor-makowski/spych/tree/main/voices/pt
+    """
     if os.path.isfile(voice):
         return voice  # If it's already a valid file path, just return it
     cache_dir = get_cache_dir(folder='voices')
@@ -49,7 +112,7 @@ def get_pt_voice(voice: str) -> str:
 
     if not os.path.isfile(local_path):
         print(f"[spych] Downloading voice '{voice}' from pt voices...")
-        url = f"https://raw.githubusercontent.com/connor-makowski/spych/main/voices/pt/{voice}.pt"
+        url = f"https://raw.githubusercontent.com/connor-makowski/spych/speaker/voices/pt/{voice}.pt"
         try:
             response = requests.get(url)
             response.raise_for_status()
@@ -61,8 +124,31 @@ def get_pt_voice(voice: str) -> str:
             raise FileNotFoundError(f"Voice '{voice}' not found in cache and failed to download from {url}.")
     return local_path
 
-def get_model(name: str):
-    """Downloads a model from the voices/model folder if it doesn't exist in the cache, and returns the local path."""
+def get_model(name: str) -> str:
+    """
+    Usage:
+
+    - Returns the local path to a model file, downloading it from the spych
+      voices/model folder if it is not already in the cache.
+
+    Requires:
+
+    - `name`:
+        - Type: str
+        - What: Model filename (e.g. "my_model.bin") or an existing file path.
+          If a valid file path is given it is returned as-is without downloading.
+
+    Returns:
+
+    - `local_path`:
+        - Type: str
+        - What: Absolute path to the cached model file.
+
+    Notes:
+
+    - Raises FileNotFoundError if the model is not found locally and cannot be
+      downloaded from the repo.
+    """
     if os.path.isfile(name):
         return name  # If it's already a valid file path, just return it
     cache_dir = get_cache_dir(folder='voices')
@@ -71,7 +157,7 @@ def get_model(name: str):
     local_path = os.path.join(model_dir, f"{name}")
     if not os.path.isfile(local_path):
         print(f"[spych] Downloading model '{name}' from voices/model...")
-        url = f"https://raw.githubusercontent.com/connor-makowski/spych/main/voices/model/{name}"
+        url = f"https://raw.githubusercontent.com/connor-makowski/spych/speaker/voices/model/{name}"
         try:
             response = requests.get(url)
             response.raise_for_status()

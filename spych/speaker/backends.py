@@ -1,16 +1,10 @@
 import os
-import warnings
-
-warnings.filterwarnings("ignore", category=UserWarning, module="torch")
-warnings.filterwarnings("ignore", category=FutureWarning, module="torch")
-
-import glob
-import torch
-from huggingface_hub import constants as _hf_constants
+from huggingface_hub import hf_hub_download
 from spych.utils import get_cache_dir
 from spych.voice_manager import get_wave_voice, get_pt_voice
 
-torch_device = "cuda" if torch.cuda.is_available() else "cpu"
+import torch
+device = "cuda" if torch.cuda.is_available() else "cpu"
 
 KOKORO_VOICES = [
     "af_alloy",
@@ -82,6 +76,13 @@ def _get_cached_wave_voices() -> list:
 
 
 class BaseBackend:
+    """
+    Usage:
+
+    - Abstract base class for TTS backends.
+    - Subclass and implement `speak(text)` to add a new backend.
+    """
+
     def __init__(self, speaker: "Speaker", voice: str):
         self.speaker = speaker
         self.voice = voice
@@ -91,6 +92,19 @@ class BaseBackend:
 
 
 class ChatterboxBackend(BaseBackend):
+    """
+    Usage:
+
+    - TTS backend using Chatterbox Turbo for high-quality zero-shot voice cloning.
+    - Requires a voice name (e.g. "af_heart") or path to a .wav file for cloning.
+    - Wave voice files are auto-downloaded from the spych voices repo on first use
+      and cached to the spych voices cache (~/.cache/spych/voices/wave/).
+    - Browse included voices: https://github.com/connor-makowski/spych/tree/main/voices/wave
+    - Model weights are downloaded from HuggingFace on first use and cached to
+      ~/.cache/spych/models/.
+    - Record a custom voice with: spych profile_my_voice --name my_voice
+    """
+
     def __init__(self, speaker: "Speaker", voice: str):
         super().__init__(speaker, voice)
         from spych.speaker.chatterbox import SpychChatterboxTTS
@@ -134,7 +148,7 @@ class ChatterboxBackend(BaseBackend):
         self.sample_rate = self.model.sr
 
     def load_model(self) -> None:
-        self.model = self.ChatterboxTTS.from_pretrained(device=torch_device)
+        self.model = self.ChatterboxTTS.from_pretrained(device=device)
 
     def speak(self, text: str):
         audio = self.model.generate(text)
@@ -144,13 +158,30 @@ class ChatterboxBackend(BaseBackend):
 
 
 class KokoroBackend(BaseBackend):
+    """
+    Usage:
+
+    - Lightweight TTS backend using the Kokoro neural TTS model (~82 MB).
+    - Requires a Kokoro voice name; see KOKORO_VOICES for the full list.
+    - Voice .pt files are auto-downloaded from the spych voices repo on first use
+      and cached to the spych voices cache (~/.cache/spych/voices/pt/).
+    - Browse available voices: https://github.com/connor-makowski/spych/tree/main/voices/pt
+    - Model weights are downloaded from HuggingFace on first use and cached to
+      ~/.cache/spych/models/kokoro-82M/.
+
+    Notes:
+
+    - Not compatible with Python 3.14+.
+    """
+
     REPO_ID = "hexgrad/Kokoro-82M"
 
     def __init__(self, speaker: "Speaker", voice: str):
         super().__init__(speaker, voice)
-        from kokoro import KPipeline
+        from kokoro import KPipeline, KModel
 
         self.KPipeline = KPipeline
+        self.KModel = KModel
 
         if not self.voice:
             self.voice = "af_heart"
@@ -170,25 +201,21 @@ class KokoroBackend(BaseBackend):
         lang_code = "b" if self.voice.startswith(("bm_", "bf_")) else "a"
 
         model_cache_dir = get_cache_dir(folder="models")
-        model_cache = os.path.join(
-            model_cache_dir,
-            "models--" + self.REPO_ID.replace("/", "--"),
-        )
-        is_cached = os.path.exists(model_cache) and bool(
-            glob.glob(os.path.join(model_cache, "snapshots", "*"))
-        )
+        kokoro_dir = os.path.join(model_cache_dir, "kokoro")
+        os.makedirs(kokoro_dir, exist_ok=True)
 
-        prev_HF_HUB_CACHE = _hf_constants.HF_HUB_CACHE
-        prev_HF_HUB_OFFLINE = _hf_constants.HF_HUB_OFFLINE
-        _hf_constants.HF_HUB_CACHE = model_cache_dir
-        if is_cached:
-            _hf_constants.HF_HUB_OFFLINE = True
-        try:
-            self.pipeline = self.KPipeline(lang_code=lang_code, repo_id=self.REPO_ID)
-            self.pipeline.load_voice(self.voice_path)
-        finally:
-            _hf_constants.HF_HUB_CACHE = prev_HF_HUB_CACHE
-            _hf_constants.HF_HUB_OFFLINE = prev_HF_HUB_OFFLINE
+        for fname in ["config.json", "kokoro-v1_0.pth"]:
+            if not os.path.isfile(os.path.join(kokoro_dir, fname)):
+                hf_hub_download(repo_id=self.REPO_ID, filename=fname, local_dir=kokoro_dir)
+
+        kmodel = self.KModel(
+            repo_id=self.REPO_ID,
+            config=os.path.join(kokoro_dir, "config.json"),
+            model=os.path.join(kokoro_dir, "kokoro-v1_0.pth"),
+        ).to(device).eval()
+
+        self.pipeline = self.KPipeline(lang_code=lang_code, repo_id=self.REPO_ID, model=kmodel)
+        self.pipeline.load_voice(self.voice_path)
 
     def speak(self, text: str):
         for _, _, audio in self.pipeline(text, voice=self.voice_path):
@@ -197,17 +224,38 @@ class KokoroBackend(BaseBackend):
             self.speaker.play_pcm_array(audio.numpy(), self.sample_rate)
 
 
-def get_backend(speaker: "Speaker", voice: str) -> BaseBackend | None:
-    """Helper to get the first available backend, checked once at init."""
+def get_backend(speaker: "Speaker", voice: str) -> BaseBackend:
+    """
+    Usage:
 
-    # try:
-    return ChatterboxBackend(speaker, voice)
-    # except (ImportError, Exception):
-    #     pass
+    - Returns the first available TTS backend, tried in priority order:
+      Chatterbox Turbo → Kokoro.
+    - Chatterbox is tried first; if unavailable or not installed, falls back to Kokoro.
+    - Raises NotImplementedError if neither backend is available.
+
+    Requires:
+
+    - `speaker`:
+        - Type: Speaker
+        - What: The owning Speaker instance (passed through to the backend).
+    - `voice`:
+        - Type: str
+        - What: Voice name or .wav file path passed to the backend.
+
+    Returns:
+
+    - `backend`:
+        - Type: BaseBackend
+        - What: An initialized backend ready to call `speak(text)`.
+    """
+    try:
+        return ChatterboxBackend(speaker, voice)
+    except (ImportError, Exception):
+        pass
     try:
         return KokoroBackend(speaker, voice)
     except (ImportError, Exception):
         pass
     raise NotImplementedError(
-        "No TTS backend available. To use a speaker, please install one with `pip install spych[chatterbox]` or `pip install spych[kokoro]`."
+        "No TTS backend available. Install one with `pip install spych[chatterbox]` or `pip install spych[kokoro]`."
     )

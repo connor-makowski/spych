@@ -10,7 +10,7 @@ A lightweight, fully offline Python toolkit for wake word detection, audio trans
 - **Fully offline**: no API keys, no cloud calls, no eavesdropping
 - **Multi-threaded wake word detection**: overlapping listener windows so you rarely miss a trigger
 - **Multiple wake words**: map different words to different actions in one listener
-- **Spoken responses**: neural text-to-speech via [Kokoro](https://github.com/hexgrad/kokoro) (~82 MB, downloaded once and cached); agents speak their summaries aloud
+- **Spoken responses**: neural text-to-speech via [Chatterbox Turbo](https://github.com/resemble-ai/chatterbox) (high quality, zero-shot voice cloning) or [Kokoro](https://github.com/hexgrad/kokoro) (lightweight); agents speak their summaries aloud
 - **Automatic follow-up listening**: when a response ends with a question, Spych listens for your reply automatically — no wake word needed
 - **Live transcription**: continuous VAD-gated transcription to `.txt` and/or `.srt` files
 - **Built-in agents**: for [Ollama](https://ollama.com), [Claude Code](https://docs.anthropic.com/en/docs/claude-code), [Codex](https://github.com/openai/codex), [Gemini CLI](https://github.com/google-gemini/gemini-cli), and [OpenCode](https://opencode.ai)
@@ -62,7 +62,7 @@ spych opencode --model anthropic/claude-sonnet-4-5
 spych gemini --wake-words gemini "hey gemini"
 ```
 
-Enable spoken responses with `--use-speaker`. Kokoro (~82 MB) is downloaded on first use and cached locally — all subsequent runs are fully offline:
+Enable spoken responses with `--use-speaker`. The TTS backend (Chatterbox Turbo or Kokoro) is downloaded on first use and cached locally — all subsequent runs are fully offline:
 
 ```bash
 spych claude --use-speaker
@@ -197,8 +197,8 @@ All agents accept a `terminate_words` list (default: `["terminate"]`). Say the w
 | `continue_conversation` | `True` | `True` | `True` | `True` | `True` | Resume the most recent session |
 | `setting_sources` | - | `["user", "project", "local"]` | - | - | - | Claude Code local settings to load |
 | `show_tool_events` | `True` | `True` | `True` | `True` | `True` | Print live tool start/end events |
-| `use_speaker` | `False` | `False` | `False` | `False` | `False` | Speak responses aloud via kokoro TTS |
-| `speaker_voice` | `"af_heart"` | `"af_heart"` | `"af_heart"` | `"af_heart"` | `"af_heart"` | Kokoro voice ID for spoken responses |
+| `use_speaker` | `False` | `False` | `False` | `False` | `False` | Speak responses aloud via TTS |
+| `speaker_voice` | `"af_heart"` | `"af_heart"` | `"af_heart"` | `"af_heart"` | `"af_heart"` | Voice name for spoken responses |
 | `response_style` | `""` | `""` | `""` | `""` | `""` | Style preset or custom instruction for spoken output |
 | `spych_kwargs` | - | - | - | - | - | Extra kwargs passed to `Spych` |
 | `spych_wake_kwargs` | - | - | - | - | - | Extra kwargs passed to `SpychWake` |
@@ -214,8 +214,8 @@ All agents accept a `terminate_words` list (default: `["terminate"]`). Say the w
 | `listen_duration` | `0` | Seconds to listen after wake word (0 = VAD auto) |
 | `history_length` | `10` | Past interactions to include in context |
 | `host` | `"http://localhost:11434"` | Ollama instance URL |
-| `use_speaker` | `False` | Speak responses aloud via kokoro TTS |
-| `speaker_voice` | `"af_heart"` | Kokoro voice ID for spoken responses |
+| `use_speaker` | `False` | Speak responses aloud via TTS |
+| `speaker_voice` | `"af_heart"` | Voice name for spoken responses |
 | `response_style` | `""` | Style preset or custom instruction for spoken output |
 | `spych_kwargs` | `None` | Extra kwargs passed to `Spych` |
 | `spych_wake_kwargs` | `None` | Extra kwargs passed to `SpychWake` |
@@ -262,6 +262,11 @@ When TTS is active, short responses are spoken verbatim; longer ones use the `su
 
 ### Available Voices
 
+The same voice names (e.g. `af_heart`, `bm_george`) work for both backends. Chatterbox uses `.wav` reference files for zero-shot cloning; Kokoro uses `.pt` voice tensors. Voice files are downloaded automatically on first use.
+
+- Chatterbox wave voices: https://github.com/connor-makowski/spych/tree/main/voices/wave
+- Kokoro pt voices (56 total): https://github.com/connor-makowski/spych/tree/main/voices/pt
+
 American English (`am_` / `af_`):
 
 | Voice | Gender | Grade |
@@ -281,7 +286,7 @@ British English (`bm_` / `bf_`):
 | `bf_isabella` | F | C |
 | `bm_george` | M | C |
 
-Full list: https://huggingface.co/hexgrad/Kokoro-82M/blob/main/VOICES.md
+Full Kokoro voice list: https://huggingface.co/hexgrad/Kokoro-82M/blob/main/VOICES.md
 
 ---
 
