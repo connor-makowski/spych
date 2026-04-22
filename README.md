@@ -386,7 +386,7 @@ spych live --no-timestamps --whisper-model small.en
 | `whisper_model` | `"base.en"` | faster-whisper model name |
 | `whisper_device` | `"cpu"` | Device for inference: `"cpu"` or `"cuda"` |
 | `whisper_compute_type` | `"int8"` | Compute precision: `"int8"`, `"float16"`, or `"float32"` |
-| `no_speech_threshold` | `0.3` | Whisper segments with `no_speech_prob` above this are discarded |
+| `no_speech_threshold` | `0.4` | Whisper segments with `no_speech_prob` above this are discarded |
 | `speech_threshold` | `0.5` | Silero VAD probability above which a frame is considered speech onset |
 | `silence_threshold` | `0.35` | Silero VAD probability below which a frame is considered silence during speech |
 | `silence_frames_threshold` | `20` | Consecutive silent frames (~32ms each) required to close a segment (~640ms) |

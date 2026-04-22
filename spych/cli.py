@@ -75,6 +75,19 @@ def _add_shared_args(parser: argparse.ArgumentParser) -> None:
         help="Seconds to listen after wake word (default: 5)",
     )
     parser.add_argument(
+        "--follow-up-listen-duration",
+        type=float,
+        metavar="SECONDS",
+        help="Seconds to listen for follow-up answers (default: 0)",
+    )
+    parser.add_argument(
+        "--inactivity-timeout",
+        type=float,
+        default=8.0,
+        metavar="SECONDS",
+        help="Seconds of inactivity before pivoting back to wake word (default: 8.0)",
+    )
+    parser.add_argument(
         "--response-style",
         default="",
         metavar="STYLE",
@@ -134,6 +147,10 @@ def _build_shared_kwargs(args: argparse.Namespace) -> dict:
         kwargs["terminate_words"] = args.terminate_words
     if args.listen_duration is not None:
         kwargs["listen_duration"] = args.listen_duration
+    if getattr(args, "follow_up_listen_duration", None) is not None:
+        kwargs["follow_up_listen_duration"] = args.follow_up_listen_duration
+    if getattr(args, "inactivity_timeout", 10.0) is not None:
+        kwargs["inactivity_timeout"] = args.inactivity_timeout
     if args.use_speaker:
         kwargs["use_speaker"] = True
     if args.speaker_voice != "af_heart":
@@ -448,6 +465,20 @@ def main():
         help="Seconds to listen after a wake word (default: 5)",
     )
     p_multi.add_argument(
+        "--follow-up-listen-duration",
+        type=float,
+        default=0,
+        metavar="SECONDS",
+        help="Seconds to listen for follow-up answers (default: 0)",
+    )
+    p_multi.add_argument(
+        "--inactivity-timeout",
+        type=float,
+        default=8.0,
+        metavar="SECONDS",
+        help="Seconds of inactivity before pivoting back to wake word (default: 8.0)",
+    )
+    p_multi.add_argument(
         "--continue-conversation",
         type=_parse_bool,
         default=True,
@@ -642,6 +673,8 @@ def main():
                             spych_object=spych_object,
                             continue_conversation=args.continue_conversation,
                             listen_duration=args.listen_duration,
+                            follow_up_listen_duration=args.follow_up_listen_duration,
+                            inactivity_timeout=args.inactivity_timeout,
                             show_tool_events=args.show_tool_events,
                         ),
                         "wake_words": ["claude", "clod", "cloud", "clawed"],
@@ -658,6 +691,8 @@ def main():
                             spych_object=spych_object,
                             continue_conversation=args.continue_conversation,
                             listen_duration=args.listen_duration,
+                            follow_up_listen_duration=args.follow_up_listen_duration,
+                            inactivity_timeout=args.inactivity_timeout,
                             setting_sources=args.setting_sources,
                             show_tool_events=args.show_tool_events,
                         ),
@@ -675,6 +710,8 @@ def main():
                             spych_object=spych_object,
                             continue_conversation=args.continue_conversation,
                             listen_duration=args.listen_duration,
+                            follow_up_listen_duration=args.follow_up_listen_duration,
+                            inactivity_timeout=args.inactivity_timeout,
                             show_tool_events=args.show_tool_events,
                         ),
                         "wake_words": ["codex"],
@@ -691,6 +728,8 @@ def main():
                             spych_object=spych_object,
                             continue_conversation=args.continue_conversation,
                             listen_duration=args.listen_duration,
+                            follow_up_listen_duration=args.follow_up_listen_duration,
+                            inactivity_timeout=args.inactivity_timeout,
                             show_tool_events=args.show_tool_events,
                         ),
                         "wake_words": ["gemini"],
@@ -707,6 +746,8 @@ def main():
                             spych_object=spych_object,
                             continue_conversation=args.continue_conversation,
                             listen_duration=args.listen_duration,
+                            follow_up_listen_duration=args.follow_up_listen_duration,
+                            inactivity_timeout=args.inactivity_timeout,
                             show_tool_events=args.show_tool_events,
                             model=args.opencode_model,
                         ),
@@ -726,6 +767,8 @@ def main():
                             history_length=args.ollama_history_length,
                             host=args.ollama_host,
                             listen_duration=args.listen_duration,
+                            follow_up_listen_duration=args.follow_up_listen_duration,
+                            inactivity_timeout=args.inactivity_timeout,
                         ),
                         "wake_words": ["llama", "ollama", "lama"],
                         "terminate_words": args.terminate_words,

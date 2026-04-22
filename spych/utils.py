@@ -140,6 +140,7 @@ class Recorder:
         silence_frames_threshold: int,
         speech_pad_frames: int,
         max_speech_duration_s: float,
+        inactivity_timeout: Optional[float] = None,
         stop_event=None,
     ) -> list[int]:
         """
@@ -179,6 +180,13 @@ class Recorder:
             - What: Hard cap on utterance duration in seconds; forces a return
               even if the speaker never pauses
 
+        Optional:
+
+        - `inactivity_timeout`:
+            - Type: float | None
+            - What: Seconds to wait for speech onset before returning an empty buffer
+            - Default: None (wait indefinitely)
+
         Returns:
 
         - `buffer`:
@@ -188,6 +196,11 @@ class Recorder:
         self.ensure_vad()
         frame_ms = self.frame_length / self.sample_rate * 1000
         max_speech_frames = int(max_speech_duration_s * 1000 / frame_ms)
+        inactivity_frames = (
+            int(inactivity_timeout * 1000 / frame_ms)
+            if inactivity_timeout
+            else None
+        )
 
         recorder = PvRecorder(
             device_index=device_index, frame_length=self.frame_length
@@ -198,11 +211,13 @@ class Recorder:
         in_speech: bool = False
         voiced_frame_count: int = 0
         silent_frame_count: int = 0
+        total_frames: int = 0
 
         try:
             recorder.start()
             while stop_event is None or not stop_event.is_set():
                 frame = recorder.read()
+                total_frames += 1
                 tensor = (
                     torch.tensor(frame, dtype=torch.float32).unsqueeze(0)
                     / 32768.0
@@ -214,6 +229,12 @@ class Recorder:
                     ).item()
 
                 if not in_speech:
+                    if (
+                        inactivity_frames is not None
+                        and total_frames >= inactivity_frames
+                    ):
+                        break
+
                     pre_roll.append(frame)
                     if len(pre_roll) > speech_pad_frames:
                         pre_roll.pop(0)
@@ -363,7 +384,7 @@ def get_response_style(style: Optional[str]) -> str:
 PERSONALITIES: dict[str, dict] = {
     "jarvis": {
         "name": "J.A.R.V.I.S.",
-        "wake_words": ["jarvis", "jarves"],
+        "wake_words": ["jarvis", "jarves", "jargus", "jervis"],
         "speaker_voice": "bm_george",
         "use_speaker": True,
         "response_style": "jarvis",

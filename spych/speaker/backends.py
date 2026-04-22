@@ -1,7 +1,12 @@
 import os
+import warnings
 from huggingface_hub import hf_hub_download
 from spych.utils import get_cache_dir
 from spych.voice_manager import get_wave_voice, get_pt_voice
+
+# Suppress Torch warnings that clutter the CLI
+warnings.filterwarnings("ignore", category=UserWarning)
+warnings.filterwarnings("ignore", category=FutureWarning)
 
 import torch
 device = "cuda" if torch.cuda.is_available() else "cpu"

@@ -26,6 +26,7 @@ class BaseResponder(Notify):
         use_speaker: bool = False,
         speaker_voice: str = "af_heart",
         follow_up_listen_duration: int | float = 0,
+        inactivity_timeout: Optional[float] = 8.0,
     ) -> None:
         """
         Usage:
@@ -98,8 +99,15 @@ class BaseResponder(Notify):
               `listen_duration`: 0 uses Silero VAD to auto-detect the end of speech;
               a positive number records for exactly that many seconds.
             - Default: 0 (VAD auto-detect)
-            - Note: Only used when `use_speaker` is True and the spoken summary
-              contains a question mark.
+            - Note: Only used when a follow-up is needed from the user.
+
+        - `inactivity_timeout`:
+            - Type: float | None
+            - What: Seconds to wait for speech onset during a listen loop
+              before pivoting back to the wake word. Only applied when using VAD-gated
+              recording (duration 0).
+            - Default: 8.0 (wait for 8 seconds of inactivity)
+
 
         Notes:
 
@@ -127,6 +135,7 @@ class BaseResponder(Notify):
         self.response_style = response_style
         self.style_hint = get_response_style(response_style)
         self.follow_up_listen_duration = follow_up_listen_duration
+        self.inactivity_timeout = inactivity_timeout
         self.speaker = None
         self.summary_character_limit = 200
 
@@ -542,10 +551,13 @@ class BaseResponder(Notify):
         is_follow_up = False
 
         while True:
-            duration = self.follow_up_listen_duration if is_follow_up else self.listen_duration
+            duration = self.follow_up_listen_duration if is_follow_up and self.follow_up_listen_duration != 0 else self.listen_duration
+            inactivity_timeout = self.inactivity_timeout
 
             self.on_listen_start(duration=duration)
-            user_input = self.spych_object.listen(duration=duration)
+            user_input = self.spych_object.listen(
+                duration=duration, inactivity_timeout=inactivity_timeout
+            )
             self.on_listen_end()
 
             if not user_input:
@@ -575,6 +587,7 @@ class BaseResponder(Notify):
                 CliPrinter.divider()
                 is_follow_up = True
             else:
+                is_follow_up = False
                 self.wait_for_next_wake_word()
                 return response
 

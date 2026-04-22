@@ -21,6 +21,7 @@ class LocalClaudeCodeSDKResponder(BaseResponder):
         use_speaker: bool = False,
         speaker_voice: str = "af_heart",
         response_style: Optional[str] = None,
+        **kwargs,
     ) -> None:
         """
         Usage:
@@ -98,6 +99,7 @@ class LocalClaudeCodeSDKResponder(BaseResponder):
             use_speaker=use_speaker,
             speaker_voice=speaker_voice,
             response_style=response_style,
+            **kwargs,
         )
         self.continue_conversation = continue_conversation
         self.setting_sources = list(setting_sources) if setting_sources else []
@@ -204,6 +206,7 @@ def claude_code_sdk(
     response_style: Optional[str] = None,
     spych_kwargs: dict[str, any] | None = None,
     spych_wake_kwargs: dict[str, any] | None = None,
+    **kwargs,
 ) -> None:
     """
     Usage:
@@ -290,6 +293,7 @@ def claude_code_sdk(
         use_speaker=use_speaker,
         speaker_voice=speaker_voice,
         response_style=response_style,
+        **kwargs,
     )
 
     SpychOrchestrator(
@@ -315,6 +319,7 @@ class LocalClaudeCodeCLIResponder(BaseResponder):
         use_speaker: bool = False,
         speaker_voice: str = "af_heart",
         response_style: Optional[str] = None,
+        **kwargs,
     ) -> None:
         """
         Usage:
@@ -392,6 +397,7 @@ class LocalClaudeCodeCLIResponder(BaseResponder):
             use_speaker=use_speaker,
             speaker_voice=speaker_voice,
             response_style=response_style,
+            **kwargs,
         )
         self.continue_conversation = continue_conversation
         self.show_tool_events = show_tool_events
@@ -577,6 +583,7 @@ def claude_code_cli(
     response_style: Optional[str] = None,
     spych_kwargs: Optional[dict[str, Any]] = None,
     spych_wake_kwargs: Optional[dict[str, Any]] = None,
+    **kwargs,
 ) -> None:
     """
     Usage:
@@ -645,6 +652,7 @@ def claude_code_cli(
         use_speaker=use_speaker,
         speaker_voice=speaker_voice,
         response_style=response_style,
+        **kwargs,
     )
 
     SpychOrchestrator(

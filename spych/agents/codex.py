@@ -16,6 +16,7 @@ class LocalCodexCLIResponder(BaseResponder):
         use_speaker: bool = False,
         speaker_voice: str = "af_heart",
         response_style: Optional[str] = None,
+        **kwargs,
     ) -> None:
         """
         Usage:
@@ -90,6 +91,7 @@ class LocalCodexCLIResponder(BaseResponder):
             use_speaker=use_speaker,
             speaker_voice=speaker_voice,
             response_style=response_style,
+            **kwargs,
         )
         self.continue_conversation = continue_conversation
         self.show_tool_events = show_tool_events
@@ -250,6 +252,7 @@ def codex_cli(
     response_style: Optional[str] = None,
     spych_kwargs: Optional[dict[str, Any]] = None,
     spych_wake_kwargs: Optional[dict[str, Any]] = None,
+    **kwargs,
 ) -> None:
     """
     Usage:
@@ -327,6 +330,7 @@ def codex_cli(
         use_speaker=use_speaker,
         speaker_voice=speaker_voice,
         response_style=response_style,
+        **kwargs,
     )
 
     SpychOrchestrator(

@@ -1,6 +1,6 @@
 from faster_whisper import WhisperModel
 from spych.utils import Notify, Recorder, get_clean_audio_buffer
-from typing import Union
+from typing import Union, Optional
 
 
 class Spych(Notify):
@@ -9,11 +9,11 @@ class Spych(Notify):
         whisper_model: str = "base.en",
         whisper_device: str = "cpu",
         whisper_compute_type: str = "int8",
-        no_speech_threshold: float = 0.3,
+        no_speech_threshold: float = 0.4,
         vad_speech_threshold: float = 0.5,
         vad_silence_threshold: float = 0.35,
-        vad_silence_frames_threshold: int = 20,
-        vad_speech_pad_frames: int = 5,
+        vad_silence_frames_threshold: int = 40,
+        vad_speech_pad_frames: int = 10,
         vad_max_speech_duration_s: float = 30.0,
     ) -> None:
         """
@@ -48,7 +48,7 @@ class Spych(Notify):
         - `no_speech_threshold`:
             - Type: float
             - What: The threshold for the `no_speech_prob` returned by faster-whisper
-            - Default: 0.3
+            - Default: 0.4
             - Note: Segments with a `no_speech_prob` above this threshold will be
               ignored to reduce false positives from silence or background noise
 
@@ -70,13 +70,13 @@ class Spych(Notify):
             - Type: int
             - What: Consecutive silent frames (~32ms each) required to confirm the
               utterance has ended and return the buffer
-            - Default: 20  (~640ms)
+            - Default: 40  (~1280ms)
 
         - `vad_speech_pad_frames`:
             - Type: int
             - What: Pre-roll frames captured before onset confirmation; also the
               number of consecutive voiced frames required to confirm speech onset
-            - Default: 5  (~160ms)
+            - Default: 10  (~320ms)
 
         - `vad_max_speech_duration_s`:
             - Type: float
@@ -101,6 +101,7 @@ class Spych(Notify):
         self,
         duration: Union[int, float, str] = 0,
         device_index: int = -1,
+        inactivity_timeout: Optional[float] = 8.0,
     ) -> str:
         """
         Usage:
@@ -128,6 +129,12 @@ class Spych(Notify):
             - Default: -1
             - Note: Use `-1` to select the system default input device
 
+        - `inactivity_timeout`:
+            - Type: float | None
+            - What: Seconds to wait for speech onset before returning an empty string
+              when using VAD-gated recording (`duration="auto"` or `0`)
+            - Default: 8.0 (wait for 8 seconds of inactivity)
+
         Returns:
 
         - `transcription`:
@@ -143,6 +150,7 @@ class Spych(Notify):
                 silence_frames_threshold=self.vad_silence_frames_threshold,
                 speech_pad_frames=self.vad_speech_pad_frames,
                 max_speech_duration_s=self.vad_max_speech_duration_s,
+                inactivity_timeout=inactivity_timeout,
             )
         else:
             buffer = self.recorder.record(

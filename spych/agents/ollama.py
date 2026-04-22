@@ -18,6 +18,7 @@ class OllamaResponder(BaseResponder):
         use_speaker: bool = False,
         speaker_voice: str = "af_heart",
         response_style: Optional[str] = None,
+        **kwargs,
     ) -> None:
         """
         Usage:
@@ -94,6 +95,7 @@ class OllamaResponder(BaseResponder):
             use_speaker=use_speaker,
             speaker_voice=speaker_voice,
             response_style=response_style,
+            **kwargs,
         )
         self.model = model
         self.history_length = history_length
@@ -205,6 +207,7 @@ def ollama(
     response_style: Optional[str] = None,
     spych_kwargs: dict[str, any] | None = None,
     spych_wake_kwargs: dict[str, any] | None = None,
+    **kwargs,
 ) -> None:
     """
     Usage:
@@ -296,6 +299,7 @@ def ollama(
         use_speaker=use_speaker,
         speaker_voice=speaker_voice,
         response_style=response_style,
+        **kwargs,
     )
 
     SpychOrchestrator(
