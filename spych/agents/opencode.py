@@ -1,6 +1,7 @@
 from spych.core import Spych
 from spych.orchestrator import SpychOrchestrator
 from spych.responders import BaseResponder, AgentResponse
+from spych.utils import resolve_cmd
 from typing import Optional, Any
 import subprocess, json, re, time
 
@@ -150,7 +151,7 @@ class LocalOpenCodeCLIResponder(BaseResponder):
         self.first_call = False
 
         # Build command — prompt goes last as positional arg
-        cmd = ["opencode", "run", "--format", "json"]
+        cmd = [resolve_cmd("opencode"), "run", "--format", "json"]
 
         if self.continue_conversation:
             if self._last_session_id:

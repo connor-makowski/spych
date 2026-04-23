@@ -1,5 +1,6 @@
 import sys, json, time, subprocess, importlib, re
 from spych.core import Spych
+from spych.utils import resolve_cmd
 from spych.orchestrator import SpychOrchestrator
 from spych.responders import BaseResponder, AgentResponse
 from typing import Optional, Any
@@ -441,7 +442,7 @@ class LocalClaudeCodeCLIResponder(BaseResponder):
               the clean final answer.
         """
         cmd = [
-            "claude",
+            resolve_cmd("claude"),
             "-p",
             user_input,
             "--output-format",

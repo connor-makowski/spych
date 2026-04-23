@@ -1,6 +1,7 @@
 from spych.core import Spych
 from spych.orchestrator import SpychOrchestrator
 from spych.responders import BaseResponder, AgentResponse
+from spych.utils import resolve_cmd
 from typing import Optional, Any
 import subprocess, json, time
 
@@ -130,7 +131,7 @@ class LocalCodexCLIResponder(BaseResponder):
         if self.continue_conversation and not is_first:
             if self._last_session_id:
                 cmd = [
-                    "codex",
+                    resolve_cmd("codex"),
                     "exec",
                     "resume",
                     self._last_session_id,
@@ -139,7 +140,7 @@ class LocalCodexCLIResponder(BaseResponder):
                 ]
             else:
                 cmd = [
-                    "codex",
+                    resolve_cmd("codex"),
                     "exec",
                     "resume",
                     "--last",
@@ -147,7 +148,7 @@ class LocalCodexCLIResponder(BaseResponder):
                     user_input,
                 ]
         else:
-            cmd = ["codex", "exec", "--json", user_input]
+            cmd = [resolve_cmd("codex"), "exec", "--json", user_input]
 
         proc = subprocess.Popen(
             cmd,

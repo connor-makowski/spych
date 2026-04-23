@@ -2,6 +2,7 @@ from spych.core import Spych
 from spych.orchestrator import SpychOrchestrator
 from spych.responders import BaseResponder, AgentResponse
 from spych.cli_tools import CliPrinter, theme
+from spych.utils import resolve_cmd
 from typing import Optional, Any
 import subprocess, json, time, shutil, select
 
@@ -137,7 +138,7 @@ class LocalGeminiCLIResponder(BaseResponder):
         try:
             proc = subprocess.Popen(
                 [
-                    "gemini",
+                    resolve_cmd("gemini"),
                     "-p",
                     "return only 'true' then stop immediately.",
                     "--output-format",
@@ -271,7 +272,7 @@ class LocalGeminiCLIResponder(BaseResponder):
         self.first_call = False
 
         cmd = [
-            "gemini",
+            resolve_cmd("gemini"),
             "-p",
             self.format_prompt(user_input),
             "--output-format",

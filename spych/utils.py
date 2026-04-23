@@ -1,9 +1,33 @@
-import traceback, sys, os, wave
+import traceback, sys, os, wave, shutil
 from pvrecorder import PvRecorder
 import numpy as np
 from typing import Union, Optional
 from silero_vad import load_silero_vad
 import torch
+
+
+def resolve_cmd(name: str) -> str:
+    """
+    Usage:
+
+    - Resolves a CLI command name to its full executable path using shutil.which.
+      On Windows, Node.js CLI tools are installed as .cmd wrappers (e.g. gemini.cmd).
+      subprocess.Popen with shell=False cannot find them by bare name, but shutil.which
+      respects PATHEXT and returns the full path including the extension.
+
+    Requires:
+
+    - `name`:
+        - Type: str
+        - What: The CLI command name to resolve (e.g. "gemini", "claude")
+
+    Returns:
+
+    - `path`:
+        - Type: str
+        - What: The full path to the executable if found, otherwise the original name
+    """
+    return shutil.which(name) or name
 
 
 def get_cache_dir(folder="voices") -> str:
