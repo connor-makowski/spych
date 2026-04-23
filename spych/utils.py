@@ -444,7 +444,7 @@ def get_personality(name: str) -> dict:
 
     - Returns a personality preset dict containing default kwargs (name,
       wake_words, speaker_voice, use_speaker, response_style) for the named
-      personality. Unknown names return an empty dict.
+      personality. Raises ValueError for unknown names.
 
     Requires:
 
@@ -456,7 +456,14 @@ def get_personality(name: str) -> dict:
 
     - `preset`:
         - Type: dict
-        - What: A dict of agent kwargs to apply as defaults. Empty dict if the
-          name is not recognized.
+        - What: A dict of agent kwargs to apply as defaults.
+
+    Notes:
+
+    - Raises ValueError if the name is not found in PERSONALITIES.
     """
-    return dict(PERSONALITIES.get(name.lower(), {}))
+    key = name.lower()
+    if key not in PERSONALITIES:
+        valid = ", ".join(sorted(PERSONALITIES))
+        raise ValueError(f"Unknown personality {name!r}. Valid options: {valid}")
+    return dict(PERSONALITIES[key])

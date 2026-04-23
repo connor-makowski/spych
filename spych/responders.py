@@ -290,7 +290,8 @@ class BaseResponder(Notify):
             - Type: String
         - `requires_user_feedback`: a boolean flag indicating whether your response contains a question or otherwise requires a user to follow up with additional information.
             - Type: Boolean
-        
+            
+        {"Do all tasks without considering style, however, your final response should be styled like this: " if self.style_hint else ""}
         {self.style_hint}
 
         Below is the input prompt to consider:

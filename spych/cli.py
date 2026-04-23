@@ -28,6 +28,7 @@ Examples:
 
 import argparse
 import sys
+from importlib.metadata import version
 
 
 def _parse_bool(value: str) -> bool:
@@ -180,17 +181,19 @@ def _build_agent_kwargs(args: argparse.Namespace) -> dict:
 
 
 def main():
+    __version__ = version("spych")
     parser = argparse.ArgumentParser(
         prog="spych",
-        description="Launch a voice agent from the terminal.",
+        description=f"spych {__version__}: Launch a voice agent from the terminal.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=__doc__,
     )
 
     parser.add_argument(
+        "-v",
         "--version",
         action="version",
-        version="spych 3.6.0",
+        version=f"spych {__version__}",
         help="Show the version number and exit",
     )
 
