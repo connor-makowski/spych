@@ -4,7 +4,7 @@ from spych.responders import BaseResponder, AgentResponse
 from spych.cli_tools import CliPrinter, theme
 from spych.utils import resolve_cmd
 from typing import Optional, Any
-import subprocess, json, time, shutil, select
+import subprocess, json, time, shutil, threading, queue
 
 
 class LocalGeminiCLIResponder(BaseResponder):
@@ -153,23 +153,38 @@ class LocalGeminiCLIResponder(BaseResponder):
             authenticated = False
             error_message = ""
 
+            # Use a queue and a thread to read output without blocking
+            # or using select.select() (which fails on Windows pipes).
+            q = queue.Queue()
+
+            def reader(pipe, q):
+                try:
+                    for line in pipe:
+                        q.put(line)
+                except Exception:
+                    pass
+                finally:
+                    pipe.close()
+
+            stdout_thread = threading.Thread(
+                target=reader, args=(proc.stdout, q), daemon=True
+            )
+            stdout_thread.start()
+
             try:
                 # Read lines with a timeout — we only need the first few
                 # events to know whether auth succeeded.
-                # Use select() so the deadline fires even when the subprocess
-                # produces no output (e.g. network stall).
                 deadline = time.time() + 10
                 while True:
                     remaining = deadline - time.time()
                     if remaining <= 0:
                         break
-                    ready, _, _ = select.select(
-                        [proc.stdout], [], [], remaining
-                    )
-                    if not ready:
+
+                    try:
+                        raw_line = q.get(timeout=remaining)
+                    except queue.Empty:
                         break  # timed out with no output
 
-                    raw_line = proc.stdout.readline()
                     if not raw_line:
                         break  # EOF
 
