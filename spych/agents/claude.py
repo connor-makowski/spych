@@ -1,6 +1,6 @@
 import sys, json, time, subprocess, importlib, re
 from spych.core import Spych
-from spych.utils import resolve_cmd
+from spych.utils import resolve_cmd, StreamSubprocess
 from spych.orchestrator import SpychOrchestrator
 from spych.responders import BaseResponder, AgentResponse
 from typing import Optional, Any
@@ -146,7 +146,7 @@ class LocalClaudeCodeSDKResponder(BaseResponder):
         # tool_id -> (name, start_time)
         active_tools: dict[str, tuple[str, float]] = {}
 
-        for raw_line in proc.stdout:
+        for raw_line in StreamSubprocess(proc):
             # print(raw_line, end="")  # Echo raw line for debugging
             raw_line = raw_line.strip()
             if not raw_line:
@@ -466,7 +466,7 @@ class LocalClaudeCodeCLIResponder(BaseResponder):
 
         result_text = ""
 
-        for raw_line in proc.stdout:
+        for raw_line in StreamSubprocess(proc):
             raw_line = raw_line.strip()
             if not raw_line:
                 continue

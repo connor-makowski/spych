@@ -2,9 +2,9 @@ from spych.core import Spych
 from spych.orchestrator import SpychOrchestrator
 from spych.responders import BaseResponder, AgentResponse
 from spych.cli_tools import CliPrinter, theme
-from spych.utils import resolve_cmd
+from spych.utils import resolve_cmd, StreamSubprocess
 from typing import Optional, Any
-import subprocess, json, time, shutil, threading, queue
+import subprocess, json, time, shutil
 
 
 class LocalGeminiCLIResponder(BaseResponder):
@@ -153,23 +153,7 @@ class LocalGeminiCLIResponder(BaseResponder):
             authenticated = False
             error_message = ""
 
-            # Use a queue and a thread to read output without blocking
-            # or using select.select() (which fails on Windows pipes).
-            q = queue.Queue()
-
-            def reader(pipe, q):
-                try:
-                    for line in pipe:
-                        q.put(line)
-                except Exception:
-                    pass
-                finally:
-                    pipe.close()
-
-            stdout_thread = threading.Thread(
-                target=reader, args=(proc.stdout, q), daemon=True
-            )
-            stdout_thread.start()
+            stream = StreamSubprocess(proc)
 
             try:
                 # Read lines with a timeout — we only need the first few
@@ -180,13 +164,9 @@ class LocalGeminiCLIResponder(BaseResponder):
                     if remaining <= 0:
                         break
 
-                    try:
-                        raw_line = q.get(timeout=remaining)
-                    except queue.Empty:
-                        break  # timed out with no output
-
-                    if not raw_line:
-                        break  # EOF
+                    raw_line = stream.get(timeout=remaining)
+                    if raw_line is None:
+                        break  # timed out or EOF
 
                     raw_line = raw_line.strip()
                     if not raw_line:
@@ -312,7 +292,7 @@ class LocalGeminiCLIResponder(BaseResponder):
         # tool_id -> (name, start_time)
         active_tools: dict[str, tuple[str, float]] = {}
 
-        for raw_line in proc.stdout:
+        for raw_line in StreamSubprocess(proc):
             raw_line = raw_line.strip()
             if not raw_line:
                 continue

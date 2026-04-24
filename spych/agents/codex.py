@@ -1,7 +1,7 @@
 from spych.core import Spych
 from spych.orchestrator import SpychOrchestrator
 from spych.responders import BaseResponder, AgentResponse
-from spych.utils import resolve_cmd
+from spych.utils import resolve_cmd, StreamSubprocess
 from typing import Optional, Any
 import subprocess, json, time
 
@@ -158,9 +158,9 @@ class LocalCodexCLIResponder(BaseResponder):
             text=True,
         )
 
-        final_text = ""
+        final_result = ""
 
-        for raw_line in proc.stdout:
+        for raw_line in StreamSubprocess(proc):
             raw_line = raw_line.strip()
             if not raw_line:
                 continue
@@ -169,6 +169,7 @@ class LocalCodexCLIResponder(BaseResponder):
                 event = json.loads(raw_line)
             except json.JSONDecodeError:
                 continue
+
 
             etype = event.get("type")
 

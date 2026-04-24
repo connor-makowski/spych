@@ -1,4 +1,4 @@
-import traceback, sys, os, wave, shutil
+import traceback, sys, os, wave, shutil, threading, queue, subprocess
 from pvrecorder import PvRecorder
 import numpy as np
 from typing import Union, Optional
@@ -491,3 +491,78 @@ def get_personality(name: str) -> dict:
         valid = ", ".join(sorted(PERSONALITIES))
         raise ValueError(f"Unknown personality {name!r}. Valid options: {valid}")
     return dict(PERSONALITIES[key])
+
+
+class StreamSubprocess:
+    """
+    Usage:
+
+    - A context manager/iterator wrapper for subprocess.Popen that drains
+      stderr in the background and provides a thread-safe iterator over
+      stdout via a queue. This prevents deadlocks on Windows where a full
+      stderr pipe can block the process.
+
+    Example:
+
+    ```python
+    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    for line in StreamSubprocess(proc):
+        print(line)
+    ```
+    """
+
+    def __init__(self, proc: subprocess.Popen) -> None:
+        self.proc = proc
+        self.q = queue.Queue()
+        self._sentinel = object()
+
+        self._stdout_thread = threading.Thread(
+            target=self._reader, args=(self.proc.stdout,), daemon=True
+        )
+        self._stderr_thread = threading.Thread(
+            target=self._drain, args=(self.proc.stderr,), daemon=True
+        )
+
+        self._stdout_thread.start()
+        self._stderr_thread.start()
+
+    def _reader(self, pipe):
+        try:
+            for line in pipe:
+                self.q.put(line)
+        except Exception:
+            pass
+        finally:
+            self.q.put(self._sentinel)
+
+    def _drain(self, pipe):
+        try:
+            for _ in pipe:
+                pass
+        except Exception:
+            pass
+        finally:
+            if pipe:
+                pipe.close()
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        item = self.q.get()
+        if item is self._sentinel:
+            raise StopIteration
+        return item
+
+    def get(self, timeout: Optional[float] = None):
+        """
+        Get the next line from stdout with an optional timeout.
+        Returns None if the process has exited or the timeout is reached.
+        """
+        try:
+            item = self.q.get(timeout=timeout)
+            if item is self._sentinel:
+                return None
+            return item
+        except queue.Empty:
+            return None

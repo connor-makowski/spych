@@ -1,7 +1,7 @@
 from spych.core import Spych
 from spych.orchestrator import SpychOrchestrator
 from spych.responders import BaseResponder, AgentResponse
-from spych.utils import resolve_cmd
+from spych.utils import resolve_cmd, StreamSubprocess
 from typing import Optional, Any
 import subprocess, json, re, time
 
@@ -180,7 +180,7 @@ class LocalOpenCodeCLIResponder(BaseResponder):
         # Keyed by tool name since inline XML has no unique call ID.
         active_tools: dict[str, float] = {}
 
-        for raw_line in proc.stdout:
+        for raw_line in StreamSubprocess(proc):
             raw_line = raw_line.strip()
             if not raw_line:
                 continue
