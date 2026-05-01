@@ -184,6 +184,7 @@ class SpychOrchestrator:
                         response_style=getattr(resp, "response_style", ""),
                         use_speaker=getattr(resp, "use_speaker", False),
                         speaker_voice=getattr(resp, "speaker_voice", ""),
+                        user_name=getattr(resp, "user_name", "User"),
                     )
                 original()
 

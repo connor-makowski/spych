@@ -33,6 +33,7 @@ spych/
     chatterbox.py          # SpychChatterboxTTS — standalone Chatterbox Turbo implementation
   cli.py                   # CLI entry point (spych subcommands)
   cli_tools.py             # Theme, CliSpinner, CliPrinter — terminal UI utilities
+  dashboard.py             # AgentDashboard — rich TUI for live agent interaction
   spinners.py              # Spinner frame definitions (BRAILLE, ARC, MOON, etc.)
   utils.py                 # Recorder, Notify, get_response_style, PERSONALITIES, get_personality
   agents/
@@ -118,6 +119,12 @@ All commands use Docker via `./run.sh`:
 - Producer-consumer architecture with three threads: `VADRecorder` → `Transcriber` → `Writer`
 - Writes to `.txt`, `.srt`, or both; maintains a context buffer (~128 words) for whisper `initial_prompt`
 - Stoppable via keystroke, spoken terminate word, or `KeyboardInterrupt`
+
+**`AgentDashboard`** (`dashboard.py`) — TUI:
+- Renders a live, interactive terminal dashboard in the alternate screen buffer.
+- Features real-time tool tracking, thought streaming, and conversation history.
+- Includes a scrollable "All Logs" mode and optimized text wrapping with internal caching.
+- Handles keyboard input for scrolling and mode toggling via a dedicated input thread.
 
 ### Built-in Agents (`spych/agents/`)
 

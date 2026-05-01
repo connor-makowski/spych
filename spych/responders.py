@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from spych.utils import Notify, get_response_style
-from spych.cli_tools import CliSpinner, NullSpinner, CliPrinter, theme
+from spych.utils import Notify, get_response_style, get_setting, get_user, get_default_user
+from spych.cli_tools import CliSpinner, NullSpinner, CliPrinter, theme, set_theme
 from spych.spinners import Spinner
 from spych.speaker import Speaker
 from dataclasses import dataclass
@@ -9,6 +9,9 @@ from typing import Optional
 import json
 import time
 from spych.dashboard import AgentDashboard
+
+# Set theme from settings
+set_theme(get_setting("theme", "dark"))
 
 
 @dataclass
@@ -32,6 +35,7 @@ class BaseResponder(Notify):
         follow_up_listen_duration: int | float = 0,
         inactivity_timeout: Optional[float] = 4.0,
         dashboard: Optional[AgentDashboard] = None,
+        user: Optional[str] = None,
     ) -> None:
         """
         Usage:
@@ -124,6 +128,12 @@ class BaseResponder(Notify):
               dashboard instead of printing to stdout. The spinner is suppressed.
             - Default: None
 
+        - `user`:
+            - Type: str | None
+            - What: The user name to use for tailored responses. If None, uses the
+              default user from settings. If "none", no user profile is used.
+            - Default: None
+
 
         Notes:
 
@@ -140,6 +150,13 @@ class BaseResponder(Notify):
         self.listen_duration = listen_duration
         self.name = name if name else self.__class__.__name__
         self.dashboard: Optional["AgentDashboard"] = dashboard
+
+        # Set user profile
+        self.user_profile: Optional[dict] = None
+        user_name = user if user else get_default_user()
+        if user_name and user_name.lower() != "none":
+            self.user_profile = get_user(user_name)
+
         # Use NullSpinner when a dashboard owns the screen; otherwise use a real
         # spinner (shared if injected by the orchestrator, private otherwise).
         _spinner: CliSpinner
@@ -159,14 +176,32 @@ class BaseResponder(Notify):
         self.follow_up_listen_duration = follow_up_listen_duration
         self.inactivity_timeout = inactivity_timeout
         self.speaker = None
-        self.summary_character_limit = 200
+        self.summary_character_limit = 300
 
         if use_speaker:
             self.speaker = Speaker(speaker_voice, backend=speaker_backend)
 
+            def _on_playback_start():
+                if self.dashboard is not None:
+                    self.dashboard.on_status_change("speaking")
+
+            def _on_playback_complete():
+                if self.dashboard is not None:
+                    self.dashboard.on_status_change("waiting")
+
+            self.speaker.on_playback_start = _on_playback_start
+            self.speaker.on_playback_complete = _on_playback_complete
+
     # ------------------------------------------------------------------ #
     #  Public helper API — safe to call from inside respond()             #
     # ------------------------------------------------------------------ #
+
+    @property
+    def user_name(self) -> str:
+        """Returns the user name from the profile or 'User'."""
+        if self.user_profile:
+            return self.user_profile.get("name", "User") or "User"
+        return "User"
 
     def wait_for_next_wake_word(self, divider: bool = True) -> None:
         """
@@ -311,17 +346,31 @@ class BaseResponder(Notify):
         return f"""
         You must respond with a valid json object with the following keys:
 
-        - `response`: The full text of your response, which will be printed in the terminal. 
+        - `response`: 
+            - What: 
+                - The full text of your response, which will be printed in the terminal. 
             - Type: String
-        - `summary`: A short summary of your response, that will be presented at the end of each response cycle, but may be spoken outloud. Keep as short as possible. Do not include any special characters or paths to files in this summary (in case it is read aloud).Ask any follow up questions at the end of this summary.
+        - `summary`: 
+            - What:
+                - A short summary of your response, that will be presented at the end of each response cycle, but may be spoken outloud. 
+                - Keep it casual and concise, as if you are a human summarizing your own response in a concise spoken manner.
+                - Keep as short as possible while reasonably covering the core content.
+                - Do not include any special characters or paths to files in this summary (in case it is read aloud).
+                - Ask any follow up questions at the end of this summary. Make sure to cover the core content with this summary. 
+                - Do not mention any spoken instructions (like clears throat) unless to meet the instructions given by the user. 
             - Type: String
-        - `requires_user_feedback`: a boolean flag indicating whether your response contains a question or otherwise requires a user to follow up with additional information.
+        - `requires_user_feedback`: 
+            - What:
+                - A boolean flag indicating whether your response would expect a user to follow up with additional information.
+                - If true, the agent will listen for a follow-up response from the user. Make sure to ask any follow up questions last if this is true.
             - Type: Boolean
             
+        {f"The following is information about the user you are helping. This is only for context. You should typically not reference this directly unless it is pertinent to the request stated below. START USER CONTEXT {json.dumps(self.user_profile)} END USER CONTEXT" if self.user_profile else ""}
+
         {"Do all tasks without considering style, however, your final response should be styled like this: " if self.style_hint else ""}
         {self.style_hint}
 
-        Below is the input prompt to consider:
+        Everything below is the input prompt from the user:
         =================
 
         {prompt}
@@ -516,7 +565,7 @@ class BaseResponder(Notify):
             self.dashboard.on_status_change("thinking")
             self._start_time = time.time()
             return
-        CliPrinter.label("User:", user_input)
+        CliPrinter.label(f"{self.user_name}:", user_input)
         self._start_time = time.time()
         self.spinner.start_with_verbs(
             self.name, interval=15, spinner=Spinner.ZEN
@@ -543,7 +592,14 @@ class BaseResponder(Notify):
         if self.dashboard is not None:
             if response.response:
                 self.dashboard.on_response(response, self.name, elapsed)
-            self.dashboard.on_status_change("waiting")
+            
+            # Only transition to waiting if we aren't about to speak
+            # and no follow-up is needed.
+            # If we are about to speak, the speaker callbacks will handle transitions.
+            if not response.requires_user_feedback:
+                about_to_speak = self.speaker and response.response
+                if not about_to_speak:
+                    self.dashboard.on_status_change("waiting")
             return
         self.spinner.stop()
         if response.response:
@@ -650,8 +706,6 @@ class BaseResponder(Notify):
                     else response.summary
                 )
                 self.speaker.speak_async(text_to_speak)
-                if self.dashboard is not None:
-                    self.dashboard.on_status_change("speaking")
 
             if response.requires_user_feedback:
                 if self.speaker:

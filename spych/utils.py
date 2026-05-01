@@ -1,7 +1,8 @@
+import json
 import traceback, sys, os, wave, shutil, threading, queue, subprocess
 from pvrecorder import PvRecorder
 import numpy as np
-from typing import Union, Optional
+from typing import Any, Union, Optional
 from silero_vad import load_silero_vad
 import torch
 
@@ -44,6 +45,71 @@ def get_cache_dir(folder="voices") -> str:
     path = os.path.join(base_dir, "spych", folder)
     os.makedirs(path, exist_ok=True)
     return path
+
+
+def get_setting(key: str, default: Any = None) -> Any:
+    """Returns a setting from the cache."""
+    path = os.path.join(get_cache_dir("settings"), "settings.json")
+    if not os.path.exists(path):
+        return default
+    with open(path, "r") as f:
+        try:
+            settings = json.load(f)
+        except json.JSONDecodeError:
+            return default
+    return settings.get(key, default)
+
+
+def set_setting(key: str, value: Any) -> None:
+    """Sets a setting in the cache."""
+    folder = get_cache_dir("settings")
+    path = os.path.join(folder, "settings.json")
+    settings = {}
+    if os.path.exists(path):
+        with open(path, "r") as f:
+            try:
+                settings = json.load(f)
+            except json.JSONDecodeError:
+                settings = {}
+    settings[key] = value
+    with open(path, "w") as f:
+        json.dump(settings, f, indent=4)
+
+
+def get_user(name: str) -> Optional[dict]:
+    """Returns a user profile from the cache."""
+    path = os.path.join(get_cache_dir("users"), f"{name}.json")
+    if not os.path.exists(path):
+        return None
+    with open(path, "r") as f:
+        try:
+            return json.load(f)
+        except json.JSONDecodeError:
+            return None
+
+
+def get_all_users() -> list[str]:
+    """Returns a list of all user profile names."""
+    folder = get_cache_dir("users")
+    return [f[:-5] for f in os.listdir(folder) if f.endswith(".json")]
+
+
+def set_user(name: str, data: dict) -> None:
+    """Sets a user profile in the cache."""
+    folder = get_cache_dir("users")
+    path = os.path.join(folder, f"{name}.json")
+    with open(path, "w") as f:
+        json.dump(data, f, indent=4)
+
+
+def get_default_user() -> Optional[str]:
+    """Returns the default user name."""
+    return get_setting("default_user")
+
+
+def set_default_user(name: Optional[str]) -> None:
+    """Sets the default user name."""
+    set_setting("default_user", name)
 
 
 def save_wav(path: str, buffer: list[int], sample_rate: int = 16000) -> None:

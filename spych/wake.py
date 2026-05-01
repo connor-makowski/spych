@@ -125,7 +125,7 @@ class SpychWake(Notify):
         whisper_model="tiny.en",
         whisper_device="cpu",
         whisper_compute_type="int8",
-        no_speech_threshold=0.4,
+        no_speech_threshold=0.25,
         on_terminate=None,
     ):
         """
@@ -204,7 +204,7 @@ class SpychWake(Notify):
         - `no_speech_threshold`:
             - Type: float
             - What: The threshold for the `no_speech_prob` returned by faster-whisper
-            - Default: 0.4
+            - Default: 0.25
             - Note: Segments with a `no_speech_prob` above this threshold will be ignored to reduce false positives from silence or background noise
 
         - `on_terminate`:

@@ -83,6 +83,7 @@ The following utilities are also available as CLI commands. They don't use wake 
 | `spych --help` | Show detailed usage instructions and exit |
 | `spych live` | Continuous speech-to-text transcription to file |
 | `spych multi` | Run multiple agents simultaneously |
+| `spych users` | Manage user profiles and global settings |
 | `spych profile_my_voice` | Record a voice sample for TTS cloning |
 
 ## Global Flags
@@ -96,6 +97,8 @@ spych --theme light claude
 | Flag | Options | Default | Description |
 |---|---|---|---|
 | `--theme` | `dark`, `light`, `solarized`, `mono` | `dark` | Terminal colour theme |
+
+> 💡 **TUI Dashboard:** Spych launches a rich terminal interface by default. Use the `--verbose` flag (e.g., `spych --verbose claude`) to switch to a simpler, non-interactive scrollable output.
 
 ---
 
@@ -157,6 +160,27 @@ spych claude --name "JARVIS" --wake-words jarvis jarves \
 | `news_anchor` | `bella`, `news anchor`, `anchor` | `af_bella` | `news_anchor` — professional broadcast tone |
 | `robot` | `rob`, `robot` | `am_adam` | `robot` — monotone, literal |
 | `caveman` | `er`, `ur`, `caveman`, `cave man` | `am_onyx` | `caveman` — very simple, direct |
+
+---
+
+# User Management
+
+Spych supports multiple user profiles, allowing agents to provide more personalized responses based on your name, age, and other context.
+
+```bash
+# Launch the interactive user management menu
+spych users
+```
+
+The `users` utility allows you to:
+- Create, edit, and delete user profiles.
+- Set a default user for all agents.
+- Change the global terminal theme (`dark`, `light`, `solarized`, `mono`).
+
+You can also specify a user for a specific session:
+```bash
+spych claude --user Connor
+```
 
 ---
 

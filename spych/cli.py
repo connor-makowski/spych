@@ -24,6 +24,11 @@ Examples:
     # Voice management
     spych profile_my_voice --name my_voice
     spych profile_my_voice --name my_voice --alternate-output-file ./my_voice_backup.wav
+
+    # User management
+    spych users
+    spych claude --user UserA
+    spych claude --user none
 """
 
 import argparse
@@ -132,6 +137,12 @@ def _add_shared_args(parser: argparse.ArgumentParser) -> None:
             "TUI dashboard (default: false)"
         ),
     )
+    parser.add_argument(
+        "--user",
+        default=None,
+        metavar="NAME",
+        help="The user name to use for tailored responses (default: default user from settings)",
+    )
 
 
 def _add_agent_args(parser: argparse.ArgumentParser) -> None:
@@ -179,6 +190,8 @@ def _build_shared_kwargs(args: argparse.Namespace) -> dict:
         kwargs["speaker_backend"] = args.speaker_backend
     if args.response_style:
         kwargs["response_style"] = args.response_style
+    if args.user:
+        kwargs["user"] = args.user
     return kwargs
 
 
@@ -601,6 +614,20 @@ def main():
     )
 
     # ------------------------------------------------------------------ #
+    # users — manage user profiles                                       #
+    # ------------------------------------------------------------------ #
+    p_users = subparsers.add_parser(
+        "users",
+        help="Manage user profiles and global settings",
+        description=(
+            "Launch an interactive menu to manage user profiles and global "
+            "preferences. Profiles store personal info (name, age, extra context) "
+            "used to tailor agent responses. You can also set the default user "
+            "and terminal theme here."
+        ),
+    )
+
+    # ------------------------------------------------------------------ #
     # Dispatch                                                             #
     # ------------------------------------------------------------------ #
     args = parser.parse_args()
@@ -632,6 +659,14 @@ def main():
     def _start_dashboard(agent_name: str, kwargs: dict):
         """Create a dashboard and inject it into kwargs; start is deferred until healthchecks pass."""
         from spych.dashboard import AgentDashboard
+        from spych.utils import get_user, get_default_user
+
+        user_name = kwargs.get("user") or get_default_user()
+        profile_name = "User"
+        if user_name and user_name.lower() != "none":
+            profile = get_user(user_name)
+            if profile:
+                profile_name = profile.get("name", "User") or "User"
 
         wake_words = kwargs.get("wake_words", _DEFAULT_WAKE_WORDS.get(args.agent, []))
         dashboard = AgentDashboard(
@@ -640,6 +675,7 @@ def main():
             response_style=kwargs.get("response_style", ""),
             use_speaker=kwargs.get("use_speaker", True),
             speaker_voice=kwargs.get("speaker_voice", "af_heart"),
+            user_name=profile_name,
         )
         print("  ◌ Running healthchecks...")
         kwargs["dashboard"] = dashboard
@@ -748,6 +784,100 @@ def main():
             alternate_output_file=args.alternate_output_file,
         )
 
+    elif args.agent == "users":
+        from spych.utils import get_all_users, get_user, set_user, set_default_user, get_default_user, set_setting, get_setting
+        from spych.cli_tools import set_theme
+
+        def users_menu():
+            while True:
+                print("\n  " + "=" * 20)
+                print("  SPYCH USER MANAGEMENT")
+                print("  " + "=" * 20)
+                
+                users = get_all_users()
+                default_user = get_default_user()
+                current_theme = get_setting("theme", "dark")
+                
+                print(f"\n  Default User: {default_user or 'None'}")
+                print(f"  Current Theme: {current_theme}")
+                print("\n  Users:")
+                if not users:
+                    print("    (No users found)")
+                for u in users:
+                    print(f"    - {u}{' (default)' if u == default_user else ''}")
+                
+                print("\n  Options:")
+                print("    1. Create new user")
+                print("    2. Edit user")
+                print("    3. Delete user")
+                print("    4. Set default user")
+                print("    5. Set theme")
+                print("    6. Exit")
+                
+                choice = input("\n  Choice: ").strip()
+                
+                if choice == "1":
+                    name = input("  User name: ").strip()
+                    if name:
+                        data = {
+                            "name": input("  Full name: ").strip(),
+                            "age": input("  Age: ").strip(),
+                            "gender": input("  Gender: ").strip(),
+                            "extra": input("  Extra info: ").strip(),
+                        }
+                        set_user(name, data)
+                        print(f"  User '{name}' created.")
+                
+                elif choice == "2":
+                    name = input("  User name to edit: ").strip()
+                    user = get_user(name)
+                    if user:
+                        print(f"  Editing {name} (leave blank to keep current)")
+                        user["name"] = input(f"    Full name [{user.get('name', '')}]: ").strip() or user.get("name", "")
+                        user["age"] = input(f"    Age [{user.get('age', '')}]: ").strip() or user.get("age", "")
+                        user["gender"] = input(f"    Gender [{user.get('gender', '')}]: ").strip() or user.get("gender", "")
+                        user["extra"] = input(f"    Extra info [{user.get('extra', '')}]: ").strip() or user.get("extra", "")
+                        set_user(name, user)
+                        print(f"  User '{name}' updated.")
+                    else:
+                        print("  User not found.")
+                
+                elif choice == "3":
+                    name = input("  User name to delete: ").strip()
+                    path = os.path.join(get_cache_dir("users"), f"{name}.json")
+                    if os.path.exists(path):
+                        os.remove(path)
+                        if get_default_user() == name:
+                            set_default_user(None)
+                        print(f"  User '{name}' deleted.")
+                    else:
+                        print("  User not found.")
+                
+                elif choice == "4":
+                    name = input("  Default user name (or 'none'): ").strip()
+                    if name.lower() == "none":
+                        set_default_user(None)
+                        print("  Default user cleared.")
+                    elif name in get_all_users():
+                        set_default_user(name)
+                        print(f"  Default user set to '{name}'.")
+                    else:
+                        print("  User not found.")
+                
+                elif choice == "5":
+                    theme = input("  Theme (dark, light, solarized, mono): ").strip().lower()
+                    if theme in ["dark", "light", "solarized", "mono"]:
+                        set_setting("theme", theme)
+                        set_theme(theme)
+                        print(f"  Theme set to '{theme}'.")
+                    else:
+                        print("  Invalid theme.")
+                
+                elif choice == "6":
+                    break
+
+        users_menu()
+
     # ------------------------------------------------------------------ #
     # Multi-agent dispatch                                                 #
     # ------------------------------------------------------------------ #
@@ -762,6 +892,14 @@ def main():
         multi_dashboard = None
         if not args.verbose:
             from spych.dashboard import AgentDashboard
+            from spych.utils import get_user, get_default_user
+
+            user_name = args.user or get_default_user()
+            profile_name = "User"
+            if user_name and user_name.lower() != "none":
+                profile = get_user(user_name)
+                if profile:
+                    profile_name = profile.get("name", "User") or "User"
 
             first_agent = _AGENT_ALIASES.get(args.agents[0], args.agents[0])
             _multi_name_map = {
@@ -776,6 +914,7 @@ def main():
                 agent_name=_multi_name_map.get(first_agent, first_agent),
                 wake_words=_DEFAULT_WAKE_WORDS.get(first_agent, []),
                 use_speaker=args.use_speaker,
+                user_name=profile_name,
             )
             print("  ◌ Running healthchecks...")
 
@@ -797,6 +936,7 @@ def main():
                             use_speaker=args.use_speaker,
                             show_tool_events=args.show_tool_events,
                             dashboard=multi_dashboard,
+                            user=args.user,
                         ),
                         "wake_words": ["claude", "clod", "cloud", "clawed"],
                         "terminate_words": args.terminate_words,
@@ -819,6 +959,7 @@ def main():
                             setting_sources=args.setting_sources,
                             show_tool_events=args.show_tool_events,
                             dashboard=multi_dashboard,
+                            user=args.user,
                         ),
                         "wake_words": ["claude", "clod", "cloud", "clawed"],
                         "terminate_words": args.terminate_words,
@@ -840,6 +981,7 @@ def main():
                             use_speaker=args.use_speaker,
                             show_tool_events=args.show_tool_events,
                             dashboard=multi_dashboard,
+                            user=args.user,
                         ),
                         "wake_words": ["codex"],
                         "terminate_words": args.terminate_words,
@@ -861,6 +1003,7 @@ def main():
                             use_speaker=args.use_speaker,
                             show_tool_events=args.show_tool_events,
                             dashboard=multi_dashboard,
+                            user=args.user,
                         ),
                         "wake_words": ["gemini"],
                         "terminate_words": args.terminate_words,
@@ -883,6 +1026,7 @@ def main():
                             show_tool_events=args.show_tool_events,
                             model=args.opencode_model,
                             dashboard=multi_dashboard,
+                            user=args.user,
                         ),
                         "wake_words": ["opencode", "open code"],
                         "terminate_words": args.terminate_words,
@@ -905,6 +1049,7 @@ def main():
                             speaker_backend=args.speaker_backend,
                             use_speaker=args.use_speaker,
                             dashboard=multi_dashboard,
+                            user=args.user,
                         ),
                         "wake_words": ["llama", "ollama", "lama"],
                         "terminate_words": args.terminate_words,

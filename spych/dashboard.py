@@ -27,6 +27,8 @@ import time
 from dataclasses import dataclass
 from typing import Optional
 
+from spych.spinners import Spinner
+
 try:
     import select
     import termios
@@ -49,6 +51,7 @@ _ITALIC = "\033[3m"
 _RED = "\033[91m"
 _GREEN = "\033[92m"
 _YELLOW = "\033[93m"
+_MAGENTA = "\033[95m"
 _CYAN = "\033[96m"
 
 _CURSOR_HIDE = "\033[?25l"
@@ -197,14 +200,32 @@ class _DashboardRenderer:
     _CONV_FIXED = 3  # label + top-rule + bottom-rule
     _FIXED_BASE = _HEADER_LINES + _CONV_FIXED + _FOOTER_LINES  # = 9
 
-    _SUMMARY_CHAR_LIMIT = 200
+    _SUMMARY_CHAR_LIMIT = 300
 
-    def __init__(self) -> None:
+    def __init__(
+        self,
+        thinking_spinner: list[str],
+        waiting_spinner: list[str],
+        listening_spinner: list[str],
+    ) -> None:
         self._prev_cols = 0
         self._prev_rows = 0
+        self._thinking_spinner = thinking_spinner
+        self._waiting_spinner = waiting_spinner
+        self._listening_spinner = listening_spinner
+        
+        # Cache for wrapped conversation blocks:
+        # (entry_id, cols) -> list[str]
+        self._conv_cache: dict[tuple[int, int], list[str]] = {}
+        # Cache for wrapped tool lines:
+        # (tool_id, cols) -> list[str]
+        self._tool_cache: dict[tuple[int, int], list[str]] = {}
+        # Cache for wrapped thought entries:
+        # (thought_id, cols) -> list[str]
+        self._thought_cache: dict[tuple[int, int], list[str]] = {}
 
-    _THINKING_SPINNER = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
     _THINKING_VERBS = [
+        # ... (same as before)
         "Thinking",
         "Vibing",
         "Pontificating",
@@ -245,22 +266,29 @@ class _DashboardRenderer:
         "Brainbrewing",
     ]
 
-    @staticmethod
-    def _status_str(status: str) -> str:
+    def _status_str(self, status: str) -> str:
         if status == THINKING:
-            idx = int(time.time() * 10) % len(_DashboardRenderer._THINKING_SPINNER)
+            idx = int(time.time() * 10) % len(self._thinking_spinner)
             v_idx = (
-                int(time.time() / 2) % len(_DashboardRenderer._THINKING_VERBS)
+                int(time.time() / 10) % len(_DashboardRenderer._THINKING_VERBS)
             )
-            spinner = _DashboardRenderer._THINKING_SPINNER[idx]
+            spinner = self._thinking_spinner[idx]
             verb = _DashboardRenderer._THINKING_VERBS[v_idx]
             return f"{_YELLOW}{spinner} {verb}{_RESET}"
 
+        if status == LISTENING:
+            idx = int(time.time() * 10) % len(self._listening_spinner)
+            spinner = self._listening_spinner[idx]
+            return f"{_BOLD}{_GREEN}{spinner} LISTENING {spinner}{_RESET}"
+
+        if status == WAITING:
+            idx = int(time.time() * 5) % len(self._waiting_spinner)
+            spinner = self._waiting_spinner[idx]
+            return f"{_DIM}{spinner} Waiting{_RESET}"
+
         indicators: dict[str, str] = {
-            LISTENING: f"{_BOLD}{_GREEN}▶▶▶ LISTENING ◀◀◀{_RESET}",
             SPEAKING: f"{_CYAN}♪ Speaking{_RESET}",
             TERMINATED: f"{_DIM}✗ Stopped{_RESET}",
-            WAITING: f"{_DIM}○ Waiting{_RESET}",
         }
         return indicators.get(status, f"{_DIM}○ Waiting{_RESET}")
 
@@ -270,22 +298,99 @@ class _DashboardRenderer:
             return text
         return text[: width - 1] + "…"
 
+    _ANSI_ESCAPE = re.compile(r"\033\[[0-9;]*[mK]")
+
     @staticmethod
     def _visible_len(text: str) -> int:
-        return len(re.sub(r"\033\[[0-9;]*[mK]", "", text))
+        return len(_DashboardRenderer._ANSI_ESCAPE.sub("", text))
 
     @staticmethod
     def _wrap_text(text: str, width: int, indent: int = 0) -> list[str]:
         if not text:
             return [""]
+        
+        # Split by existing newlines first to ensure textwrap doesn't get confused
+        # and to prevent strings containing \n from entering the render loop.
+        lines = text.splitlines()
+        res = []
         wrapper = textwrap.TextWrapper(
             width=width,
             initial_indent=" " * indent,
             subsequent_indent=" " * indent,
-            replace_whitespace=False,
-            drop_whitespace=False,
+            replace_whitespace=True,
+            drop_whitespace=True,
         )
-        return wrapper.wrap(text)
+        for line in lines:
+            if not line.strip():
+                # Preserve blank lines but respect indent
+                res.append(" " * indent)
+                continue
+            wrapped_lines = wrapper.wrap(line)
+            if wrapped_lines:
+                res.extend(wrapped_lines)
+            else:
+                # If wrap returns nothing for a non-empty line (rare), 
+                # at least keep the indent.
+                res.append(" " * indent)
+        return res if res else [""]
+
+    @staticmethod
+    def _format_line_group(
+        prefix: str,
+        text: str,
+        cols: int,
+        duration: Optional[float] = None,
+    ) -> list[str]:
+        prefix_len = _DashboardRenderer._visible_len(prefix)
+        available_width = max(10, cols - prefix_len - 1)
+        # Strip text to prevent double spaces if input starts with a space
+        wrapped = _DashboardRenderer._wrap_text(text.strip(), available_width)
+        res = []
+        for i, line in enumerate(wrapped):
+            cur_line = (prefix if i == 0 else " " * prefix_len) + line
+            
+            if duration is not None and i == len(wrapped) - 1:
+                dur_str = f"({duration:.1f}s)"
+                cur_visible = _DashboardRenderer._visible_len(cur_line)
+                target_width = cols - 2
+                spaces = target_width - cur_visible - len(dur_str)
+                if spaces >= 1:
+                    cur_line += " " * spaces + _DIM + dur_str + _RESET
+                else:
+                    if cur_visible > target_width - len(dur_str) - 5:
+                        res.append(cur_line)
+                        cur_line = " " * (target_width - len(dur_str)) + _DIM + dur_str + _RESET
+                    else:
+                         cur_line += " " + _DIM + dur_str + _RESET
+            
+            if _DashboardRenderer._visible_len(cur_line) > cols - 1:
+                cur_line = _DashboardRenderer._truncate(cur_line, cols - 1)
+            res.append(cur_line)
+        return res
+
+    def _format_user(self, ts: str, name: str, text: str, duration: float, cols: int) -> list[str]:
+        prefix = f"  {ts}  {_CYAN}{name}:{_RESET} "
+        return self._format_line_group(prefix, text, cols, duration=duration)
+
+    def _format_agent(self, ts: str, name: str, text: str, duration: float, cols: int) -> list[str]:
+        prefix = f"  {ts}  {_BOLD}{name}:{_RESET} "
+        return self._format_line_group(prefix, text, cols, duration=duration)
+
+    def _format_thought(self, ts: str, text: str, cols: int) -> list[str]:
+        prefix = f"    {ts}  {_ITALIC}{_DIM}Thought:{_RESET} "
+        return self._format_line_group(prefix, text, cols)
+
+    def _format_tool(self, ts: str, name: str, status: str, is_running: bool, elapsed: Optional[float], cols: int, show_ts: bool = False) -> list[str]:
+        icon = "⚙" if is_running else "✓"
+        color = _YELLOW if is_running else _GREEN
+        elapsed_str = f" ({elapsed:.2f}s)" if elapsed else ""
+        content = f"{name} → {status}{elapsed_str}"
+        if show_ts:
+            ts_str = f"{_DIM}{ts}{_RESET}"
+            prefix = f"  {ts_str}  {color}{icon}{_RESET}  "
+        else:
+            prefix = f"    {color}{icon}{_RESET}  "
+        return self._format_line_group(prefix, content, cols)
 
     def render(
         self,
@@ -294,6 +399,7 @@ class _DashboardRenderer:
         response_style: str,
         use_speaker: bool,
         speaker_voice: str,
+        user_name: str,
         status: str,
         status_start: float,
         conversation: list[ConversationEntry],
@@ -312,6 +418,18 @@ class _DashboardRenderer:
             resized = True
             self._prev_cols = cols
             self._prev_rows = rows
+            # Clear cache on resize as wrapping changes
+            self._conv_cache.clear()
+            self._tool_cache.clear()
+            self._thought_cache.clear()
+
+        # Periodically bound cache size
+        if len(self._conv_cache) > 2000:
+            self._conv_cache.clear()
+        if len(self._tool_cache) > 2000:
+            self._tool_cache.clear()
+        if len(self._thought_cache) > 2000:
+            self._thought_cache.clear()
 
         bar_width = max(10, cols - 4)
         budget = rows - 1
@@ -356,59 +474,58 @@ class _DashboardRenderer:
 
             log_lines: list[str] = []
             for entry in conversation:
-                ts = f"{_DIM}{entry.timestamp}{_RESET}"
-                user_text = f"({entry.user_duration:.1f}s) {entry.user_input}"
-                log_lines.extend([f"  {ts}  {_DIM}User:{_RESET}    " + l for l in self._wrap_text(user_text, cols - 25)])
-                
+                entry_cache_key = (id(entry), cols)
+                if entry_cache_key in self._conv_cache:
+                    log_lines.extend(self._conv_cache[entry_cache_key])
+                    continue
+
+                block = []
+                ts = entry.timestamp
+                block.extend(self._format_user(ts, user_name, entry.user_input, entry.user_duration, cols))
+
                 for thought in entry.thoughts:
-                    th_ts = f"{_DIM}{thought.timestamp}{_RESET}"
-                    log_lines.extend([f"    {th_ts}  {_ITALIC}{_DIM}Thought:{_RESET} " + l for l in self._wrap_text(thought.text, cols - 27)])
+                    thought_cache_key = (id(thought), cols)
+                    if thought_cache_key not in self._thought_cache:
+                        self._thought_cache[thought_cache_key] = self._format_thought(thought.timestamp, thought.text, cols)
+                    block.extend(self._thought_cache[thought_cache_key])
 
                 for tool in entry.tool_calls:
-                    icon = "⚙" if tool.is_running else "✓"
-                    color = _YELLOW if tool.is_running else _GREEN
-                    elapsed_str = f" ({tool.elapsed:.2f}s)" if tool.elapsed else ""
-                    tool_header = f"    {color}{icon}{_RESET}  "
-                    tool_content = f"{tool.name} → {tool.status}{elapsed_str}"
-                    log_lines.extend([tool_header + l for l in self._wrap_text(tool_content, cols - 15)])
+                    tool_cache_key = (id(tool), cols, tool.status, tool.is_running, tool.elapsed)
+                    if tool_cache_key not in self._tool_cache:
+                        self._tool_cache[tool_cache_key] = self._format_tool(tool.timestamp, tool.name, tool.status, tool.is_running, tool.elapsed, cols)
+                    block.extend(self._tool_cache[tool_cache_key])
 
-                for resp_line in entry.response.splitlines():
-                    log_lines.extend(["  " + l for l in self._wrap_text(resp_line, cols - 5)])
+                block.extend(self._format_agent(ts, entry.agent_name, entry.response, entry.elapsed, cols))
                 
+                # Doubling fix: only show summary if it's different and response is long
                 if (
                     len(entry.response) > self._SUMMARY_CHAR_LIMIT
                     and entry.summary != entry.response
                 ):
-                    log_lines.extend([f"  {_DIM}Summary:{_RESET} " + l for l in self._wrap_text(entry.summary, cols - 15)])
+                    block.extend(self._format_line_group(f"  {ts}  {_BOLD}Summary:{_RESET} ", entry.summary, cols))
                 
-                log_lines.append(
-                    f"  {_DIM}{'─' * min(bar_width, 60)}{_RESET}"
-                )
+                block.append(f"  {_DIM}{'─' * min(bar_width, 60)}{_RESET}")
+                
+                self._conv_cache[entry_cache_key] = block
+                log_lines.extend(block)
 
             # In-progress turn
             if current_user_input or status == LISTENING or current_tool_calls or current_thoughts:
                 if status == LISTENING:
                     elapsed = time.time() - status_start
                     ts = f"({elapsed:.1f}s)"
-                    text = "Listening..."
+                    duration = elapsed
                 else:
                     ts = current_user_ts
-                    text = f"({current_user_duration:.1f}s) {current_user_input}"
+                    duration = current_user_duration
 
-                if text:
-                    log_lines.extend([f"  {_DIM}{ts}{_RESET}  {_DIM}User:{_RESET}    " + l for l in self._wrap_text(text, cols - 25)])
+                log_lines.extend(self._format_user(ts, user_name, current_user_input if status != LISTENING else "Listening...", duration, cols))
                 
                 for thought in current_thoughts:
-                    th_ts = f"{_DIM}{thought.timestamp}{_RESET}"
-                    log_lines.extend([f"    {th_ts}  {_ITALIC}{_DIM}Thought:{_RESET} " + l for l in self._wrap_text(thought.text, cols - 27)])
+                    log_lines.extend(self._format_thought(thought.timestamp, thought.text, cols))
 
                 for tool in current_tool_calls:
-                    icon = "⚙" if tool.is_running else "✓"
-                    color = _YELLOW if tool.is_running else _GREEN
-                    elapsed_str = f" ({tool.elapsed:.2f}s)" if tool.elapsed else ""
-                    tool_header = f"    {color}{icon}{_RESET}  "
-                    tool_content = f"{tool.name} → {tool.status}{elapsed_str}"
-                    log_lines.extend([tool_header + l for l in self._wrap_text(tool_content, cols - 15)])
+                    log_lines.extend(self._format_tool(tool.timestamp, tool.name, tool.status, tool.is_running, tool.elapsed, cols))
 
             max_scroll = max(0, len(log_lines) - max_log_lines)
             effective_scroll = min(scroll_offset, max_scroll)
@@ -428,43 +545,49 @@ class _DashboardRenderer:
             tool_content_lines = []
             if has_tools:
                 for tool in current_tool_calls:
-                    icon = "⚙" if tool.is_running else "✓"
-                    color = _YELLOW if tool.is_running else _GREEN
-                    elapsed_str = f" ({tool.elapsed:.2f}s)" if tool.elapsed else ""
-                    tool_header = f"  {_DIM}{tool.timestamp}{_RESET}  {color}{icon}{_RESET}  "
-                    tool_content = f"{tool.name} → {tool.status}{elapsed_str}"
-                    tool_content_lines.extend([tool_header + l for l in self._wrap_text(tool_content, cols - 25)])
+                    tool_content_lines.extend(self._format_tool(tool.timestamp, tool.name, tool.status, tool.is_running, tool.elapsed, cols, show_ts=True))
             
+            # CAP tool panel height to roughly 1/3 of the screen to prevent overflow
+            max_tool_content_height = max(0, (budget - self._FIXED_BASE) // 3)
+            if len(tool_content_lines) > max_tool_content_height:
+                tool_content_lines = tool_content_lines[-max_tool_content_height:]
+                if max_tool_content_height > 0:
+                    tool_content_lines[0] = f"  {_DIM}... (more tools above){_RESET}"
+
             tool_height = (self._TOOL_FIXED + len(tool_content_lines)) if has_tools else 0
             max_conv_lines = max(0, budget - self._FIXED_BASE - tool_height)
 
             conv_display: list[list[str]] = [] 
             for entry in conversation:
+                # Use a different cache key for default mode because it wraps differently
+                cache_key = (id(entry), cols, "default")
+                if cache_key in self._conv_cache:
+                    conv_display.append(self._conv_cache[cache_key])
+                    continue
+
                 block = []
-                ts = f"{_DIM}{entry.timestamp}{_RESET}"
-                user_text = f"({entry.user_duration:.1f}s) {entry.user_input}"
-                block.extend([f"  {ts}  {_DIM}User:{_RESET}    " + l for l in self._wrap_text(user_text, cols - 25)])
-                
+                ts = entry.timestamp
+                block.extend(self._format_user(ts, user_name, entry.user_input, entry.user_duration, cols))
+
                 resp_text = (
                     entry.summary
                     if len(entry.response) > self._SUMMARY_CHAR_LIMIT
                     and entry.summary != entry.response
                     else entry.response
                 )
-                block.extend([f"  {ts}  {_BOLD}{entry.agent_name}:{_RESET} " + l for l in self._wrap_text(resp_text, cols - 25)])
+                block.extend(self._format_agent(ts, entry.agent_name, resp_text, entry.elapsed, cols))
+                self._conv_cache[cache_key] = block
                 conv_display.append(block)
-
             if current_user_input or status == LISTENING:
-                block = []
                 if status == LISTENING:
                     elapsed = time.time() - status_start
                     ts = f"({elapsed:.1f}s)"
-                    text = "Listening..."
+                    duration = elapsed
                 else:
                     ts = current_user_ts
-                    text = f"({current_user_duration:.1f}s) {current_user_input}"
-                block.extend([f"  {_DIM}{ts}{_RESET}  {_DIM}User:{_RESET}    " + l for l in self._wrap_text(text, cols - 25)])
-                conv_display.append(block)
+                    duration = current_user_duration
+                
+                conv_display.append(self._format_user(ts, user_name, current_user_input if status != LISTENING else "Listening...", duration, cols))
 
             max_scroll = max(0, len(conv_display) - 1)
             effective_scroll = min(scroll_offset, max_scroll)
@@ -477,6 +600,7 @@ class _DashboardRenderer:
                     visible_conv_lines = block + visible_conv_lines
                 else:
                     if not visible_conv_lines:
+                        # If a single block is too large, take as much of it as possible
                         visible_conv_lines = block[-max_conv_lines:]
                     break
             
@@ -495,7 +619,6 @@ class _DashboardRenderer:
                 for line in tool_content_lines:
                     lines.append(line)
                 lines.append(f"  {'─' * bar_width}")
-
         lines.append("")
         lines.append(
             f"  {_DIM}Ctrl+C to stop  │  Ctrl+A to toggle mode  │  ↑/↓ to scroll{_RESET}"
@@ -570,6 +693,21 @@ class AgentDashboard:
         - What: External event shared with the caller for coordinated shutdown.
         - Default: None (a private event is created)
 
+    - ``thinking_spinner``:
+        - Type: list[str]
+        - What: Frame sequence for the 'thinking' status.
+        - Default: Spinner.ZEN
+
+    - ``waiting_spinner``:
+        - Type: list[str]
+        - What: Frame sequence for the 'waiting' status.
+        - Default: Spinner.CIRCLE_FILL
+
+    - ``listening_spinner``:
+        - Type: list[str]
+        - What: Frame sequence for the 'listening' status.
+        - Default: Spinner.EQUALIZER
+
     Notes:
 
     - Call ``start()`` to activate the TUI and ``stop()`` in a finally block
@@ -587,14 +725,19 @@ class AgentDashboard:
         response_style: str = "",
         use_speaker: bool = False,
         speaker_voice: str = "",
+        user_name: str = "User",
         max_history: int = 500,
         stop_event: Optional[threading.Event] = None,
+        thinking_spinner: list[str] = Spinner.ZEN,
+        waiting_spinner: list[str] = Spinner.CIRCLE_FILL,
+        listening_spinner: list[str] = Spinner.EQUALIZER,
     ) -> None:
         self._agent_name = agent_name
         self._wake_words = wake_words
         self._response_style = response_style
         self._use_speaker = use_speaker
         self._speaker_voice = speaker_voice
+        self._user_name = user_name
         self._max_history = max_history
 
         self._status: str = WAITING
@@ -614,7 +757,11 @@ class AgentDashboard:
         self._lock = threading.Lock()
         self._display_thread: Optional[threading.Thread] = None
         self._input_thread: Optional[threading.Thread] = None
-        self._renderer = _DashboardRenderer()
+        self._renderer = _DashboardRenderer(
+            thinking_spinner=thinking_spinner,
+            waiting_spinner=waiting_spinner,
+            listening_spinner=listening_spinner,
+        )
         self._started: bool = False
 
     # ── Public event API ───────────────────────────────────────────────────
@@ -626,6 +773,7 @@ class AgentDashboard:
         response_style: str = "",
         use_speaker: bool = False,
         speaker_voice: str = "",
+        user_name: str = "User",
     ) -> None:
         """
         Usage:
@@ -656,6 +804,10 @@ class AgentDashboard:
         - ``speaker_voice``:
             - Type: str
             - Default: ""
+
+        - ``user_name``:
+            - Type: str
+            - Default: "User"
         """
         with self._lock:
             self._agent_name = name
@@ -663,6 +815,7 @@ class AgentDashboard:
             self._response_style = response_style
             self._use_speaker = use_speaker
             self._speaker_voice = speaker_voice
+            self._user_name = user_name
 
     def on_status_change(self, status: str) -> None:
         """
@@ -803,12 +956,27 @@ class AgentDashboard:
         """
         ts = time.strftime("%H:%M:%S")
         with self._lock:
+            # Deduplicate thoughts that are part of the response
+            # to avoid visual doubling in the history.
+            unique_thoughts = []
+            resp_text = response.response.strip()
+            for t in self._current_thoughts:
+                t_text = t.text.strip()
+                if not t_text:
+                    continue
+                # If the thought is a subset of the final response, it's likely 
+                # a streaming artifact or an intermediate update we don't need
+                # to show once we have the full response.
+                if t_text in resp_text:
+                    continue
+                unique_thoughts.append(t)
+
             self._conversation.append(
                 ConversationEntry(
                     user_input=self._current_user_input,
                     agent_name=agent_name,
                     tool_calls=list(self._current_tool_calls),
-                    thoughts=list(self._current_thoughts),
+                    thoughts=unique_thoughts,
                     response=response.response,
                     summary=response.summary,
                     timestamp=ts,
@@ -894,6 +1062,7 @@ class AgentDashboard:
                 response_style = self._response_style
                 use_speaker = self._use_speaker
                 speaker_voice = self._speaker_voice
+                user_name = self._user_name
                 status = self._status
                 status_start = self._status_start
                 conversation = list(self._conversation)
@@ -911,6 +1080,7 @@ class AgentDashboard:
                 response_style=response_style,
                 use_speaker=use_speaker,
                 speaker_voice=speaker_voice,
+                user_name=user_name,
                 status=status,
                 status_start=status_start,
                 conversation=conversation,

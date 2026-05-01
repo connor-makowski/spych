@@ -43,6 +43,9 @@ class Speaker:
         self.interrupted = threading.Event()
         self.speaking_complete = threading.Event()
         self.speaking_complete.set()
+        self.__playback_started__ = False
+        self.on_playback_start = None
+        self.on_playback_complete = None
 
         self.backend = get_backend(
             speaker=self, voice=voice, backend_name=backend
@@ -50,6 +53,11 @@ class Speaker:
 
     def play_pcm_array(self, audio: np.ndarray, sample_rate: int) -> None:
         """Helper to play a numpy PCM array via pygame."""
+        if not self.__playback_started__:
+            self.__playback_started__ = True
+            if self.on_playback_start:
+                self.on_playback_start()
+
         pcm = (audio.flatten() * 32767).astype(np.int16)
         buf = io.BytesIO()
         with wave.open(buf, "wb") as wf:
@@ -94,9 +102,12 @@ class Speaker:
                 pass
             finally:
                 self.speaking_complete.set()
+                if self.on_playback_complete:
+                    self.on_playback_complete()
 
         self.speaking_complete.clear()
         self.interrupted.clear()
+        self.__playback_started__ = False
         threading.Thread(target=run_speak, daemon=True).start()
 
     def wait_for_speak(self) -> None:
