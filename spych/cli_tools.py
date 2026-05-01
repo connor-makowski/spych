@@ -431,6 +431,39 @@ class CliSpinner:
             frames = self._frames
 
 
+class NullSpinner:
+    """
+    Usage:
+
+    - Drop-in replacement for ``CliSpinner`` that suppresses all terminal
+      output. Used automatically by ``BaseResponder`` when an
+      ``AgentDashboard`` is active, so the spinner never corrupts the
+      alternate screen buffer.
+
+    Notes:
+
+    - All methods are no-ops. ``stop()`` returns ``False`` to match the
+      ``CliSpinner.stop()`` return value contract.
+    """
+
+    def start(
+        self, message: str | None = None, spinner: list[str] | None = None
+    ) -> None:
+        pass
+
+    def start_with_verbs(
+        self,
+        name: str,
+        verbs: list[str] | None = None,
+        interval: float = 10.0,
+        spinner: list[str] | None = None,
+    ) -> None:
+        pass
+
+    def stop(self, final_message: str | None = None) -> bool:
+        return False
+
+
 class CliPrinter:
     @staticmethod
     def divider(

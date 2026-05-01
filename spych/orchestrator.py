@@ -2,9 +2,11 @@ from __future__ import annotations
 
 from typing import Optional, TypedDict
 
-from spych.cli_tools import theme, CliPrinter, CliSpinner
+from spych.cli_tools import theme, CliPrinter, CliSpinner, NullSpinner
 from spych.wake import SpychWake
 from spych.spinners import Spinner
+
+from spych.dashboard import AgentDashboard
 
 
 class OrchestratorEntry(TypedDict, total=False):
@@ -63,6 +65,10 @@ class SpychOrchestrator:
             raise ValueError("SpychOrchestrator requires at least one entry.")
 
         self.entries = self.build_entries(entries)
+        # Inherit the dashboard from the first responder if one was injected.
+        self._dashboard: Optional[AgentDashboard] = getattr(
+            self.entries[0]["responder"], "dashboard", None
+        ) if self.entries else None
         self.spinner = self.build_spinner()
         self.wake_word_map, self.terminate_words = self.build_wake_word_map()
         self.spych_wake = self.build_spych_wake(spych_wake_kwargs)
@@ -125,6 +131,8 @@ class SpychOrchestrator:
             - Type: CliSpinner
             - What: The shared spinner instance assigned to all responders
         """
+        if self._dashboard is not None:
+            return NullSpinner()
         spinner = CliSpinner()
         for entry in self.entries:
             entry["responder"].spinner = spinner
@@ -164,17 +172,31 @@ class SpychOrchestrator:
                 if w not in terminate_words:
                     terminate_words.append(w)
 
-        def make_tracked_call(resp: "BaseResponder"):
+        def make_tracked_call(resp: "BaseResponder", entry_wake_words: list[str]):
             original = resp.__call__
 
             def tracked():
                 self.last_responder = resp
+                if self._dashboard is not None:
+                    self._dashboard.set_agent(
+                        name=resp.name,
+                        wake_words=entry_wake_words,
+                        response_style=getattr(resp, "response_style", ""),
+                        use_speaker=getattr(resp, "use_speaker", False),
+                        speaker_voice=getattr(resp, "speaker_voice", ""),
+                    )
                 original()
 
             return tracked
 
+        # Build a per-entry wake-word map to preserve each entry's wake_words for set_agent.
+        entry_wake_words_by_resp: dict[str, list[str]] = {}
+        for entry in self.entries:
+            for word in entry["wake_words"]:
+                entry_wake_words_by_resp[word.lower()] = entry["wake_words"]
+
         tracked_wake_map: dict[str, callable] = {
-            word: make_tracked_call(resp)
+            word: make_tracked_call(resp, entry_wake_words_by_resp.get(word, []))
             for word, resp in wake_word_map.items()
         }
 
@@ -242,7 +264,7 @@ class SpychOrchestrator:
         for entry in self.entries:
             if not entry["responder"].healthcheck():
                 CliPrinter.info(
-                    f"{entry["responder"].name} healthcheck failed.",
+                    f"{entry['responder'].name} healthcheck failed.",
                     color=theme.error,
                 )
                 return
@@ -253,7 +275,10 @@ class SpychOrchestrator:
                 responder=entry["responder"].__class__.__name__,
             )
 
-        CliPrinter.divider("─", 60, theme.accent)
+        if self._dashboard is not None:
+            self._dashboard.start()
+        else:
+            CliPrinter.divider("─", 60, theme.accent)
         self.spinner.start("Waiting for wake word", spinner=Spinner.BRAILLE)
 
         try:

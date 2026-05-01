@@ -424,7 +424,7 @@ PERSONALITIES: dict[str, dict] = {
         "response_style": "friendly",
     },
     "jarvis": {
-        "name": "J.A.R.V.I.S.",
+        "name": "JARVIS",
         "wake_words": ["jarvis", "jarves", "jargus", "jervis"],
         "speaker_voice": "bm_george",
         "use_speaker": True,

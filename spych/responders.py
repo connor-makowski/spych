@@ -1,11 +1,14 @@
+from __future__ import annotations
+
 from spych.utils import Notify, get_response_style
-from spych.cli_tools import CliSpinner, CliPrinter, theme
+from spych.cli_tools import CliSpinner, NullSpinner, CliPrinter, theme
 from spych.spinners import Spinner
 from spych.speaker import Speaker
 from dataclasses import dataclass
 from typing import Optional
 import json
 import time
+from spych.dashboard import AgentDashboard
 
 
 @dataclass
@@ -28,6 +31,7 @@ class BaseResponder(Notify):
         speaker_backend: str = "",
         follow_up_listen_duration: int | float = 0,
         inactivity_timeout: Optional[float] = 4.0,
+        dashboard: Optional[AgentDashboard] = None,
     ) -> None:
         """
         Usage:
@@ -114,6 +118,12 @@ class BaseResponder(Notify):
               recording (duration 0).
             - Default: 4.0 (wait for 4 seconds of inactivity)
 
+        - `dashboard`:
+            - Type: AgentDashboard | None
+            - What: When provided, the responder routes all lifecycle events to the
+              dashboard instead of printing to stdout. The spinner is suppressed.
+            - Default: None
+
 
         Notes:
 
@@ -129,10 +139,15 @@ class BaseResponder(Notify):
         self.spych_object = spych_object
         self.listen_duration = listen_duration
         self.name = name if name else self.__class__.__name__
-        # Accept an injected shared spinner or create a private one.
-        self.spinner: CliSpinner = (
-            spinner if spinner is not None else CliSpinner()
-        )
+        self.dashboard: Optional["AgentDashboard"] = dashboard
+        # Use NullSpinner when a dashboard owns the screen; otherwise use a real
+        # spinner (shared if injected by the orchestrator, private otherwise).
+        _spinner: CliSpinner
+        if dashboard is not None:
+            _spinner = NullSpinner()
+        else:
+            _spinner = spinner if spinner is not None else CliSpinner()
+        self.spinner: CliSpinner = _spinner
         self._start_time: float = 0.0
 
         self._current_user_input: str = ""
@@ -168,6 +183,9 @@ class BaseResponder(Notify):
             - What: Whether to print a divider line before restarting the spinner
             - Default: True
         """
+        if self.dashboard is not None:
+            self.dashboard.on_status_change("waiting")
+            return
         if divider:
             CliPrinter.divider()
         self.spinner.start("Waiting for wake word", spinner=Spinner.BRAILLE)
@@ -208,6 +226,9 @@ class BaseResponder(Notify):
             - What: Elapsed time in seconds since the tool started (if available)
             - Default: None
         """
+        if self.dashboard is not None:
+            self.dashboard.on_tool_event(tool_name, status, is_running=is_running, elapsed=elapsed)
+            return
         was_running = self.spinner.stop()
         CliPrinter.tool_event(
             tool_name, status, is_running=is_running, elapsed=elapsed
@@ -236,6 +257,9 @@ class BaseResponder(Notify):
             - What: ANSI escape code for the info icon. Defaults to the theme accent.
             - Default: None
         """
+        if self.dashboard is not None:
+            self.dashboard.on_thought(message)
+            return
         was_running = self.spinner.stop()
         CliPrinter.info(message, color)
         if was_running:
@@ -259,6 +283,9 @@ class BaseResponder(Notify):
             - Type: str
             - What: The response message to display
         """
+        if self.dashboard is not None:
+            self.dashboard.on_thought(message)
+            return
         was_running = self.spinner.stop()
         CliPrinter.print_response(name, message)
         if was_running:
@@ -449,6 +476,9 @@ class BaseResponder(Notify):
         - This method is called automatically at the start of each listen cycle.
         - It updates the spinner label to show the responder name and listening duration.
         """
+        if self.dashboard is not None:
+            self.dashboard.on_status_change("listening")
+            return
         if duration is not None:
             listen_duration = duration
         else:
@@ -481,6 +511,11 @@ class BaseResponder(Notify):
         - The start time is recorded for timing purposes.
         """
         self._current_user_input = user_input
+        if self.dashboard is not None:
+            self.dashboard.on_user_input(user_input)
+            self.dashboard.on_status_change("thinking")
+            self._start_time = time.time()
+            return
         CliPrinter.label("User:", user_input)
         self._start_time = time.time()
         self.spinner.start_with_verbs(
@@ -505,6 +540,11 @@ class BaseResponder(Notify):
         - It stops the spinner, prints the response, and shows success/failure status with elapsed time.
         """
         elapsed = time.time() - self._start_time
+        if self.dashboard is not None:
+            if response.response:
+                self.dashboard.on_response(response, self.name, elapsed)
+            self.dashboard.on_status_change("waiting")
+            return
         self.spinner.stop()
         if response.response:
             CliPrinter.print_response(self.name, response.response)
@@ -528,6 +568,9 @@ class BaseResponder(Notify):
         - This method is called when the responder is terminated.
         - It stops the spinner and prints an informative message about the termination.
         """
+        if self.dashboard is not None:
+            self.dashboard.on_status_change("terminated")
+            return
         self.spinner.stop()
         CliPrinter.info(f"{self.name} has been terminated.")
 
@@ -542,6 +585,8 @@ class BaseResponder(Notify):
         - This method is called automatically at the end of each listen cycle.
         - It stops the spinner to indicate that listening has finished.
         """
+        if self.dashboard is not None:
+            return
         self.spinner.start(spinner=Spinner.BRAILLE)
         self.spinner.stop()
 
@@ -591,7 +636,8 @@ class BaseResponder(Notify):
                 self.on_after_respond(user_input, response)
             except Exception as exc:
                 self.spinner.stop()
-                print(f"  {theme.error}✗  Error: {exc}{theme.reset}\n")
+                if self.dashboard is None:
+                    print(f"  {theme.error}✗  Error: {exc}{theme.reset}\n")
                 self.wait_for_next_wake_word(divider=False)
                 return None
 
@@ -604,11 +650,14 @@ class BaseResponder(Notify):
                     else response.summary
                 )
                 self.speaker.speak_async(text_to_speak)
+                if self.dashboard is not None:
+                    self.dashboard.on_status_change("speaking")
 
             if response.requires_user_feedback:
                 if self.speaker:
                     self.speaker.wait_for_speak()
-                CliPrinter.divider()
+                if self.dashboard is None:
+                    CliPrinter.divider()
                 is_follow_up = True
             else:
                 is_follow_up = False
@@ -632,6 +681,8 @@ class BaseResponder(Notify):
             - What: Additional keyword arguments to display in the ready message
 
         """
+        if self.dashboard is not None:
+            return
         CliPrinter.header(self.name)
         CliPrinter.kwarg_inputs(**kwargs)
         CliPrinter.empty_line()

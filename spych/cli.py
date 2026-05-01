@@ -123,6 +123,15 @@ def _add_shared_args(parser: argparse.ArgumentParser) -> None:
         metavar="BACKEND",
         help="Explicit TTS backend to use (default: priority Chatterbox then Kokoro)",
     )
+    parser.add_argument(
+        "--verbose",
+        action="store_true",
+        default=False,
+        help=(
+            "Use verbose scroll output (spinner + full log) instead of the "
+            "TUI dashboard (default: false)"
+        ),
+    )
 
 
 def _add_agent_args(parser: argparse.ArgumentParser) -> None:
@@ -609,6 +618,33 @@ def main():
     # ------------------------------------------------------------------ #
     # Single-agent dispatch                                                #
     # ------------------------------------------------------------------ #
+
+    # Default wake words per agent — mirrors the factory function defaults.
+    _DEFAULT_WAKE_WORDS: dict[str, list[str]] = {
+        "ollama": ["llama", "ollama", "lama"],
+        "claude_code_cli": ["claude", "clod", "cloud", "clawed"],
+        "claude_code_sdk": ["claude", "clod", "cloud", "clawed"],
+        "codex_cli": ["codex"],
+        "gemini_cli": ["gemini"],
+        "opencode_cli": ["opencode", "open code"],
+    }
+
+    def _start_dashboard(agent_name: str, kwargs: dict):
+        """Create a dashboard and inject it into kwargs; start is deferred until healthchecks pass."""
+        from spych.dashboard import AgentDashboard
+
+        wake_words = kwargs.get("wake_words", _DEFAULT_WAKE_WORDS.get(args.agent, []))
+        dashboard = AgentDashboard(
+            agent_name=kwargs.get("name", agent_name),
+            wake_words=wake_words,
+            response_style=kwargs.get("response_style", ""),
+            use_speaker=kwargs.get("use_speaker", True),
+            speaker_voice=kwargs.get("speaker_voice", "af_heart"),
+        )
+        print("  ◌ Running healthchecks...")
+        kwargs["dashboard"] = dashboard
+        return dashboard
+
     if args.agent == "ollama":
         from spych.agents import ollama
 
@@ -616,29 +652,57 @@ def main():
         kwargs["model"] = args.model
         kwargs["history_length"] = args.history_length
         kwargs["host"] = args.host
-        ollama(**kwargs)
+        dashboard = _start_dashboard("Ollama", kwargs) if not args.verbose else None
+        try:
+            ollama(**kwargs)
+        finally:
+            if dashboard is not None:
+                dashboard.stop()
 
     elif args.agent == "claude_code_cli":
         from spych.agents import claude_code_cli
 
-        claude_code_cli(**_build_agent_kwargs(args))
+        kwargs = _build_agent_kwargs(args)
+        dashboard = _start_dashboard("Claude", kwargs) if not args.verbose else None
+        try:
+            claude_code_cli(**kwargs)
+        finally:
+            if dashboard is not None:
+                dashboard.stop()
 
     elif args.agent == "claude_code_sdk":
         from spych.agents import claude_code_sdk
 
         kwargs = _build_agent_kwargs(args)
         kwargs["setting_sources"] = args.setting_sources
-        claude_code_sdk(**kwargs)
+        dashboard = _start_dashboard("Claude", kwargs) if not args.verbose else None
+        try:
+            claude_code_sdk(**kwargs)
+        finally:
+            if dashboard is not None:
+                dashboard.stop()
 
     elif args.agent == "codex_cli":
         from spych.agents import codex_cli
 
-        codex_cli(**_build_agent_kwargs(args))
+        kwargs = _build_agent_kwargs(args)
+        dashboard = _start_dashboard("Codex", kwargs) if not args.verbose else None
+        try:
+            codex_cli(**kwargs)
+        finally:
+            if dashboard is not None:
+                dashboard.stop()
 
     elif args.agent == "gemini_cli":
         from spych.agents import gemini_cli
 
-        gemini_cli(**_build_agent_kwargs(args))
+        kwargs = _build_agent_kwargs(args)
+        dashboard = _start_dashboard("Gemini", kwargs) if not args.verbose else None
+        try:
+            gemini_cli(**kwargs)
+        finally:
+            if dashboard is not None:
+                dashboard.stop()
 
     elif args.agent == "opencode_cli":
         from spych.agents import opencode_cli
@@ -646,7 +710,12 @@ def main():
         kwargs = _build_agent_kwargs(args)
         if args.model is not None:
             kwargs["model"] = args.model
-        opencode_cli(**kwargs)
+        dashboard = _start_dashboard("OpenCode", kwargs) if not args.verbose else None
+        try:
+            opencode_cli(**kwargs)
+        finally:
+            if dashboard is not None:
+                dashboard.stop()
 
     elif args.agent == "live":
         from spych.live import SpychLive
@@ -689,6 +758,27 @@ def main():
         # A single Spych transcription object shared by all responders.
         spych_object = Spych(whisper_model="base.en")
 
+        # Build dashboard before responders so it can be injected.
+        multi_dashboard = None
+        if not args.verbose:
+            from spych.dashboard import AgentDashboard
+
+            first_agent = _AGENT_ALIASES.get(args.agents[0], args.agents[0])
+            _multi_name_map = {
+                "claude_code_cli": "Claude",
+                "claude_code_sdk": "Claude",
+                "codex_cli": "Codex",
+                "gemini_cli": "Gemini",
+                "opencode_cli": "OpenCode",
+                "ollama": "Ollama",
+            }
+            multi_dashboard = AgentDashboard(
+                agent_name=_multi_name_map.get(first_agent, first_agent),
+                wake_words=_DEFAULT_WAKE_WORDS.get(first_agent, []),
+                use_speaker=args.use_speaker,
+            )
+            print("  ◌ Running healthchecks...")
+
         entries = []
 
         for agent_name in [_AGENT_ALIASES.get(a, a) for a in args.agents]:
@@ -706,6 +796,7 @@ def main():
                             speaker_backend=args.speaker_backend,
                             use_speaker=args.use_speaker,
                             show_tool_events=args.show_tool_events,
+                            dashboard=multi_dashboard,
                         ),
                         "wake_words": ["claude", "clod", "cloud", "clawed"],
                         "terminate_words": args.terminate_words,
@@ -727,6 +818,7 @@ def main():
                             use_speaker=args.use_speaker,
                             setting_sources=args.setting_sources,
                             show_tool_events=args.show_tool_events,
+                            dashboard=multi_dashboard,
                         ),
                         "wake_words": ["claude", "clod", "cloud", "clawed"],
                         "terminate_words": args.terminate_words,
@@ -747,6 +839,7 @@ def main():
                             speaker_backend=args.speaker_backend,
                             use_speaker=args.use_speaker,
                             show_tool_events=args.show_tool_events,
+                            dashboard=multi_dashboard,
                         ),
                         "wake_words": ["codex"],
                         "terminate_words": args.terminate_words,
@@ -767,6 +860,7 @@ def main():
                             speaker_backend=args.speaker_backend,
                             use_speaker=args.use_speaker,
                             show_tool_events=args.show_tool_events,
+                            dashboard=multi_dashboard,
                         ),
                         "wake_words": ["gemini"],
                         "terminate_words": args.terminate_words,
@@ -788,6 +882,7 @@ def main():
                             use_speaker=args.use_speaker,
                             show_tool_events=args.show_tool_events,
                             model=args.opencode_model,
+                            dashboard=multi_dashboard,
                         ),
                         "wake_words": ["opencode", "open code"],
                         "terminate_words": args.terminate_words,
@@ -809,13 +904,18 @@ def main():
                             inactivity_timeout=args.inactivity_timeout,
                             speaker_backend=args.speaker_backend,
                             use_speaker=args.use_speaker,
+                            dashboard=multi_dashboard,
                         ),
                         "wake_words": ["llama", "ollama", "lama"],
                         "terminate_words": args.terminate_words,
                     }
                 )
 
-        SpychOrchestrator(entries=entries).start()
+        try:
+            SpychOrchestrator(entries=entries).start()
+        finally:
+            if multi_dashboard is not None:
+                multi_dashboard.stop()
 
     else:
         parser.print_help()

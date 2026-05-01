@@ -144,7 +144,7 @@ Personalities are named presets that bundle a wake word list, voice, display nam
 ```bash
 spych claude --personality jarvis
 # equivalent to:
-spych claude --name "J.A.R.V.I.S." --wake-words jarvis jarves \
+spych claude --name "JARVIS" --wake-words jarvis jarves \
              --speaker-voice bm_george --use-speaker true \
              --response-style jarvis
 ```
@@ -180,7 +180,7 @@ The `--response-style` flag shapes how the agent formats its spoken output.
 | `robot` | Monotone, literal |
 | `caveman` | Very simple, direct |
 | `yoda` | Inverted sentence structure |
-| `jarvis` | J.A.R.V.I.S. from Iron Man — precise, dry wit, addresses user as "sir" |
+| `jarvis` | JARVIS from Iron Man — precise, dry wit, addresses user as "sir" |
 
 You can also pass any custom instruction string directly: `--response-style "Reply in exactly one sentence."`.
 
