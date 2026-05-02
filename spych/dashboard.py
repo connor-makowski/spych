@@ -135,10 +135,18 @@ class ThoughtEntry:
     - ``timestamp``:
         - Type: str
         - What: HH:MM:SS when the thought was recorded.
+
+    Optional:
+
+    - ``is_response``:
+        - Type: bool
+        - What: Whether this thought should be presented as a normal agent response.
+        - Default: False
     """
 
     text: str
     timestamp: str
+    is_response: bool = False
 
 
 @dataclass
@@ -384,10 +392,14 @@ class _DashboardRenderer:
         prefix = f"  {ts}  {_BOLD}{name}:{_RESET} "
         return self._format_line_group(prefix, text, cols, duration=duration)
 
-    def _format_thought(self, ts: str, text: str, cols: int, agent_name: str = "") -> list[str]:
-        name_str = f"{agent_name} " if agent_name else ""
-        prefix = f"    {ts}  {_ITALIC}{_DIM}{name_str}Thought:{_RESET} "
-        return self._format_line_group(prefix, text, cols)
+    def _format_thought(self, ts: str, text: str, cols: int, agent_name: str = "", is_response: bool = False) -> list[str]:
+        if is_response:
+            prefix = f"  {ts}  {_BOLD}{agent_name}:{_RESET} "
+            return self._format_line_group(prefix, text, cols)
+        else:
+            name_str = f"{agent_name} " if agent_name else ""
+            prefix = f"    {ts}  {_ITALIC}{_DIM}{name_str}Thought:{_RESET} "
+            return self._format_line_group(prefix, text, cols)
 
     def _format_tool(self, ts: str, name: str, status: str, is_running: bool, elapsed: Optional[float], cols: int, show_ts: bool = False, detail: Optional[str] = None) -> list[str]:
         icon = "⚙" if is_running else "✓"
@@ -497,9 +509,15 @@ class _DashboardRenderer:
                 block.extend(self._format_user(ts, user_name, entry.user_input, entry.user_duration, cols))
 
                 for thought in entry.thoughts:
-                    thought_cache_key = (id(thought), cols)
+                    thought_cache_key = (id(thought), cols, thought.is_response)
                     if thought_cache_key not in self._thought_cache:
-                        self._thought_cache[thought_cache_key] = self._format_thought(thought.timestamp, thought.text, cols, agent_name=entry.agent_name)
+                        self._thought_cache[thought_cache_key] = self._format_thought(
+                            thought.timestamp,
+                            thought.text,
+                            cols,
+                            agent_name=entry.agent_name,
+                            is_response=thought.is_response,
+                        )
                     block.extend(self._thought_cache[thought_cache_key])
 
                 for tool in entry.tool_calls:
@@ -535,7 +553,7 @@ class _DashboardRenderer:
                 log_lines.extend(self._format_user(ts, user_name, current_user_input if status != LISTENING else "Listening...", duration, cols))
                 
                 for thought in current_thoughts:
-                    log_lines.extend(self._format_thought(thought.timestamp, thought.text, cols))
+                    log_lines.extend(self._format_thought(thought.timestamp, thought.text, cols, agent_name=agent_name, is_response=thought.is_response))
 
                 for tool in current_tool_calls:
                     log_lines.extend(self._format_tool(tool.timestamp, tool.name, tool.status, tool.is_running, tool.elapsed, cols, detail=tool.detail))
@@ -582,6 +600,11 @@ class _DashboardRenderer:
                 ts = entry.timestamp
                 block.extend(self._format_user(ts, user_name, entry.user_input, entry.user_duration, cols))
 
+                # Include intermediate responses (thoughts with is_response=True)
+                for thought in entry.thoughts:
+                    if thought.is_response:
+                        block.extend(self._format_thought(thought.timestamp, thought.text, cols, agent_name=entry.agent_name, is_response=True))
+
                 resp_text = (
                     entry.summary
                     if len(entry.response) > self._SUMMARY_CHAR_LIMIT
@@ -604,7 +627,7 @@ class _DashboardRenderer:
                     conv_display.append(self._format_user(ts, user_name, current_user_input if status != LISTENING else "Listening...", duration, cols))
                 
                 for thought in current_thoughts:
-                    conv_display.append(self._format_thought(thought.timestamp, thought.text, cols, agent_name=agent_name))
+                    conv_display.append(self._format_thought(thought.timestamp, thought.text, cols, agent_name=agent_name, is_response=thought.is_response))
 
             max_scroll = max(0, len(conv_display) - 1)
             effective_scroll = min(scroll_offset, max_scroll)
@@ -731,6 +754,7 @@ class AgentDashboard:
     """
 
     REFRESH_INTERVAL: float = 0.15
+    _THOUGHT_TOOLS = {"update_topic", "change_topic", "set_topic", "strategic_intent"}
 
     def __init__(
         self,
@@ -858,7 +882,7 @@ class AgentDashboard:
                 self._status = status
                 self._status_start = time.time()
 
-    def on_user_input(self, text: str) -> None:
+    def on_user_input(self, text: str, is_continuation: bool = False) -> None:
         """
         Usage:
 
@@ -869,8 +893,19 @@ class AgentDashboard:
         - ``text``:
             - Type: str
             - What: Transcribed user input.
+
+        Optional:
+
+        - ``is_continuation``:
+            - Type: bool
+            - What: Whether this turn is a continuation of a previous turn
+              (e.g. after an intermediate response).
+            - Default: False
         """
         with self._lock:
+            if is_continuation and text == self._current_user_input:
+                return
+
             self._current_user_input = text
             self._current_user_ts = time.strftime("%H:%M:%S")
             self._current_user_duration = time.time() - self._status_start
@@ -878,7 +913,7 @@ class AgentDashboard:
             self._current_tool_calls = []
             self._current_thoughts = []
 
-    def on_thought(self, text: str) -> None:
+    def on_thought(self, text: str, is_response: bool = False) -> None:
         """
         Usage:
 
@@ -889,10 +924,17 @@ class AgentDashboard:
         - ``text``:
             - Type: str
             - What: The content of the thought.
+
+        Optional:
+
+        - ``is_response``:
+            - Type: bool
+            - What: Whether this thought should be presented as a normal agent response.
+            - Default: False
         """
         ts = time.strftime("%H:%M:%S")
         with self._lock:
-            self._current_thoughts.append(ThoughtEntry(text=text, timestamp=ts))
+            self._current_thoughts.append(ThoughtEntry(text=text, timestamp=ts, is_response=is_response))
 
     def on_tool_event(
         self,
@@ -937,6 +979,11 @@ class AgentDashboard:
               is passed.
             - Default: None
         """
+        if name in self._THOUGHT_TOOLS:
+            if detail and status == "running":
+                self.on_thought(detail, is_response=False)
+            return
+
         ts = time.strftime("%H:%M:%S")
         with self._lock:
             for i in range(len(self._current_tool_calls) - 1, -1, -1):
@@ -988,6 +1035,10 @@ class AgentDashboard:
             - Type: float
             - What: Seconds from user input to completed response.
         """
+        if response.is_intermediate_response:
+            self.on_thought(response.response, is_response=True)
+            return
+
         ts = time.strftime("%H:%M:%S")
         with self._lock:
             # Deduplicate thoughts that are part of the response
@@ -1001,7 +1052,8 @@ class AgentDashboard:
                 # If the thought is a subset of the final response, it's likely 
                 # a streaming artifact or an intermediate update we don't need
                 # to show once we have the full response.
-                if t_text in resp_text:
+                # EXCEPT if it was explicitly flagged as a response (intermediate response).
+                if not t.is_response and t_text in resp_text:
                     continue
                 unique_thoughts.append(t)
 

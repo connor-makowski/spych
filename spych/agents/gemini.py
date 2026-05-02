@@ -344,7 +344,7 @@ class LocalGeminiCLIResponder(BaseResponder):
                 if self.show_tool_events:
                     # Extract a short human-readable detail from the parameters dict.
                     # Prefer well-known keys; fall back to the first string value.
-                    _PREF_KEYS = ("path", "file_path", "command", "query", "url", "pattern")
+                    _PREF_KEYS = ("path", "file_path", "command", "query", "url", "pattern", "summary", "strategic_intent", "title")
                     detail = next((str(params[k]) for k in _PREF_KEYS if k in params), None)
                     if not detail:
                         detail = next((str(v) for v in params.values() if isinstance(v, str) and v), None)

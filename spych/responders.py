@@ -346,7 +346,7 @@ class BaseResponder(Notify):
             - What: The response message to display
         """
         if self.dashboard is not None:
-            self.dashboard.on_thought(message)
+            self.dashboard.on_thought(message, is_response=True)
             return
         was_running = self.spinner.stop()
         CliPrinter.print_response(name, message)
@@ -356,44 +356,6 @@ class BaseResponder(Notify):
     # ------------------------------------------------------------------ #
     #  Speaker integration                                                #
     # ------------------------------------------------------------------ #
-
-    def _show_intermediate_status(self, response_text: str, summary_text: str) -> None:
-        """
-        Usage:
-
-        - Displays a brief intermediate status message to the user without going
-          through the full `on_response()` lifecycle (no elapsed time, no status
-          line). Called when the LLM returns `is_intermediate_response=true` to
-          acknowledge a complex request before the continuation call begins.
-
-        Requires:
-
-        - `response_text`:
-            - Type: str
-            - What: The status message to display in the terminal
-
-        - `summary_text`:
-            - Type: str
-            - What: The spoken summary (used when response_text exceeds the
-              character limit)
-        """
-        if self.dashboard is not None:
-            self.dashboard.on_thought(response_text)
-            self.dashboard.on_status_change("thinking")
-        else:
-            self.spinner.stop()
-            # Ensure the message has a minimal default if empty to show attribution
-            display_text = response_text if response_text.strip() else "Working on it..."
-            CliPrinter.print_response(self.name, display_text)
-            self.spinner.start_with_verbs(self.name, interval=15, spinner=Spinner.ZEN)
-
-        if self.speaker and response_text:
-            text_to_speak = (
-                response_text
-                if len(response_text) <= self.summary_character_limit
-                else summary_text
-            )
-            self.speaker.speak_async(text_to_speak)
 
     def format_prompt(self, prompt: str) -> str:
         """
@@ -638,7 +600,7 @@ class BaseResponder(Notify):
             spinner=Spinner.EQUALIZER,
         )
 
-    def on_user_input(self, user_input: str) -> None:
+    def on_user_input(self, user_input: str, is_continuation: bool = False) -> None:
         """
         Usage:
 
@@ -650,6 +612,13 @@ class BaseResponder(Notify):
             - Type: str
             - What: The transcribed text from the user
 
+        Optional:
+
+        - `is_continuation`:
+            - Type: bool
+            - What: Whether this is a continuation turn
+            - Default: False
+
         Notes:
 
         - This method is called automatically when user input is received.
@@ -658,11 +627,14 @@ class BaseResponder(Notify):
         """
         self._current_user_input = user_input
         if self.dashboard is not None:
-            self.dashboard.on_user_input(user_input)
+            self.dashboard.on_user_input(user_input, is_continuation=is_continuation)
             self.dashboard.on_status_change("thinking")
             self._start_time = time.time()
             return
-        CliPrinter.label(f"{self.user_name}:", user_input)
+
+        if not is_continuation:
+            CliPrinter.label(f"{self.user_name}:", user_input)
+
         self._start_time = time.time()
         self.spinner.start_with_verbs(
             self.name, interval=15, spinner=Spinner.ZEN
@@ -690,10 +662,9 @@ class BaseResponder(Notify):
             if response.response:
                 self.dashboard.on_response(response, self.name, elapsed)
             
-            # Only transition to waiting if we aren't about to speak
-            # and no follow-up is needed.
-            # If we are about to speak, the speaker callbacks will handle transitions.
-            if not response.requires_user_feedback:
+            # Only transition to waiting if we aren't about to speak,
+            # no follow-up is needed, and this isn't an intermediate response.
+            if not response.requires_user_feedback and not response.is_intermediate_response:
                 about_to_speak = self.speaker and response.response
                 if not about_to_speak:
                     self.dashboard.on_status_change("waiting")
@@ -782,25 +753,40 @@ class BaseResponder(Notify):
                 self.wait_for_next_wake_word(divider=False)
                 return None
 
-            self.on_user_input(user_input)
-
             current_query = user_input
             is_continuation_turn = False
 
             try:
                 while True:
+                    self.on_user_input(current_query, is_continuation=is_continuation_turn)
                     self.on_before_respond(current_query)
                     response = self.respond(current_query, is_continuation=is_continuation_turn)
                     self.on_after_respond(current_query, response)
 
-                    # If the LLM acknowledged but needs to continue: speak async while
-                    # the actual work runs, then loop back for the next continuation.
+                    # Unified response handling for both intermediate and final acknowledgments.
+                    # We only print/speak if there is actual response text.
+                    if response.response:
+                        if self.speaker:
+                            self.speaker.wait_for_speak()
+
+                        self.on_response(response)
+
+                        if self.speaker:
+                            text_to_speak = (
+                                response.response
+                                if len(response.response) <= self.summary_character_limit
+                                else response.summary
+                            )
+                            self.speaker.speak_async(text_to_speak)
+                    elif not response.is_intermediate_response:
+                        # For final empty responses, still call on_response to show
+                        # status (e.g. failure icon) or commit the dashboard turn.
+                        self.on_response(response)
+
                     if (
                         self.allow_intermediate_responses
                         and response.is_intermediate_response
-                        and response.response.strip()
                     ):
-                        self._show_intermediate_status(response.response, response.summary)
                         is_continuation_turn = True
                         self._continuation_in_progress = True
                         continue
@@ -818,19 +804,6 @@ class BaseResponder(Notify):
                     self.speaker.wait_for_speak()
                 self.wait_for_next_wake_word(divider=False)
                 return None
-
-            if self.speaker:
-                self.speaker.wait_for_speak()
-
-            self.on_response(response)
-
-            if self.speaker and response.response:
-                text_to_speak = (
-                    response.response
-                    if len(response.response) <= self.summary_character_limit
-                    else response.summary
-                )
-                self.speaker.speak_async(text_to_speak)
 
             if response.requires_user_feedback:
                 if self.speaker:
