@@ -1,3 +1,4 @@
+from typing import Optional, Callable
 import os
 
 os.environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "1"
@@ -86,12 +87,21 @@ class Speaker:
         self.interrupted.clear()
         self.backend.speak(text)
 
-    def speak_async(self, text: str) -> None:
+    def speak_async(
+        self, text: str, on_complete: Optional[Callable[[], None]] = None
+    ) -> None:
         """
         Usage:
 
         - Converts text to speech and plays it through the system audio output in
           a background thread. Does not block the main thread.
+
+        Optional:
+
+        - `on_complete`:
+            - Type: Callable[[], None] | None
+            - What: Callback triggered after playback finishes (even if interrupted).
+            - Default: None
         """
 
         def run_speak():
@@ -102,6 +112,8 @@ class Speaker:
                 pass
             finally:
                 self.speaking_complete.set()
+                if on_complete:
+                    on_complete()
                 if self.on_playback_complete:
                     self.on_playback_complete()
 

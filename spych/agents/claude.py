@@ -160,7 +160,7 @@ class LocalClaudeCodeSDKResponder(BaseResponder):
         self._first_call = True
         self._last_session_id: str | None = None
 
-    def respond(self, user_input: str) -> AgentResponse:
+    def respond(self, user_input: str, is_continuation: bool = False) -> AgentResponse:
         """
         Spawns _sdk_worker.py as a subprocess, writes the request payload to
         its stdin, then reads newline-delimited JSON events from its stdout.
@@ -171,9 +171,13 @@ class LocalClaudeCodeSDKResponder(BaseResponder):
         is_first = self._first_call
         self._first_call = False
 
+        prompt = user_input
+        if is_continuation:
+            prompt = "Please continue."
+
         payload = json.dumps(
             {
-                "user_input": self.format_prompt(user_input),
+                "user_input": self.format_prompt(prompt),
                 "is_first": is_first,
                 "continue_conversation": self.continue_conversation,
                 "last_session_id": self._last_session_id,

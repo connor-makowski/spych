@@ -5,9 +5,10 @@ from spych.cli_tools import CliSpinner, NullSpinner, CliPrinter, theme, set_them
 from spych.spinners import Spinner
 from spych.speaker import Speaker
 from dataclasses import dataclass
-from typing import Optional
+from typing import Optional, Any
 import json
 import time
+import re
 from spych.dashboard import AgentDashboard
 
 # Set theme from settings
@@ -190,25 +191,19 @@ class BaseResponder(Notify):
         self.summary_character_limit = 300
         self._continuation_in_progress: bool = False
         self._awaiting_follow_up: bool = False
+        self._current_turn_id: int = 0
+        self._last_speak_turn_id: int = 0
 
         if use_speaker:
             self.speaker = Speaker(speaker_voice, backend=speaker_backend)
 
             def _on_playback_start():
                 if self.dashboard is not None:
-                    self.dashboard.on_status_change("speaking")
-
-            def _on_playback_complete():
-                if self.dashboard is not None:
-                    if self._continuation_in_progress:
-                        self.dashboard.on_status_change("thinking")
-                    elif self._awaiting_follow_up:
-                        self.dashboard.on_status_change("listening")
-                    else:
-                        self.dashboard.on_status_change("waiting")
+                    self.dashboard.on_status_change(
+                        "speaking", turn_id=self._last_speak_turn_id
+                    )
 
             self.speaker.on_playback_start = _on_playback_start
-            self.speaker.on_playback_complete = _on_playback_complete
 
     # ------------------------------------------------------------------ #
     #  Public helper API — safe to call from inside respond()             #
@@ -237,7 +232,7 @@ class BaseResponder(Notify):
             - Default: True
         """
         if self.dashboard is not None:
-            self.dashboard.on_status_change("waiting")
+            self.dashboard.on_status_change("waiting", turn_id=self._current_turn_id)
             return
         if divider:
             CliPrinter.divider()
@@ -443,31 +438,35 @@ class BaseResponder(Notify):
               to echoing `raw_output` in all fields on parse failure
         """
         text = raw_output.strip()
-        if text.startswith("```"):
-            newline = text.find("\n")
-            if newline != -1:
-                text = text[newline + 1 :]
-            if text.endswith("```"):
-                text = text[:-3].strip()
-        # Try direct parse first, then fall back to extracting embedded JSON object
-        for candidate in (
-            text,
-            text[text.find("{") : text.rfind("}") + 1] if "{" in text else "",
-        ):
+
+        # Helper for reliable boolean parsing from potentially hallucinated string booleans
+        def parse_bool(val: Any) -> bool:
+            if isinstance(val, bool):
+                return val
+            if isinstance(val, str):
+                return val.lower() == "true"
+            return bool(val)
+
+        # Extract JSON by finding the first '{' and using raw_decode to find the matching '}'.
+        # This handles nested objects and braces inside strings correctly.
+        start_idx = text.find("{")
+        if start_idx != -1:
             try:
-                data = json.loads(candidate)
+                decoder = json.JSONDecoder()
+                data, _ = decoder.raw_decode(text[start_idx:])
                 return AgentResponse(
                     response=str(data.get("response", raw_output)),
                     summary=str(data.get("summary", raw_output)),
-                    requires_user_feedback=bool(
+                    requires_user_feedback=parse_bool(
                         data.get("requires_user_feedback", False)
                     ),
-                    is_intermediate_response=bool(
+                    is_intermediate_response=parse_bool(
                         data.get("is_intermediate_response", False)
                     ),
                 )
             except (json.JSONDecodeError, ValueError):
-                continue
+                pass
+
         return AgentResponse(
             response=raw_output,
             summary=raw_output,
@@ -585,7 +584,7 @@ class BaseResponder(Notify):
         - It updates the spinner label to show the responder name and listening duration.
         """
         if self.dashboard is not None:
-            self.dashboard.on_status_change("listening")
+            self.dashboard.on_status_change("listening", turn_id=self._current_turn_id)
             return
         if duration is not None:
             listen_duration = duration
@@ -625,10 +624,17 @@ class BaseResponder(Notify):
         - It prints the user input label and starts the spinner with verb animation.
         - The start time is recorded for timing purposes.
         """
+        if not is_continuation:
+            self._current_turn_id += 1
+
         self._current_user_input = user_input
         if self.dashboard is not None:
-            self.dashboard.on_user_input(user_input, is_continuation=is_continuation)
-            self.dashboard.on_status_change("thinking")
+            self.dashboard.on_user_input(
+                user_input, is_continuation=is_continuation, turn_id=self._current_turn_id
+            )
+            self.dashboard.on_status_change(
+                "thinking", turn_id=self._current_turn_id
+            )
             self._start_time = time.time()
             return
 
@@ -636,9 +642,10 @@ class BaseResponder(Notify):
             CliPrinter.label(f"{self.user_name}:", user_input)
 
         self._start_time = time.time()
-        self.spinner.start_with_verbs(
-            self.name, interval=15, spinner=Spinner.ZEN
-        )
+        if not is_continuation:
+            self.spinner.start_with_verbs(
+                self.name, interval=15, spinner=Spinner.ZEN
+            )
 
     def on_response(self, response: AgentResponse) -> None:
         """
@@ -667,7 +674,7 @@ class BaseResponder(Notify):
             if not response.requires_user_feedback and not response.is_intermediate_response:
                 about_to_speak = self.speaker and response.response
                 if not about_to_speak:
-                    self.dashboard.on_status_change("waiting")
+                    self.dashboard.on_status_change("waiting", turn_id=self._current_turn_id)
             return
         self.spinner.stop()
         if response.response:
@@ -693,7 +700,7 @@ class BaseResponder(Notify):
         - It stops the spinner and prints an informative message about the termination.
         """
         if self.dashboard is not None:
-            self.dashboard.on_status_change("terminated")
+            self.dashboard.on_status_change("terminated", turn_id=self._current_turn_id)
             return
         self.spinner.stop()
         CliPrinter.info(f"{self.name} has been terminated.")
@@ -763,6 +770,13 @@ class BaseResponder(Notify):
                     response = self.respond(current_query, is_continuation=is_continuation_turn)
                     self.on_after_respond(current_query, response)
 
+                    # Update internal flags immediately so callbacks see the correct state
+                    self._continuation_in_progress = bool(
+                        self.allow_intermediate_responses
+                        and response.is_intermediate_response
+                    )
+                    self._awaiting_follow_up = bool(response.requires_user_feedback)
+
                     # Unified response handling for both intermediate and final acknowledgments.
                     # We only print/speak if there is actual response text.
                     if response.response:
@@ -777,28 +791,54 @@ class BaseResponder(Notify):
                                 if len(response.response) <= self.summary_character_limit
                                 else response.summary
                             )
-                            self.speaker.speak_async(text_to_speak)
-                    elif not response.is_intermediate_response:
+                            # Capture closure variables to fix race condition in dashboard status updates (Bug 5)
+                            tid = self._current_turn_id
+                            self._last_speak_turn_id = tid
+
+                            def _on_complete():
+                                if self.dashboard is not None:
+                                    # Only the latest speech turn should update the status
+                                    if self._last_speak_turn_id != tid:
+                                        return
+                                    
+                                    if self._continuation_in_progress:
+                                        self.dashboard.on_status_change(
+                                            "thinking", turn_id=tid
+                                        )
+                                    elif self._awaiting_follow_up:
+                                        self.dashboard.on_status_change(
+                                            "listening", turn_id=tid
+                                        )
+                                    else:
+                                        self.dashboard.on_status_change(
+                                            "waiting", turn_id=tid
+                                        )
+
+                            self.speaker.speak_async(text_to_speak, on_complete=_on_complete)
+                    else:
                         # For final empty responses, still call on_response to show
                         # status (e.g. failure icon) or commit the dashboard turn.
+                        # This also ensures the dashboard clears the current turn input.
                         self.on_response(response)
+                        if self.dashboard:
+                            self.dashboard.clear_current_turn()
 
-                    if (
-                        self.allow_intermediate_responses
-                        and response.is_intermediate_response
-                    ):
+                    if self._continuation_in_progress:
                         is_continuation_turn = True
-                        self._continuation_in_progress = True
                         continue
 
-                    # Final response: clear continuation flag before breaking
-                    self._continuation_in_progress = False
                     break
 
             except Exception as exc:
                 self._continuation_in_progress = False
                 self.spinner.stop()
-                if self.dashboard is None:
+                if self.dashboard is not None:
+                    # Notify dashboard of waiting state on error and clear turn to avoid desync (Bug 1)
+                    self.dashboard.on_status_change(
+                        "waiting", turn_id=self._current_turn_id
+                    )
+                    self.dashboard.clear_current_turn()
+                else:
                     print(f"  {theme.error}✗  Error: {exc}{theme.reset}\n")
                 if self.speaker:
                     self.speaker.wait_for_speak()

@@ -310,15 +310,53 @@ class _DashboardRenderer:
 
     @staticmethod
     def _truncate(text: str, width: int) -> str:
-        if len(text) <= width:
+        if _DashboardRenderer._visible_len(text) <= width:
             return text
-        return text[: width - 1] + "…"
+        
+        res = ""
+        cur_width = 0
+        # Split by ANSI escape sequences to preserve them
+        parts = re.split(r"(\033\[[0-9;]*[mK])", text)
+        for part in parts:
+            if not part:
+                continue
+            if part.startswith("\033["):
+                res += part
+            else:
+                for char in part:
+                    w = _DashboardRenderer._visible_len(char)
+                    if cur_width + w + 1 > width:
+                        # Append reset to prevent color bleed if we truncated mid-color
+                        return res + "…" + _RESET
+                    res += char
+                    cur_width += w
+        return res + "…" + _RESET
 
     _ANSI_ESCAPE = re.compile(r"\033\[[0-9;]*[mK]")
 
     @staticmethod
     def _visible_len(text: str) -> int:
-        return len(_DashboardRenderer._ANSI_ESCAPE.sub("", text))
+        clean = _DashboardRenderer._ANSI_ESCAPE.sub("", text)
+        length = 0
+        for char in clean:
+            # Heuristic for double-width characters (CJK, Emojis, etc.)
+            cp = ord(char)
+            if cp >= 0x1100 and (
+                0x1100 <= cp <= 0x115F or
+                0x2329 <= cp <= 0x232A or
+                0x2E80 <= cp <= 0xA4CF or
+                0xAC00 <= cp <= 0xD7A3 or
+                0xF900 <= cp <= 0xFAFF or
+                0xFE10 <= cp <= 0xFE19 or
+                0xFE30 <= cp <= 0xFE6F or
+                0xFF00 <= cp <= 0xFF60 or
+                0xFFE0 <= cp <= 0xFFE6 or
+                cp >= 0x20000
+            ):
+                length += 2
+            else:
+                length += 1
+        return length
 
     @staticmethod
     def _wrap_text(text: str, width: int, indent: int = 0) -> list[str]:
@@ -373,11 +411,18 @@ class _DashboardRenderer:
                 if spaces >= 1:
                     cur_line += " " * spaces + _DIM + dur_str + _RESET
                 else:
-                    if cur_visible > target_width - len(dur_str) - 5:
-                        res.append(cur_line)
-                        cur_line = " " * (target_width - len(dur_str)) + _DIM + dur_str + _RESET
-                    else:
+                    # If we don't have room for spaces + dur_str on the same line,
+                    # either append with a single space if it fits the target_width,
+                    # or drop it to the next line.
+                    if cur_visible + len(dur_str) + 1 <= target_width:
                          cur_line += " " + _DIM + dur_str + _RESET
+                    elif target_width - len(dur_str) >= 0:
+                         res.append(cur_line)
+                         cur_line = " " * (target_width - len(dur_str)) + _DIM + dur_str + _RESET
+                    else:
+                         # Extremely narrow terminal, just append it
+                         res.append(cur_line)
+                         cur_line = _DIM + dur_str + _RESET
             
             if _DashboardRenderer._visible_len(cur_line) > cols - 1:
                 cur_line = _DashboardRenderer._truncate(cur_line, cols - 1)
@@ -448,13 +493,19 @@ class _DashboardRenderer:
             self._tool_cache.clear()
             self._thought_cache.clear()
 
-        # Periodically bound cache size
+        # Periodically bound cache size (evict oldest 25% when full)
         if len(self._conv_cache) > 2000:
-            self._conv_cache.clear()
+            keys = list(self._conv_cache.keys())
+            for k in keys[:500]:
+                self._conv_cache.pop(k, None)
         if len(self._tool_cache) > 2000:
-            self._tool_cache.clear()
+            keys = list(self._tool_cache.keys())
+            for k in keys[:500]:
+                self._tool_cache.pop(k, None)
         if len(self._thought_cache) > 2000:
-            self._thought_cache.clear()
+            keys = list(self._thought_cache.keys())
+            for k in keys[:500]:
+                self._thought_cache.pop(k, None)
 
         bar_width = max(10, cols - 4)
         budget = rows - 1
@@ -789,6 +840,7 @@ class AgentDashboard:
         self._current_user_duration: float = 0.0
         self._current_turn_start: float = 0.0
         self._status_start: float = time.time()
+        self._last_turn_id: int = 0
 
         self._show_all: bool = False
         self._scroll_offset: int = 0
@@ -864,7 +916,7 @@ class AgentDashboard:
             self._speaker_voice = speaker_voice
             self._user_name = user_name
 
-    def on_status_change(self, status: str) -> None:
+    def on_status_change(self, status: str, turn_id: Optional[int] = None) -> None:
         """
         Usage:
 
@@ -876,13 +928,27 @@ class AgentDashboard:
             - Type: str
             - What: One of the module-level constants: WAITING, LISTENING,
               THINKING, SPEAKING, TERMINATED.
+
+        Optional:
+
+        - ``turn_id``:
+            - Type: int | None
+            - What: The ID of the turn that triggered this status change.
+              If provided and older than the current turn, the change is ignored.
         """
         with self._lock:
+            if turn_id is not None:
+                if turn_id < self._last_turn_id:
+                    return
+                self._last_turn_id = turn_id
+
             if self._status != status:
                 self._status = status
                 self._status_start = time.time()
 
-    def on_user_input(self, text: str, is_continuation: bool = False) -> None:
+    def on_user_input(
+        self, text: str, is_continuation: bool = False, turn_id: Optional[int] = None
+    ) -> None:
         """
         Usage:
 
@@ -901,8 +967,15 @@ class AgentDashboard:
             - What: Whether this turn is a continuation of a previous turn
               (e.g. after an intermediate response).
             - Default: False
+
+        - ``turn_id``:
+            - Type: int | None
+            - What: The ID for this turn.
         """
         with self._lock:
+            if turn_id is not None:
+                self._last_turn_id = turn_id
+
             if is_continuation and text == self._current_user_input:
                 return
 
@@ -1085,11 +1158,28 @@ class AgentDashboard:
 
     def scroll_up(self, amount: int = 1) -> None:
         """Scroll up."""
-        self._scroll_offset += amount
+        with self._lock:
+            # Bound scroll offset to prevent excessive scrolling into the void
+            # We use a generous limit of 5000 lines/entries.
+            self._scroll_offset = min(self._scroll_offset + amount, 5000)
 
     def scroll_down(self, amount: int = 1) -> None:
         """Scroll down."""
-        self._scroll_offset = max(0, self._scroll_offset - amount)
+        with self._lock:
+            self._scroll_offset = max(0, self._scroll_offset - amount)
+
+    def clear_current_turn(self) -> None:
+        """
+        Usage:
+
+        - Resets the in-progress turn state (user input, tools, thoughts)
+          without adding to history. Useful for clearing 'zombie' data
+          after errors or empty responses.
+        """
+        with self._lock:
+            self._current_tool_calls = []
+            self._current_thoughts = []
+            self._current_user_input = ""
 
     def start(self) -> None:
         """
