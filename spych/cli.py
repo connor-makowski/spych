@@ -665,7 +665,16 @@ def main():
         "opencode_cli": ["opencode", "open code"],
     }
 
-    def _start_dashboard(agent_name: str, kwargs: dict):
+    _AGENT_RESPONDERS: dict[str, str] = {
+        "ollama": "OllamaResponder",
+        "claude_code_cli": "LocalClaudeCodeCLIResponder",
+        "claude_code_sdk": "LocalClaudeCodeSDKResponder",
+        "codex_cli": "LocalCodexCLIResponder",
+        "gemini_cli": "LocalGeminiCLIResponder",
+        "opencode_cli": "LocalOpenCodeCLIResponder",
+    }
+
+    def _start_dashboard(agent_name: str, responder_class: str, kwargs: dict):
         """Create a dashboard and inject it into kwargs; start is deferred until healthchecks pass."""
         from spych.dashboard import AgentDashboard
         from spych.utils import get_user, get_default_user
@@ -681,6 +690,7 @@ def main():
         dashboard = AgentDashboard(
             agent_name=kwargs.get("name", agent_name),
             wake_words=wake_words,
+            responder_class=responder_class,
             response_style=kwargs.get("response_style", ""),
             use_speaker=kwargs.get("use_speaker", True),
             speaker_voice=kwargs.get("speaker_voice", "af_heart"),
@@ -697,7 +707,11 @@ def main():
         kwargs["model"] = args.model
         kwargs["history_length"] = args.history_length
         kwargs["host"] = args.host
-        dashboard = _start_dashboard("Ollama", kwargs) if not args.verbose else None
+        dashboard = (
+            _start_dashboard("Ollama", "OllamaResponder", kwargs)
+            if not args.verbose
+            else None
+        )
         try:
             ollama(**kwargs)
         finally:
@@ -708,7 +722,11 @@ def main():
         from spych.agents import claude_code_cli
 
         kwargs = _build_agent_kwargs(args)
-        dashboard = _start_dashboard("Claude", kwargs) if not args.verbose else None
+        dashboard = (
+            _start_dashboard("Claude", "LocalClaudeCodeCLIResponder", kwargs)
+            if not args.verbose
+            else None
+        )
         try:
             claude_code_cli(**kwargs)
         finally:
@@ -720,7 +738,11 @@ def main():
 
         kwargs = _build_agent_kwargs(args)
         kwargs["setting_sources"] = args.setting_sources
-        dashboard = _start_dashboard("Claude", kwargs) if not args.verbose else None
+        dashboard = (
+            _start_dashboard("Claude", "LocalClaudeCodeSDKResponder", kwargs)
+            if not args.verbose
+            else None
+        )
         try:
             claude_code_sdk(**kwargs)
         finally:
@@ -731,7 +753,11 @@ def main():
         from spych.agents import codex_cli
 
         kwargs = _build_agent_kwargs(args)
-        dashboard = _start_dashboard("Codex", kwargs) if not args.verbose else None
+        dashboard = (
+            _start_dashboard("Codex", "LocalCodexCLIResponder", kwargs)
+            if not args.verbose
+            else None
+        )
         try:
             codex_cli(**kwargs)
         finally:
@@ -742,7 +768,11 @@ def main():
         from spych.agents import gemini_cli
 
         kwargs = _build_agent_kwargs(args)
-        dashboard = _start_dashboard("Gemini", kwargs) if not args.verbose else None
+        dashboard = (
+            _start_dashboard("Gemini", "LocalGeminiCLIResponder", kwargs)
+            if not args.verbose
+            else None
+        )
         try:
             gemini_cli(**kwargs)
         finally:
@@ -755,7 +785,11 @@ def main():
         kwargs = _build_agent_kwargs(args)
         if args.model is not None:
             kwargs["model"] = args.model
-        dashboard = _start_dashboard("OpenCode", kwargs) if not args.verbose else None
+        dashboard = (
+            _start_dashboard("OpenCode", "LocalOpenCodeCLIResponder", kwargs)
+            if not args.verbose
+            else None
+        )
         try:
             opencode_cli(**kwargs)
         finally:
@@ -922,6 +956,7 @@ def main():
             multi_dashboard = AgentDashboard(
                 agent_name=_multi_name_map.get(first_agent, first_agent),
                 wake_words=_DEFAULT_WAKE_WORDS.get(first_agent, []),
+                responder_class=_AGENT_RESPONDERS.get(first_agent, ""),
                 use_speaker=args.use_speaker,
                 user_name=profile_name,
             )

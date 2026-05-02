@@ -8,7 +8,7 @@ Usage:
 
 - Start before launching the agent; stop in a finally block:
 
-    dashboard = AgentDashboard(agent_name="Claude", wake_words=["claude"])
+    dashboard = AgentDashboard(agent_name="Claude", wake_words=["claude"], responder_class="LocalClaudeCodeCLIResponder")
     dashboard.start()
     try:
         claude_code_cli(dashboard=dashboard)
@@ -205,8 +205,8 @@ class _DashboardRenderer:
     _HEADER_LINES = 4  # rule + title + rule + blank
     _FOOTER_LINES = 2  # blank + hint line
     _TOOL_FIXED = 3  # label + top-rule + bottom-rule (only when tools present)
-    _CONV_FIXED = 3  # label + top-rule + bottom-rule
-    _FIXED_BASE = _HEADER_LINES + _CONV_FIXED + _FOOTER_LINES  # = 9
+    _CONV_FIXED = 0  # no label or rules in minimal mode
+    _FIXED_BASE = _HEADER_LINES + _CONV_FIXED + _FOOTER_LINES  # = 6
 
     _SUMMARY_CHAR_LIMIT = 300
 
@@ -408,6 +408,7 @@ class _DashboardRenderer:
         self,
         agent_name: str,
         wake_words: list[str],
+        responder_class: str,
         response_style: str,
         use_speaker: bool,
         speaker_voice: str,
@@ -456,12 +457,12 @@ class _DashboardRenderer:
             self._status_str(status),
         ]
         if wake_words:
-            shown = ", ".join(f'"{w}"' for w in wake_words[:2])
-            if len(wake_words) > 2:
-                shown += f" +{len(wake_words) - 2}"
-            header_parts.append(f"{_DIM}wake: {shown}{_RESET}")
-        if response_style:
-            header_parts.append(f"{_DIM}{response_style}{_RESET}")
+            shown = wake_words[0]
+            if len(wake_words) > 1:
+                shown += f" +{len(wake_words) - 1}"
+            header_parts.append(f"{_DIM}Wake: {shown}{_RESET}")
+        if responder_class:
+            header_parts.append(f"{_DIM}{responder_class}{_RESET}")
         if use_speaker and speaker_voice:
             header_parts.append(f"{_DIM}🔊 {speaker_voice}{_RESET}")
         if show_all:
@@ -623,11 +624,8 @@ class _DashboardRenderer:
             while len(visible_conv_lines) < max_conv_lines:
                 visible_conv_lines.insert(0, "")
 
-            lines.append(f"  {_BOLD}Recent Conversation{_RESET}")
-            lines.append(f"  {'─' * bar_width}")
             for line in visible_conv_lines:
                 lines.append(line)
-            lines.append(f"  {'─' * bar_width}")
 
             if has_tools:
                 lines.append(f"  {_BOLD}Active Tools{_RESET}")
@@ -669,7 +667,7 @@ class AgentDashboard:
            response style, and speaker info.
         2. Active Tools — tool calls from the current in-progress turn
            (hidden when no tools are active).
-        3. Recent Conversation — clean per-turn view of user inputs and
+        3. Conversation — clean per-turn view of user inputs and
            agent responses. Ctrl+A switches to a full scrollable log.
 
     Requires:
@@ -738,6 +736,7 @@ class AgentDashboard:
         self,
         agent_name: str,
         wake_words: list[str],
+        responder_class: str = "",
         response_style: str = "",
         use_speaker: bool = False,
         speaker_voice: str = "",
@@ -750,6 +749,7 @@ class AgentDashboard:
     ) -> None:
         self._agent_name = agent_name
         self._wake_words = wake_words
+        self._responder_class = responder_class
         self._response_style = response_style
         self._use_speaker = use_speaker
         self._speaker_voice = speaker_voice
@@ -786,6 +786,7 @@ class AgentDashboard:
         self,
         name: str,
         wake_words: list[str],
+        responder_class: str = "",
         response_style: str = "",
         use_speaker: bool = False,
         speaker_voice: str = "",
@@ -809,6 +810,11 @@ class AgentDashboard:
 
         Optional:
 
+        - ``responder_class``:
+            - Type: str
+            - What: Name of the responder class.
+            - Default: ""
+
         - ``response_style``:
             - Type: str
             - Default: ""
@@ -828,6 +834,7 @@ class AgentDashboard:
         with self._lock:
             self._agent_name = name
             self._wake_words = wake_words
+            self._responder_class = responder_class
             self._response_style = response_style
             self._use_speaker = use_speaker
             self._speaker_voice = speaker_voice
@@ -1086,6 +1093,7 @@ class AgentDashboard:
             with self._lock:
                 agent_name = self._agent_name
                 wake_words = list(self._wake_words)
+                responder_class = self._responder_class
                 response_style = self._response_style
                 use_speaker = self._use_speaker
                 speaker_voice = self._speaker_voice
@@ -1104,6 +1112,7 @@ class AgentDashboard:
             self._renderer.render(
                 agent_name=agent_name,
                 wake_words=wake_words,
+                responder_class=responder_class,
                 response_style=response_style,
                 use_speaker=use_speaker,
                 speaker_voice=speaker_voice,

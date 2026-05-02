@@ -188,6 +188,8 @@ class BaseResponder(Notify):
         self.allow_intermediate_responses = allow_intermediate_responses
         self.speaker = None
         self.summary_character_limit = 300
+        self._continuation_in_progress: bool = False
+        self._awaiting_follow_up: bool = False
 
         if use_speaker:
             self.speaker = Speaker(speaker_voice, backend=speaker_backend)
@@ -198,7 +200,12 @@ class BaseResponder(Notify):
 
             def _on_playback_complete():
                 if self.dashboard is not None:
-                    self.dashboard.on_status_change("waiting")
+                    if self._continuation_in_progress:
+                        self.dashboard.on_status_change("thinking")
+                    elif self._awaiting_follow_up:
+                        self.dashboard.on_status_change("listening")
+                    else:
+                        self.dashboard.on_status_change("waiting")
 
             self.speaker.on_playback_start = _on_playback_start
             self.speaker.on_playback_complete = _on_playback_complete
@@ -795,12 +802,15 @@ class BaseResponder(Notify):
                     ):
                         self._show_intermediate_status(response.response, response.summary)
                         is_continuation_turn = True
+                        self._continuation_in_progress = True
                         continue
 
-                    # If we reach here, it's a final response for this turn
+                    # Final response: clear continuation flag before breaking
+                    self._continuation_in_progress = False
                     break
 
             except Exception as exc:
+                self._continuation_in_progress = False
                 self.spinner.stop()
                 if self.dashboard is None:
                     print(f"  {theme.error}✗  Error: {exc}{theme.reset}\n")
@@ -824,7 +834,9 @@ class BaseResponder(Notify):
 
             if response.requires_user_feedback:
                 if self.speaker:
+                    self._awaiting_follow_up = True
                     self.speaker.wait_for_speak()
+                    self._awaiting_follow_up = False
                 if self.dashboard is None:
                     CliPrinter.divider()
                 is_follow_up = True

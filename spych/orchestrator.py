@@ -181,6 +181,7 @@ class SpychOrchestrator:
                     self._dashboard.set_agent(
                         name=resp.name,
                         wake_words=entry_wake_words,
+                        responder_class=resp.__class__.__name__,
                         response_style=getattr(resp, "response_style", ""),
                         use_speaker=getattr(resp, "use_speaker", False),
                         speaker_voice=getattr(resp, "speaker_voice", ""),
