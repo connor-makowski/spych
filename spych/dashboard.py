@@ -102,6 +102,13 @@ class ToolEntry:
     - ``timestamp``:
         - Type: str
         - What: HH:MM:SS when the tool event was first recorded.
+
+    Optional:
+
+    - ``detail``:
+        - Type: str | None
+        - What: Short human-readable context for the tool call (e.g. file path,
+          command string, search pattern). Displayed in place of the raw status.
     """
 
     name: str
@@ -109,6 +116,7 @@ class ToolEntry:
     is_running: bool
     elapsed: Optional[float]
     timestamp: str
+    detail: Optional[str] = None
 
 
 @dataclass
@@ -376,15 +384,19 @@ class _DashboardRenderer:
         prefix = f"  {ts}  {_BOLD}{name}:{_RESET} "
         return self._format_line_group(prefix, text, cols, duration=duration)
 
-    def _format_thought(self, ts: str, text: str, cols: int) -> list[str]:
-        prefix = f"    {ts}  {_ITALIC}{_DIM}Thought:{_RESET} "
+    def _format_thought(self, ts: str, text: str, cols: int, agent_name: str = "") -> list[str]:
+        name_str = f"{agent_name} " if agent_name else ""
+        prefix = f"    {ts}  {_ITALIC}{_DIM}{name_str}Thought:{_RESET} "
         return self._format_line_group(prefix, text, cols)
 
-    def _format_tool(self, ts: str, name: str, status: str, is_running: bool, elapsed: Optional[float], cols: int, show_ts: bool = False) -> list[str]:
+    def _format_tool(self, ts: str, name: str, status: str, is_running: bool, elapsed: Optional[float], cols: int, show_ts: bool = False, detail: Optional[str] = None) -> list[str]:
         icon = "⚙" if is_running else "✓"
         color = _YELLOW if is_running else _GREEN
-        elapsed_str = f" ({elapsed:.2f}s)" if elapsed else ""
-        content = f"{name} → {status}{elapsed_str}"
+        elapsed_str = f" {_DIM}({elapsed:.2f}s){_RESET}" if elapsed else ""
+        if detail:
+            content = f"{name}  {_DIM}{detail}{_RESET}{elapsed_str}"
+        else:
+            content = f"{name}{elapsed_str}"
         if show_ts:
             ts_str = f"{_DIM}{ts}{_RESET}"
             prefix = f"  {ts_str}  {color}{icon}{_RESET}  "
@@ -486,13 +498,13 @@ class _DashboardRenderer:
                 for thought in entry.thoughts:
                     thought_cache_key = (id(thought), cols)
                     if thought_cache_key not in self._thought_cache:
-                        self._thought_cache[thought_cache_key] = self._format_thought(thought.timestamp, thought.text, cols)
+                        self._thought_cache[thought_cache_key] = self._format_thought(thought.timestamp, thought.text, cols, agent_name=entry.agent_name)
                     block.extend(self._thought_cache[thought_cache_key])
 
                 for tool in entry.tool_calls:
-                    tool_cache_key = (id(tool), cols, tool.status, tool.is_running, tool.elapsed)
+                    tool_cache_key = (id(tool), cols, tool.status, tool.is_running, tool.elapsed, tool.detail)
                     if tool_cache_key not in self._tool_cache:
-                        self._tool_cache[tool_cache_key] = self._format_tool(tool.timestamp, tool.name, tool.status, tool.is_running, tool.elapsed, cols)
+                        self._tool_cache[tool_cache_key] = self._format_tool(tool.timestamp, tool.name, tool.status, tool.is_running, tool.elapsed, cols, detail=tool.detail)
                     block.extend(self._tool_cache[tool_cache_key])
 
                 block.extend(self._format_agent(ts, entry.agent_name, entry.response, entry.elapsed, cols))
@@ -525,7 +537,7 @@ class _DashboardRenderer:
                     log_lines.extend(self._format_thought(thought.timestamp, thought.text, cols))
 
                 for tool in current_tool_calls:
-                    log_lines.extend(self._format_tool(tool.timestamp, tool.name, tool.status, tool.is_running, tool.elapsed, cols))
+                    log_lines.extend(self._format_tool(tool.timestamp, tool.name, tool.status, tool.is_running, tool.elapsed, cols, detail=tool.detail))
 
             max_scroll = max(0, len(log_lines) - max_log_lines)
             effective_scroll = min(scroll_offset, max_scroll)
@@ -545,7 +557,7 @@ class _DashboardRenderer:
             tool_content_lines = []
             if has_tools:
                 for tool in current_tool_calls:
-                    tool_content_lines.extend(self._format_tool(tool.timestamp, tool.name, tool.status, tool.is_running, tool.elapsed, cols, show_ts=True))
+                    tool_content_lines.extend(self._format_tool(tool.timestamp, tool.name, tool.status, tool.is_running, tool.elapsed, cols, show_ts=True, detail=tool.detail))
             
             # CAP tool panel height to roughly 1/3 of the screen to prevent overflow
             max_tool_content_height = max(0, (budget - self._FIXED_BASE) // 3)
@@ -578,7 +590,7 @@ class _DashboardRenderer:
                 block.extend(self._format_agent(ts, entry.agent_name, resp_text, entry.elapsed, cols))
                 self._conv_cache[cache_key] = block
                 conv_display.append(block)
-            if current_user_input or status == LISTENING:
+            if current_user_input or status == LISTENING or current_thoughts:
                 if status == LISTENING:
                     elapsed = time.time() - status_start
                     ts = f"({elapsed:.1f}s)"
@@ -587,7 +599,11 @@ class _DashboardRenderer:
                     ts = current_user_ts
                     duration = current_user_duration
                 
-                conv_display.append(self._format_user(ts, user_name, current_user_input if status != LISTENING else "Listening...", duration, cols))
+                if current_user_input or status == LISTENING:
+                    conv_display.append(self._format_user(ts, user_name, current_user_input if status != LISTENING else "Listening...", duration, cols))
+                
+                for thought in current_thoughts:
+                    conv_display.append(self._format_thought(thought.timestamp, thought.text, cols, agent_name=agent_name))
 
             max_scroll = max(0, len(conv_display) - 1)
             effective_scroll = min(scroll_offset, max_scroll)
@@ -877,6 +893,7 @@ class AgentDashboard:
         status: str,
         is_running: bool = False,
         elapsed: Optional[float] = None,
+        detail: Optional[str] = None,
     ) -> None:
         """
         Usage:
@@ -904,6 +921,14 @@ class AgentDashboard:
         - ``elapsed``:
             - Type: float | None
             - Default: None
+
+        - ``detail``:
+            - Type: str | None
+            - What: Short human-readable context shown next to the tool name
+              (e.g. file path, command string, search pattern). When updating
+              an in-progress entry, the original detail is preserved if None
+              is passed.
+            - Default: None
         """
         ts = time.strftime("%H:%M:%S")
         with self._lock:
@@ -916,6 +941,7 @@ class AgentDashboard:
                         is_running=is_running,
                         elapsed=elapsed,
                         timestamp=t.timestamp,
+                        detail=detail if detail is not None else t.detail,
                     )
                     return
             self._current_tool_calls.append(
@@ -925,6 +951,7 @@ class AgentDashboard:
                     is_running=is_running,
                     elapsed=elapsed,
                     timestamp=ts,
+                    detail=detail,
                 )
             )
 

@@ -119,6 +119,7 @@ All agent subcommands accept these flags:
 | `--speaker-voice VOICE` | `af_heart` | Voice name for spoken responses |
 | `--speaker-backend BACKEND` | *(auto)* | `chatterbox` or `kokoro` |
 | `--response-style STYLE` | — | Style preset or custom instruction for spoken output |
+| `--intermediate-responses BOOL` | `true` | Enable intermediate response chaining for long-running tasks |
 
 Coding agents (`claude`, `codex`, `gemini`, `opencode`) also accept:
 
@@ -377,6 +378,7 @@ spych multi --agents claude codex --listen-duration 8
 | `--show-tool-events BOOL` | `true` | Print live tool start/end events |
 | `--use-speaker BOOL` | `true` | Speak responses aloud via TTS |
 | `--speaker-backend BACKEND` | *(auto)* | `chatterbox` or `kokoro` |
+| `--intermediate-responses BOOL` | `true` | Enable intermediate response chaining for long-running tasks |
 | `--ollama-model MODEL` | `llama3.2:latest` | Only used when `ollama` is in `--agents` |
 | `--ollama-host URL` | `http://localhost:11434` | Only used when `ollama` is in `--agents` |
 | `--ollama-history-length N` | `10` | Only used when `ollama` is in `--agents` |
@@ -499,6 +501,7 @@ ollama(model="llama3.2:latest")
 | `use_speaker` | `False` | `False` | `False` | `False` | `False` | Speak responses aloud via TTS |
 | `speaker_voice` | `"af_heart"` | `"af_heart"` | `"af_heart"` | `"af_heart"` | `"af_heart"` | Voice name for TTS |
 | `response_style` | `""` | `""` | `""` | `""` | `""` | Style preset or custom instruction |
+| `allow_intermediate_responses` | `True` | `True` | `True` | `True` | `True` | Enable intermediate response chaining |
 | `spych_kwargs` | — | — | — | — | — | Extra kwargs passed to `Spych` |
 | `spych_wake_kwargs` | — | — | — | — | — | Extra kwargs passed to `SpychWake` |
 
@@ -516,6 +519,7 @@ ollama(model="llama3.2:latest")
 | `use_speaker` | `False` | Speak responses aloud via TTS |
 | `speaker_voice` | `"af_heart"` | Voice name for TTS |
 | `response_style` | `""` | Style preset or custom instruction |
+| `allow_intermediate_responses` | `True` | Enable intermediate response chaining |
 | `spych_kwargs` | `None` | Extra kwargs passed to `Spych` |
 | `spych_wake_kwargs` | `None` | Extra kwargs passed to `SpychWake` |
 

@@ -10,6 +10,58 @@ CLAUDE_SDK_WORKER_PATH = importlib.util.find_spec(
 ).origin
 
 
+def _extract_tool_detail(tool_name: str, tool_input: dict) -> str:
+    """
+    Usage:
+
+    - Returns a short human-readable summary of the most relevant argument for
+      a Claude Code tool call. Used to populate the ``detail`` field of tool
+      events so the terminal displays e.g. ``Read  /path/to/file.py`` instead
+      of a raw JSON blob.
+
+    Requires:
+
+    - `tool_name`:
+        - Type: str
+        - What: The name of the tool being invoked (e.g. "Read", "Bash").
+
+    - `tool_input`:
+        - Type: dict
+        - What: The parsed input parameters for the tool call.
+
+    Returns:
+
+    - `detail`:
+        - Type: str
+        - What: A concise, display-safe string describing the key argument.
+          Empty string when no meaningful detail can be extracted.
+    """
+    _MAP: dict[str, Any] = {
+        "Read": lambda i: i.get("file_path", ""),
+        "Edit": lambda i: i.get("file_path", ""),
+        "Write": lambda i: i.get("file_path", ""),
+        "Bash": lambda i: (i.get("command", "") or "")[:80],
+        "Grep": lambda i: (
+            f'"{i.get("pattern", "")}"'
+            + (f' in {i.get("path", "")}' if i.get("path") else "")
+        ),
+        "Glob": lambda i: i.get("pattern", ""),
+        "WebFetch": lambda i: i.get("url", ""),
+        "WebSearch": lambda i: i.get("query", ""),
+        "Agent": lambda i: i.get("description", "subagent"),
+        "NotebookEdit": lambda i: i.get("notebook_path", i.get("cell_type", "")),
+        "TodoWrite": lambda i: "updating todos",
+    }
+    fn = _MAP.get(tool_name)
+    if fn:
+        return fn(tool_input) or ""
+    # Generic fallback: first non-trivial string value in the input dict
+    for v in tool_input.values():
+        if isinstance(v, str) and v:
+            return v[:80]
+    return ""
+
+
 class LocalClaudeCodeSDKResponder(BaseResponder):
     def __init__(
         self,
@@ -169,11 +221,12 @@ class LocalClaudeCodeSDKResponder(BaseResponder):
             elif etype == "tool_start":
                 tool_id = event["id"]
                 tool_name = event["name"]
-                tool_input = json.dumps(event.get("input", {}))
-                # print(f"Tool '{tool_name}' started with input: {tool_input}")
+                raw_input = event.get("input", {})
+                # print(f"Tool '{tool_name}' started with input: {json.dumps(raw_input)}")
                 active_tools[tool_id] = (tool_name, time.time())
                 if self.show_tool_events:
-                    self.tool_event(tool_name, tool_input, is_running=True)
+                    detail = _extract_tool_detail(tool_name, raw_input)
+                    self.tool_event(tool_name, "running", is_running=True, detail=detail or None)
 
             elif etype == "tool_end":
                 tool_id = event["id"]
@@ -500,7 +553,8 @@ class LocalClaudeCodeCLIResponder(BaseResponder):
                                     preceding
                                 ).strip()
                                 self.tool_event(
-                                    tool_name, explanation, is_running=True
+                                    tool_name, "running", is_running=True,
+                                    detail=explanation or None,
                                 )
 
                     # Only print live on intermediate (tool-call) turns.
@@ -543,7 +597,7 @@ class LocalClaudeCodeCLIResponder(BaseResponder):
 
         return False, self.__strip_tool_calls__(result_text).strip()
 
-    def respond(self, user_input: str) -> AgentResponse:
+    def respond(self, user_input: str, is_continuation: bool = False) -> AgentResponse:
         """
         Runs one or more `claude -p` subprocess turns until a clean result is
         received. Intermediate turns (where tool calls are in flight) print
@@ -553,7 +607,12 @@ class LocalClaudeCodeCLIResponder(BaseResponder):
         self.first_call = False
 
         active_tools: dict[str, float] = {}
-        current_input = self.format_prompt(user_input)
+        
+        prompt = user_input
+        if is_continuation:
+            prompt = "Please continue."
+            
+        current_input = self.format_prompt(prompt)
 
         while True:
             needs_continuation, result_text = self.__run_turn__(

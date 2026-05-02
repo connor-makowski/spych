@@ -243,7 +243,7 @@ class LocalGeminiCLIResponder(BaseResponder):
             )
             return False
 
-    def respond(self, user_input: str) -> AgentResponse:
+    def respond(self, user_input: str, is_continuation: bool = False) -> AgentResponse:
         """
         Usage:
 
@@ -257,6 +257,13 @@ class LocalGeminiCLIResponder(BaseResponder):
             - Type: str
             - What: The transcribed text from the user's audio input
 
+        Optional:
+
+        - `is_continuation`:
+            - Type: bool
+            - What: Whether this is a continuation call after an intermediate response.
+            - Default: False
+
         Returns:
 
         - `response`:
@@ -266,10 +273,14 @@ class LocalGeminiCLIResponder(BaseResponder):
         is_first = self.first_call
         self.first_call = False
 
+        prompt = user_input
+        if is_continuation:
+            prompt = "Please continue."
+
         cmd = [
             resolve_cmd("gemini"),
             "-p",
-            self.format_prompt(user_input),
+            self.format_prompt(prompt),
             "--output-format",
             "stream-json",
         ]
@@ -328,10 +339,16 @@ class LocalGeminiCLIResponder(BaseResponder):
             elif etype == "tool_use":
                 tool_id = event.get("tool_id", event.get("tool_name"))
                 tool_name = event.get("tool_name")
-                tool_input = json.dumps(event.get("parameters", {}))
+                params = event.get("parameters", {})
                 active_tools[tool_id] = (tool_name, time.time())
                 if self.show_tool_events:
-                    self.tool_event(tool_name, tool_input, is_running=True)
+                    # Extract a short human-readable detail from the parameters dict.
+                    # Prefer well-known keys; fall back to the first string value.
+                    _PREF_KEYS = ("path", "file_path", "command", "query", "url", "pattern")
+                    detail = next((str(params[k]) for k in _PREF_KEYS if k in params), None)
+                    if not detail:
+                        detail = next((str(v) for v in params.values() if isinstance(v, str) and v), None)
+                    self.tool_event(tool_name, "running", is_running=True, detail=detail)
 
             elif etype == "tool_result":
                 tool_id = event.get("tool_id", event.get("tool_name"))

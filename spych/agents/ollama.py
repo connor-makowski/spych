@@ -142,7 +142,7 @@ class OllamaResponder(BaseResponder):
             )
             return False
 
-    def respond(self, user_input: str) -> AgentResponse:
+    def respond(self, user_input: str, is_continuation: bool = False) -> AgentResponse:
         """
         Usage:
 

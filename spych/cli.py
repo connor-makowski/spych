@@ -143,6 +143,13 @@ def _add_shared_args(parser: argparse.ArgumentParser) -> None:
         metavar="NAME",
         help="The user name to use for tailored responses (default: default user from settings)",
     )
+    parser.add_argument(
+        "--intermediate-responses",
+        type=_parse_bool,
+        default=True,
+        metavar="BOOL",
+        help="Enable intermediate response chaining for long-running tasks (default: true)",
+    )
 
 
 def _add_agent_args(parser: argparse.ArgumentParser) -> None:
@@ -192,6 +199,8 @@ def _build_shared_kwargs(args: argparse.Namespace) -> dict:
         kwargs["response_style"] = args.response_style
     if args.user:
         kwargs["user"] = args.user
+    if not args.intermediate_responses:
+        kwargs["allow_intermediate_responses"] = False
     return kwargs
 
 

@@ -511,15 +511,17 @@ class CliPrinter:
         status: str,
         is_running: bool = False,
         elapsed: float | None = None,
+        detail: str | None = None,
     ) -> None:
         icon = "⚙" if is_running else "✓"
         color = theme.running if is_running else theme.success
         elapsed_str = (
             f" {theme.chrome}({elapsed:.2f}s){theme.reset}" if elapsed else ""
         )
+        detail_str = f"  {theme.chrome}{detail}{theme.reset}" if detail else ""
         print(
             f"  {color}{icon}{theme.reset}  {theme.dim}tool:{theme.reset} "
-            f"{theme.italic}{tool_name}{theme.reset} -> {theme.chrome}{status}{elapsed_str}"
+            f"{theme.italic}{tool_name}{theme.reset}{detail_str}{elapsed_str}"
         )
 
     @staticmethod

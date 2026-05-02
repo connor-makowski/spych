@@ -19,6 +19,7 @@ class AgentResponse:
     response: str
     summary: str
     requires_user_feedback: bool
+    is_intermediate_response: bool = False
 
 
 class BaseResponder(Notify):
@@ -36,6 +37,7 @@ class BaseResponder(Notify):
         inactivity_timeout: Optional[float] = 4.0,
         dashboard: Optional[AgentDashboard] = None,
         user: Optional[str] = None,
+        allow_intermediate_responses: bool = True,
     ) -> None:
         """
         Usage:
@@ -134,6 +136,14 @@ class BaseResponder(Notify):
               default user from settings. If "none", no user profile is used.
             - Default: None
 
+        - `allow_intermediate_responses`:
+            - Type: bool
+            - What: When True, the LLM may return `is_intermediate_response=true` to
+              acknowledge a complex request before doing the actual work. The
+              acknowledgment is spoken async while the continuation call runs in
+              parallel. When False, the field is omitted from the schema entirely
+              and a single respond() call always returns the full answer.
+            - Default: True
 
         Notes:
 
@@ -175,6 +185,7 @@ class BaseResponder(Notify):
         self.style_hint = get_response_style(response_style)
         self.follow_up_listen_duration = follow_up_listen_duration
         self.inactivity_timeout = inactivity_timeout
+        self.allow_intermediate_responses = allow_intermediate_responses
         self.speaker = None
         self.summary_character_limit = 300
 
@@ -231,6 +242,7 @@ class BaseResponder(Notify):
         status: str,
         is_running: bool = False,
         elapsed: float | None = None,
+        detail: str | None = None,
     ) -> None:
         """
         Usage:
@@ -247,7 +259,7 @@ class BaseResponder(Notify):
 
         - `status`:
             - Type: str
-            - What: The status of the tool (e.g., "starting", "running", "completed", "failed")
+            - What: The status of the tool (e.g., "running", "done")
 
         Optional:
 
@@ -260,13 +272,21 @@ class BaseResponder(Notify):
             - Type: float | None
             - What: Elapsed time in seconds since the tool started (if available)
             - Default: None
+
+        - `detail`:
+            - Type: str | None
+            - What: Short human-readable context shown next to the tool name,
+              e.g. the file path being read, the command being run, or the
+              search pattern. When updating an in-progress tool entry the
+              original detail is preserved if None is passed.
+            - Default: None
         """
         if self.dashboard is not None:
-            self.dashboard.on_tool_event(tool_name, status, is_running=is_running, elapsed=elapsed)
+            self.dashboard.on_tool_event(tool_name, status, is_running=is_running, elapsed=elapsed, detail=detail)
             return
         was_running = self.spinner.stop()
         CliPrinter.tool_event(
-            tool_name, status, is_running=is_running, elapsed=elapsed
+            tool_name, status, is_running=is_running, elapsed=elapsed, detail=detail
         )
         if was_running:
             self.spinner.start()
@@ -330,6 +350,44 @@ class BaseResponder(Notify):
     #  Speaker integration                                                #
     # ------------------------------------------------------------------ #
 
+    def _show_intermediate_status(self, response_text: str, summary_text: str) -> None:
+        """
+        Usage:
+
+        - Displays a brief intermediate status message to the user without going
+          through the full `on_response()` lifecycle (no elapsed time, no status
+          line). Called when the LLM returns `is_intermediate_response=true` to
+          acknowledge a complex request before the continuation call begins.
+
+        Requires:
+
+        - `response_text`:
+            - Type: str
+            - What: The status message to display in the terminal
+
+        - `summary_text`:
+            - Type: str
+            - What: The spoken summary (used when response_text exceeds the
+              character limit)
+        """
+        if self.dashboard is not None:
+            self.dashboard.on_thought(response_text)
+            self.dashboard.on_status_change("thinking")
+        else:
+            self.spinner.stop()
+            # Ensure the message has a minimal default if empty to show attribution
+            display_text = response_text if response_text.strip() else "Working on it..."
+            CliPrinter.print_response(self.name, display_text)
+            self.spinner.start_with_verbs(self.name, interval=15, spinner=Spinner.ZEN)
+
+        if self.speaker and response_text:
+            text_to_speak = (
+                response_text
+                if len(response_text) <= self.summary_character_limit
+                else summary_text
+            )
+            self.speaker.speak_async(text_to_speak)
+
     def format_prompt(self, prompt: str) -> str:
         """
         Usage:
@@ -337,34 +395,53 @@ class BaseResponder(Notify):
         - Returns the JSON format instruction string to append to each outgoing
           prompt. Includes a style hint when `response_style` is set.
 
-        Returns:
+        Requires:
 
         - `prompt`:
             - Type: str
-            - What: Formatted string ready to append to user_input
+            - What: The raw user input to embed at the end of the formatted prompt
+
+        Returns:
+
+        - `formatted_prompt`:
+            - Type: str
+            - What: Formatted string containing JSON schema instructions, optional style
+              hint, and the original user input; ready to send to the LLM
         """
+        intermediate_field = (
+            """- Key `is_intermediate_response` (boolean):
+            - Set to true only when completing the user's request will require significant processing time (over 10 seconds, multiple tool calls, file edits, complex reasoning).
+            - When true, put a brief spoken acknowledgment in `response` and `summary` (e.g. "On it — this may take a moment.").
+            - If true, the calling process will present your response (or summary) to the user and then immediately tell you to continue.
+            - If you find it pertinent, you can do this multiple times as you work through very long tasks, but try to limit it to one early response right away.
+            - Steps to decide when to use this:
+                1. Do you need to call a tool, edit files, or do any complex reasoning to complete the user's request? If no, set this to false and proceed as normal.
+                2. If yes, set `is_intermediate_response` to true and provide a brief acknowledgment in `response` and `summary` to let the user know you're working on it. Don't do any actual work yet — just return this acknowledgment immediately.
+                3. After you return the intermediate response, the system will present it to the user and then tell you to continue. 
+                4. When you receive the continue signal, proceed with the actual work to complete the user's request, and return the final response with `is_intermediate_response` set to false.
+                5. In general, you should only use this once per request, right away, but in rare cases, if the task is very long and you want to provide updates, you can use it multiple times. Just make sure to only use it for significant processing time, not for quick tool calls or reasoning steps, and try to keep the user informed with a clear acknowledgment each time.
+            """
+            if self.allow_intermediate_responses
+            else ""
+        )
         return f"""
         You must respond with a valid json object with the following keys:
 
-        - `response`: 
-            - What: 
-                - The full text of your response, which will be printed in the terminal. 
-            - Type: String
-        - `summary`: 
-            - What:
-                - A short summary of your response, that will be presented at the end of each response cycle, but may be spoken outloud. 
-                - Keep it casual and concise, as if you are a human summarizing your own response in a concise spoken manner.
-                - Keep as short as possible while reasonably covering the core content.
-                - Do not include any special characters or paths to files in this summary (in case it is read aloud).
-                - Ask any follow up questions at the end of this summary. Make sure to cover the core content with this summary. 
-                - Do not mention any spoken instructions (like clears throat) unless to meet the instructions given by the user. 
-            - Type: String
-        - `requires_user_feedback`: 
-            - What:
-                - A boolean flag indicating whether your response would expect a user to follow up with additional information.
-                - If true, the agent will listen for a follow-up response from the user. Make sure to ask any follow up questions last if this is true.
-            - Type: Boolean
-            
+        - Key: `response` (string):
+            - The full text of your response, which will be printed in the terminal.
+        - Key: `summary` (string):
+            - A short summary of your response, that will be presented at the end of each response cycle, but may be spoken outloud.
+            - Keep it casual and concise, as if you are a human summarizing your own response in a concise spoken manner.
+            - Keep as short as possible while reasonably covering the core content.
+            - Do not include any special characters or paths to files in this summary (in case it is read aloud).
+            - Ask any follow up questions at the end of this summary. Make sure to cover the core content with this summary.
+            - Do not mention any spoken instructions (like clears throat) unless to meet the instructions given by the user.
+            - Keep it less than {self.summary_character_limit} characters if possible, and definitely less than {self.summary_character_limit + 100} characters.
+        - Key: `requires_user_feedback` (boolean):
+            - A boolean flag indicating whether your response would expect a user to follow up with additional information.
+            - If true, the agent will listen for a follow-up response from the user. Make sure to ask any follow up questions last if this is true.
+        {intermediate_field}
+
         {f"The following is information about the user you are helping. This is only for context. You should typically not reference this directly unless it is pertinent to the request stated below. START USER CONTEXT {json.dumps(self.user_profile)} END USER CONTEXT" if self.user_profile else ""}
 
         {"Do all tasks without considering style, however, your final response should be styled like this: " if self.style_hint else ""}
@@ -416,6 +493,9 @@ class BaseResponder(Notify):
                     requires_user_feedback=bool(
                         data.get("requires_user_feedback", False)
                     ),
+                    is_intermediate_response=bool(
+                        data.get("is_intermediate_response", False)
+                    ),
                 )
             except (json.JSONDecodeError, ValueError):
                 continue
@@ -423,6 +503,7 @@ class BaseResponder(Notify):
             response=raw_output,
             summary=raw_output,
             requires_user_feedback=False,
+            is_intermediate_response=False,
         )
 
     # ------------------------------------------------------------------ #
@@ -441,7 +522,7 @@ class BaseResponder(Notify):
         """
         return True
 
-    def respond(self, user_input: str) -> AgentResponse:
+    def respond(self, user_input: str, is_continuation: bool = False) -> AgentResponse:
         """
         Usage:
 
@@ -463,6 +544,15 @@ class BaseResponder(Notify):
         - `user_input`:
             - Type: str
             - What: The transcribed or typed text from the user
+
+        Optional:
+
+        - `is_continuation`:
+            - Type: bool
+            - What: Whether this is a continuation call after an intermediate response.
+              If True, the responder should typically prompt the LLM to continue its
+              previous task rather than re-sending the original query.
+            - Default: False
 
         Returns:
 
@@ -686,16 +776,41 @@ class BaseResponder(Notify):
                 return None
 
             self.on_user_input(user_input)
+
+            current_query = user_input
+            is_continuation_turn = False
+
             try:
-                self.on_before_respond(user_input)
-                response = self.respond(user_input)
-                self.on_after_respond(user_input, response)
+                while True:
+                    self.on_before_respond(current_query)
+                    response = self.respond(current_query, is_continuation=is_continuation_turn)
+                    self.on_after_respond(current_query, response)
+
+                    # If the LLM acknowledged but needs to continue: speak async while
+                    # the actual work runs, then loop back for the next continuation.
+                    if (
+                        self.allow_intermediate_responses
+                        and response.is_intermediate_response
+                        and response.response.strip()
+                    ):
+                        self._show_intermediate_status(response.response, response.summary)
+                        is_continuation_turn = True
+                        continue
+
+                    # If we reach here, it's a final response for this turn
+                    break
+
             except Exception as exc:
                 self.spinner.stop()
                 if self.dashboard is None:
                     print(f"  {theme.error}✗  Error: {exc}{theme.reset}\n")
+                if self.speaker:
+                    self.speaker.wait_for_speak()
                 self.wait_for_next_wake_word(divider=False)
                 return None
+
+            if self.speaker:
+                self.speaker.wait_for_speak()
 
             self.on_response(response)
 
@@ -713,6 +828,7 @@ class BaseResponder(Notify):
                 if self.dashboard is None:
                     CliPrinter.divider()
                 is_follow_up = True
+                # No break here; we continue the while True loop to listen for follow-up
             else:
                 is_follow_up = False
                 self.wait_for_next_wake_word()

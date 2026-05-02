@@ -108,6 +108,7 @@ All commands use Docker via `./run.sh`:
 - Handles the full voice cycle: listen → transcribe → respond → print → (optional TTS speak)
 - Optional hooks: `healthcheck()`, `on_before_respond()`, `on_after_respond()`
 - `__call__() -> AgentResponse | None`: runs one complete voice cycle
+- `allow_intermediate_responses: bool` (default `True`) — when `False`, disables intermediate response chaining.
 
 **`SpychOrchestrator`** (`orchestrator.py`) — multi-agent coordinator:
 - Accepts a list of `OrchestratorEntry` dicts, each with `responder`, `wake_words`, and `terminate_words`
