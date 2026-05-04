@@ -84,6 +84,7 @@ The following utilities are also available as CLI commands. They don't use wake 
 | `spych --help` | Show detailed usage instructions and exit |
 | `spych live` | Continuous speech-to-text transcription to file |
 | `spych multi` | Run multiple agents simultaneously |
+| `spych users` | Manage user profiles and global settings |
 | `spych profile_my_voice` | Record a voice sample for TTS cloning |
 
 ## Global Flags
@@ -97,6 +98,8 @@ spych --theme light claude
 | Flag | Options | Default | Description |
 |---|---|---|---|
 | `--theme` | `dark`, `light`, `solarized`, `mono` | `dark` | Terminal colour theme |
+
+> 💡 **TUI Dashboard:** Spych launches a rich terminal interface by default. Use the `--verbose` flag (e.g., `spych --verbose claude`) to switch to a simpler, non-interactive scrollable output.
 
 ---
 
@@ -117,6 +120,7 @@ All agent subcommands accept these flags:
 | `--speaker-voice VOICE` | `af_heart` | Voice name for spoken responses |
 | `--speaker-backend BACKEND` | *(auto)* | `chatterbox` or `kokoro` |
 | `--response-style STYLE` | — | Style preset or custom instruction for spoken output |
+| `--intermediate-responses BOOL` | `true` | Enable intermediate response chaining for long-running tasks |
 
 Coding agents (`claude`, `codex`, `gemini`, `opencode`) also accept:
 
@@ -161,6 +165,27 @@ spych claude --name "JARVIS" --wake-words jarvis jarves \
 
 ---
 
+# User Management
+
+Spych supports multiple user profiles, allowing agents to provide more personalized responses based on your name, age, and other context.
+
+```bash
+# Launch the interactive user management menu
+spych users
+```
+
+The `users` utility allows you to:
+- Create, edit, and delete user profiles.
+- Set a default user for all agents.
+- Change the global terminal theme (`dark`, `light`, `solarized`, `mono`).
+
+You can also specify a user for a specific session:
+```bash
+spych claude --user Connor
+```
+
+---
+
 # Response Styles
 
 The `--response-style` flag shapes how the agent formats its spoken output.
@@ -180,7 +205,7 @@ The `--response-style` flag shapes how the agent formats its spoken output.
 | `robot` | Monotone, literal |
 | `caveman` | Very simple, direct |
 | `yoda` | Inverted sentence structure |
-| `jarvis` | JARVIS from Iron Man — precise, dry wit, addresses user as "sir" |
+| `jarvis` | JARVIS from Iron Man — precise, dry wit, addresses user as "sir" or "ma'am" |
 
 You can also pass any custom instruction string directly: `--response-style "Reply in exactly one sentence."`.
 
@@ -354,6 +379,7 @@ spych multi --agents claude codex --listen-duration 8
 | `--show-tool-events BOOL` | `true` | Print live tool start/end events |
 | `--use-speaker BOOL` | `true` | Speak responses aloud via TTS |
 | `--speaker-backend BACKEND` | *(auto)* | `chatterbox` or `kokoro` |
+| `--intermediate-responses BOOL` | `true` | Enable intermediate response chaining for long-running tasks |
 | `--ollama-model MODEL` | `llama3.2:latest` | Only used when `ollama` is in `--agents` |
 | `--ollama-host URL` | `http://localhost:11434` | Only used when `ollama` is in `--agents` |
 | `--ollama-history-length N` | `10` | Only used when `ollama` is in `--agents` |
@@ -476,6 +502,7 @@ ollama(model="llama3.2:latest")
 | `use_speaker` | `False` | `False` | `False` | `False` | `False` | Speak responses aloud via TTS |
 | `speaker_voice` | `"af_heart"` | `"af_heart"` | `"af_heart"` | `"af_heart"` | `"af_heart"` | Voice name for TTS |
 | `response_style` | `""` | `""` | `""` | `""` | `""` | Style preset or custom instruction |
+| `allow_intermediate_responses` | `True` | `True` | `True` | `True` | `True` | Enable intermediate response chaining |
 | `spych_kwargs` | — | — | — | — | — | Extra kwargs passed to `Spych` |
 | `spych_wake_kwargs` | — | — | — | — | — | Extra kwargs passed to `SpychWake` |
 
@@ -493,6 +520,7 @@ ollama(model="llama3.2:latest")
 | `use_speaker` | `False` | Speak responses aloud via TTS |
 | `speaker_voice` | `"af_heart"` | Voice name for TTS |
 | `response_style` | `""` | Style preset or custom instruction |
+| `allow_intermediate_responses` | `True` | Enable intermediate response chaining |
 | `spych_kwargs` | `None` | Extra kwargs passed to `Spych` |
 | `spych_wake_kwargs` | `None` | Extra kwargs passed to `SpychWake` |
 
