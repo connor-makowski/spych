@@ -142,7 +142,7 @@ class OllamaResponder(BaseResponder):
             )
             return False
 
-    def respond(self, user_input: str) -> AgentResponse:
+    def respond(self, user_input: str, is_continuation: bool = False) -> AgentResponse:
         """
         Usage:
 
@@ -161,7 +161,12 @@ class OllamaResponder(BaseResponder):
             - Type: AgentResponse
             - What: Parsed structured response from the Ollama model
         """
-        self.history.append({"role": "user", "content": user_input})
+        prompt = user_input
+        if is_continuation:
+            prompt = "Please continue."
+        else:
+            self.history.append({"role": "user", "content": user_input})
+
         prompt_history = "\n".join(
             f"{e['role'].capitalize()}: {e['content']}" for e in self.history
         )
@@ -172,7 +177,7 @@ class OllamaResponder(BaseResponder):
 
         Now here is your current prompt:
 
-        {self.format_prompt(user_input)}
+        {self.format_prompt(prompt)}
         """
 
         output = requests.post(

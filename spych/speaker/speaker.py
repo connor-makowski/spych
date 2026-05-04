@@ -1,3 +1,4 @@
+from typing import Optional, Callable
 import os
 
 os.environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "1"
@@ -43,6 +44,9 @@ class Speaker:
         self.interrupted = threading.Event()
         self.speaking_complete = threading.Event()
         self.speaking_complete.set()
+        self.__playback_started__ = False
+        self.on_playback_start = None
+        self.on_playback_complete = None
 
         self.backend = get_backend(
             speaker=self, voice=voice, backend_name=backend
@@ -50,6 +54,11 @@ class Speaker:
 
     def play_pcm_array(self, audio: np.ndarray, sample_rate: int) -> None:
         """Helper to play a numpy PCM array via pygame."""
+        if not self.__playback_started__:
+            self.__playback_started__ = True
+            if self.on_playback_start:
+                self.on_playback_start()
+
         pcm = (audio.flatten() * 32767).astype(np.int16)
         buf = io.BytesIO()
         with wave.open(buf, "wb") as wf:
@@ -78,12 +87,21 @@ class Speaker:
         self.interrupted.clear()
         self.backend.speak(text)
 
-    def speak_async(self, text: str) -> None:
+    def speak_async(
+        self, text: str, on_complete: Optional[Callable[[], None]] = None
+    ) -> None:
         """
         Usage:
 
         - Converts text to speech and plays it through the system audio output in
           a background thread. Does not block the main thread.
+
+        Optional:
+
+        - `on_complete`:
+            - Type: Callable[[], None] | None
+            - What: Callback triggered after playback finishes (even if interrupted).
+            - Default: None
         """
 
         def run_speak():
@@ -94,9 +112,14 @@ class Speaker:
                 pass
             finally:
                 self.speaking_complete.set()
+                if on_complete:
+                    on_complete()
+                if self.on_playback_complete:
+                    self.on_playback_complete()
 
         self.speaking_complete.clear()
         self.interrupted.clear()
+        self.__playback_started__ = False
         threading.Thread(target=run_speak, daemon=True).start()
 
     def wait_for_speak(self) -> None:

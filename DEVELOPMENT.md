@@ -33,6 +33,7 @@ spych/
     chatterbox.py          # SpychChatterboxTTS — standalone Chatterbox Turbo implementation
   cli.py                   # CLI entry point (spych subcommands)
   cli_tools.py             # Theme, CliSpinner, CliPrinter — terminal UI utilities
+  dashboard.py             # AgentDashboard — rich TUI for live agent interaction
   spinners.py              # Spinner frame definitions (BRAILLE, ARC, MOON, etc.)
   utils.py                 # Recorder, Notify, get_response_style, PERSONALITIES, get_personality
   agents/
@@ -107,6 +108,7 @@ All commands use Docker via `./run.sh`:
 - Handles the full voice cycle: listen → transcribe → respond → print → (optional TTS speak)
 - Optional hooks: `healthcheck()`, `on_before_respond()`, `on_after_respond()`
 - `__call__() -> AgentResponse | None`: runs one complete voice cycle
+- `allow_intermediate_responses: bool` (default `True`) — when `False`, disables intermediate response chaining.
 
 **`SpychOrchestrator`** (`orchestrator.py`) — multi-agent coordinator:
 - Accepts a list of `OrchestratorEntry` dicts, each with `responder`, `wake_words`, and `terminate_words`
@@ -118,6 +120,12 @@ All commands use Docker via `./run.sh`:
 - Producer-consumer architecture with three threads: `VADRecorder` → `Transcriber` → `Writer`
 - Writes to `.txt`, `.srt`, or both; maintains a context buffer (~128 words) for whisper `initial_prompt`
 - Stoppable via keystroke, spoken terminate word, or `KeyboardInterrupt`
+
+**`AgentDashboard`** (`dashboard.py`) — TUI:
+- Renders a live, interactive terminal dashboard in the alternate screen buffer.
+- Features real-time tool tracking, thought streaming, and conversation history.
+- Includes a scrollable "All Logs" mode and optimized text wrapping with internal caching.
+- Handles keyboard input for scrolling and mode toggling via a dedicated input thread.
 
 ### Built-in Agents (`spych/agents/`)
 

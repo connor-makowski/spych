@@ -127,7 +127,7 @@ class LocalOpenCodeCLIResponder(BaseResponder):
         """Strip inline tool-call XML from text, return clean prose only."""
         return self.TOOL_CALL_RE.sub("", text).strip()
 
-    def respond(self, user_input: str) -> AgentResponse:
+    def respond(self, user_input: str, is_continuation: bool = False) -> AgentResponse:
         """
         Usage:
 
@@ -141,6 +141,13 @@ class LocalOpenCodeCLIResponder(BaseResponder):
             - Type: str
             - What: The transcribed text from the user's audio input
 
+        Optional:
+
+        - `is_continuation`:
+            - Type: bool
+            - What: Whether this is a continuation call after an intermediate response.
+            - Default: False
+
         Returns:
 
         - `response`:
@@ -149,6 +156,10 @@ class LocalOpenCodeCLIResponder(BaseResponder):
         """
         is_first = self.first_call
         self.first_call = False
+
+        prompt = user_input
+        if is_continuation:
+            prompt = "Please continue."
 
         # Build command — prompt goes last as positional arg
         cmd = [resolve_cmd("opencode"), "run", "--format", "json"]
@@ -162,7 +173,7 @@ class LocalOpenCodeCLIResponder(BaseResponder):
         if self.model:
             cmd.extend(["--model", self.model])
 
-        cmd.append(self.format_prompt(user_input))
+        cmd.append(self.format_prompt(prompt))
 
         proc = subprocess.Popen(
             cmd,
@@ -218,7 +229,8 @@ class LocalOpenCodeCLIResponder(BaseResponder):
                             ).strip()
                             active_tools[tool_name] = time.time()
                             self.tool_event(
-                                tool_name, explanation, is_running=True
+                                tool_name, "running", is_running=True,
+                                detail=explanation or None,
                             )
 
                 accumulated_text = delta  # opencode sends full text each delta, not incremental

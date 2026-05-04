@@ -185,7 +185,7 @@ class LocalCodexCLIResponder(BaseResponder):
                     explanation = item.get("command", "")
                     active_tools[item_id] = (tool_name, time.time())
                     if self.show_tool_events:
-                        self.tool_event(tool_name, explanation, is_running=True)
+                        self.tool_event(tool_name, "running", is_running=True, detail=explanation or None)
 
             elif etype == "item.completed":
                 item = event.get("item", {})
@@ -227,7 +227,7 @@ class LocalCodexCLIResponder(BaseResponder):
 
         return final_text.strip()
 
-    def respond(self, user_input: str) -> AgentResponse:
+    def respond(self, user_input: str, is_continuation: bool = False) -> AgentResponse:
         """
         Runs a single `codex exec` subprocess turn and returns a structured
         AgentResponse. Tool calls are handled natively by the CLI.
@@ -235,9 +235,13 @@ class LocalCodexCLIResponder(BaseResponder):
         is_first = self.first_call
         self.first_call = False
 
+        prompt = user_input
+        if is_continuation:
+            prompt = "Please continue."
+
         active_tools: dict[str, tuple[str, float]] = {}
         raw = self.__run_turn__(
-            self.format_prompt(user_input),
+            self.format_prompt(prompt),
             is_first=is_first,
             active_tools=active_tools,
         )

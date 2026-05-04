@@ -431,6 +431,39 @@ class CliSpinner:
             frames = self._frames
 
 
+class NullSpinner:
+    """
+    Usage:
+
+    - Drop-in replacement for ``CliSpinner`` that suppresses all terminal
+      output. Used automatically by ``BaseResponder`` when an
+      ``AgentDashboard`` is active, so the spinner never corrupts the
+      alternate screen buffer.
+
+    Notes:
+
+    - All methods are no-ops. ``stop()`` returns ``False`` to match the
+      ``CliSpinner.stop()`` return value contract.
+    """
+
+    def start(
+        self, message: str | None = None, spinner: list[str] | None = None
+    ) -> None:
+        pass
+
+    def start_with_verbs(
+        self,
+        name: str,
+        verbs: list[str] | None = None,
+        interval: float = 10.0,
+        spinner: list[str] | None = None,
+    ) -> None:
+        pass
+
+    def stop(self, final_message: str | None = None) -> bool:
+        return False
+
+
 class CliPrinter:
     @staticmethod
     def divider(
@@ -478,15 +511,17 @@ class CliPrinter:
         status: str,
         is_running: bool = False,
         elapsed: float | None = None,
+        detail: str | None = None,
     ) -> None:
         icon = "⚙" if is_running else "✓"
         color = theme.running if is_running else theme.success
         elapsed_str = (
             f" {theme.chrome}({elapsed:.2f}s){theme.reset}" if elapsed else ""
         )
+        detail_str = f"  {theme.chrome}{detail}{theme.reset}" if detail else ""
         print(
             f"  {color}{icon}{theme.reset}  {theme.dim}tool:{theme.reset} "
-            f"{theme.italic}{tool_name}{theme.reset} -> {theme.chrome}{status}{elapsed_str}"
+            f"{theme.italic}{tool_name}{theme.reset}{detail_str}{elapsed_str}"
         )
 
     @staticmethod
