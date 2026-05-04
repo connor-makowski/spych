@@ -8,7 +8,7 @@ Usage:
 
 - Start before launching the agent; stop in a finally block:
 
-    dashboard = AgentDashboard(agent_name="Claude", wake_words=["claude"], responder_class="LocalClaudeCodeCLIResponder")
+    dashboard = AgentDashboard(agent_name="Claude", wake_words=["claude"], responder_name="LocalClaudeCodeCLIResponder")
     dashboard.start()
     try:
         claude_code_cli(dashboard=dashboard)
@@ -465,7 +465,7 @@ class _DashboardRenderer:
         self,
         agent_name: str,
         wake_words: list[str],
-        responder_class: str,
+        responder_name: str,
         response_style: str,
         use_speaker: bool,
         speaker_voice: str,
@@ -524,8 +524,8 @@ class _DashboardRenderer:
             if len(wake_words) > 1:
                 shown += f" +{len(wake_words) - 1}"
             header_parts.append(f"{_DIM}Wake: {shown}{_RESET}")
-        if responder_class:
-            header_parts.append(f"{_DIM}{responder_class}{_RESET}")
+        if responder_name:
+            header_parts.append(f"{_DIM}{responder_name}{_RESET}")
         if use_speaker and speaker_voice:
             header_parts.append(f"{_DIM}🔊 {speaker_voice}{_RESET}")
         if show_all:
@@ -811,7 +811,7 @@ class AgentDashboard:
         self,
         agent_name: str,
         wake_words: list[str],
-        responder_class: str = "",
+        responder_name: str = "",
         response_style: str = "",
         use_speaker: bool = False,
         speaker_voice: str = "",
@@ -824,7 +824,7 @@ class AgentDashboard:
     ) -> None:
         self._agent_name = agent_name
         self._wake_words = wake_words
-        self._responder_class = responder_class
+        self._responder_name = responder_name
         self._response_style = response_style
         self._use_speaker = use_speaker
         self._speaker_voice = speaker_voice
@@ -862,7 +862,7 @@ class AgentDashboard:
         self,
         name: str,
         wake_words: list[str],
-        responder_class: str = "",
+        responder_name: str = "",
         response_style: str = "",
         use_speaker: bool = False,
         speaker_voice: str = "",
@@ -886,7 +886,7 @@ class AgentDashboard:
 
         Optional:
 
-        - ``responder_class``:
+        - ``responder_name``:
             - Type: str
             - What: Name of the responder class.
             - Default: ""
@@ -910,7 +910,7 @@ class AgentDashboard:
         with self._lock:
             self._agent_name = name
             self._wake_words = wake_words
-            self._responder_class = responder_class
+            self._responder_name = responder_name
             self._response_style = response_style
             self._use_speaker = use_speaker
             self._speaker_voice = speaker_voice
@@ -1235,7 +1235,7 @@ class AgentDashboard:
             with self._lock:
                 agent_name = self._agent_name
                 wake_words = list(self._wake_words)
-                responder_class = self._responder_class
+                responder_name = self._responder_name
                 response_style = self._response_style
                 use_speaker = self._use_speaker
                 speaker_voice = self._speaker_voice
@@ -1254,7 +1254,7 @@ class AgentDashboard:
             self._renderer.render(
                 agent_name=agent_name,
                 wake_words=wake_words,
-                responder_class=responder_class,
+                responder_name=responder_name,
                 response_style=response_style,
                 use_speaker=use_speaker,
                 speaker_voice=speaker_voice,

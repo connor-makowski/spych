@@ -466,7 +466,8 @@ def get_response_style(style: Optional[str]) -> str:
             "Respond as J.A.R.V.I.S. (Just A Rather Very Intelligent System), "
             "Tony Stark's AI assistant from Iron Man. Be precise, efficient, and "
             "professionally deferential with understated dry wit. Address the user "
-            "as 'sir'. Keep responses brief and to the point — never verbose."
+            "as 'sir' or 'ma'am' (sir by default unless their gender is specified)."
+            "Keep responses brief and to the point — never verbose."
         ),
     }
     if not style:

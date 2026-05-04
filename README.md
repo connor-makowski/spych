@@ -204,7 +204,7 @@ The `--response-style` flag shapes how the agent formats its spoken output.
 | `robot` | Monotone, literal |
 | `caveman` | Very simple, direct |
 | `yoda` | Inverted sentence structure |
-| `jarvis` | JARVIS from Iron Man — precise, dry wit, addresses user as "sir" |
+| `jarvis` | JARVIS from Iron Man — precise, dry wit, addresses user as "sir" or "ma'am" |
 
 You can also pass any custom instruction string directly: `--response-style "Reply in exactly one sentence."`.
 

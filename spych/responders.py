@@ -39,6 +39,7 @@ class BaseResponder(Notify):
         dashboard: Optional[AgentDashboard] = None,
         user: Optional[str] = None,
         allow_intermediate_responses: bool = True,
+        display_name: Optional[str] = None,
     ) -> None:
         """
         Usage:
@@ -146,6 +147,12 @@ class BaseResponder(Notify):
               and a single respond() call always returns the full answer.
             - Default: True
 
+        - `display_name`:
+            - Type: str | None
+            - What: A human-readable name for the responder class, used specifically
+              for display in the dashboard header.
+            - Default: None (falls back to class name)
+
         Notes:
 
         - Subclasses must implement `respond(user_input) -> AgentResponse`.
@@ -160,6 +167,7 @@ class BaseResponder(Notify):
         self.spych_object = spych_object
         self.listen_duration = listen_duration
         self.name = name if name else self.__class__.__name__
+        self.display_name = display_name
         self.dashboard: Optional["AgentDashboard"] = dashboard
 
         # Set user profile

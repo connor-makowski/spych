@@ -666,15 +666,15 @@ def main():
     }
 
     _AGENT_RESPONDERS: dict[str, str] = {
-        "ollama": "OllamaResponder",
-        "claude_code_cli": "LocalClaudeCodeCLIResponder",
-        "claude_code_sdk": "LocalClaudeCodeSDKResponder",
-        "codex_cli": "LocalCodexCLIResponder",
-        "gemini_cli": "LocalGeminiCLIResponder",
-        "opencode_cli": "LocalOpenCodeCLIResponder",
+        "ollama": "Ollama",
+        "claude_code_cli": "Claude Code CLI",
+        "claude_code_sdk": "Claude Code SDK",
+        "codex_cli": "Codex CLI",
+        "gemini_cli": "Gemini CLI",
+        "opencode_cli": "OpenCode CLI",
     }
 
-    def _start_dashboard(agent_name: str, responder_class: str, kwargs: dict):
+    def _start_dashboard(agent_name: str, responder_name: str, kwargs: dict):
         """Create a dashboard and inject it into kwargs; start is deferred until healthchecks pass."""
         from spych.dashboard import AgentDashboard
         from spych.utils import get_user, get_default_user
@@ -687,10 +687,14 @@ def main():
                 profile_name = profile.get("name", "User") or "User"
 
         wake_words = kwargs.get("wake_words", _DEFAULT_WAKE_WORDS.get(args.agent, []))
+        
+        display_responder = _AGENT_RESPONDERS.get(args.agent, responder_name)
+        kwargs["display_name"] = display_responder
+
         dashboard = AgentDashboard(
             agent_name=kwargs.get("name", agent_name),
             wake_words=wake_words,
-            responder_class=responder_class,
+            responder_name=display_responder,
             response_style=kwargs.get("response_style", ""),
             use_speaker=kwargs.get("use_speaker", True),
             speaker_voice=kwargs.get("speaker_voice", "af_heart"),
@@ -956,7 +960,7 @@ def main():
             multi_dashboard = AgentDashboard(
                 agent_name=_multi_name_map.get(first_agent, first_agent),
                 wake_words=_DEFAULT_WAKE_WORDS.get(first_agent, []),
-                responder_class=_AGENT_RESPONDERS.get(first_agent, ""),
+                responder_name=_AGENT_RESPONDERS.get(first_agent, ""),
                 use_speaker=args.use_speaker,
                 user_name=profile_name,
             )
@@ -981,6 +985,7 @@ def main():
                             show_tool_events=args.show_tool_events,
                             dashboard=multi_dashboard,
                             user=args.user,
+                            display_name=_AGENT_RESPONDERS.get("claude_code_cli"),
                         ),
                         "wake_words": ["claude", "clod", "cloud", "clawed"],
                         "terminate_words": args.terminate_words,
@@ -1004,6 +1009,7 @@ def main():
                             show_tool_events=args.show_tool_events,
                             dashboard=multi_dashboard,
                             user=args.user,
+                            display_name=_AGENT_RESPONDERS.get("claude_code_sdk"),
                         ),
                         "wake_words": ["claude", "clod", "cloud", "clawed"],
                         "terminate_words": args.terminate_words,
@@ -1026,6 +1032,7 @@ def main():
                             show_tool_events=args.show_tool_events,
                             dashboard=multi_dashboard,
                             user=args.user,
+                            display_name=_AGENT_RESPONDERS.get("codex_cli"),
                         ),
                         "wake_words": ["codex"],
                         "terminate_words": args.terminate_words,
@@ -1048,6 +1055,7 @@ def main():
                             show_tool_events=args.show_tool_events,
                             dashboard=multi_dashboard,
                             user=args.user,
+                            display_name=_AGENT_RESPONDERS.get("gemini_cli"),
                         ),
                         "wake_words": ["gemini"],
                         "terminate_words": args.terminate_words,
@@ -1071,6 +1079,7 @@ def main():
                             model=args.opencode_model,
                             dashboard=multi_dashboard,
                             user=args.user,
+                            display_name=_AGENT_RESPONDERS.get("opencode_cli"),
                         ),
                         "wake_words": ["opencode", "open code"],
                         "terminate_words": args.terminate_words,
@@ -1094,6 +1103,7 @@ def main():
                             use_speaker=args.use_speaker,
                             dashboard=multi_dashboard,
                             user=args.user,
+                            display_name=_AGENT_RESPONDERS.get("ollama"),
                         ),
                         "wake_words": ["llama", "ollama", "lama"],
                         "terminate_words": args.terminate_words,
