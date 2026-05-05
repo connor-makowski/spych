@@ -1,14 +1,25 @@
 from __future__ import annotations
 
-from spych.utils import Notify, get_response_style, get_setting, get_user, get_default_user
-from spych.cli_tools import CliSpinner, NullSpinner, CliPrinter, theme, set_theme
+from spych.utils import (
+    Notify,
+    get_response_style,
+    get_setting,
+    get_user,
+    get_default_user,
+)
+from spych.cli_tools import (
+    CliSpinner,
+    NullSpinner,
+    CliPrinter,
+    theme,
+    set_theme,
+)
 from spych.spinners import Spinner
 from spych.speaker import Speaker
 from dataclasses import dataclass
 from typing import Optional, Any
 import json
 import time
-import re
 from spych.dashboard import AgentDashboard
 
 # Set theme from settings
@@ -240,7 +251,9 @@ class BaseResponder(Notify):
             - Default: True
         """
         if self.dashboard is not None:
-            self.dashboard.on_status_change("waiting", turn_id=self._current_turn_id)
+            self.dashboard.on_status_change(
+                "waiting", turn_id=self._current_turn_id
+            )
             return
         if divider:
             CliPrinter.divider()
@@ -292,11 +305,21 @@ class BaseResponder(Notify):
             - Default: None
         """
         if self.dashboard is not None:
-            self.dashboard.on_tool_event(tool_name, status, is_running=is_running, elapsed=elapsed, detail=detail)
+            self.dashboard.on_tool_event(
+                tool_name,
+                status,
+                is_running=is_running,
+                elapsed=elapsed,
+                detail=detail,
+            )
             return
         was_running = self.spinner.stop()
         CliPrinter.tool_event(
-            tool_name, status, is_running=is_running, elapsed=elapsed, detail=detail
+            tool_name,
+            status,
+            is_running=is_running,
+            elapsed=elapsed,
+            detail=detail,
         )
         if was_running:
             self.spinner.start()
@@ -498,7 +521,9 @@ class BaseResponder(Notify):
         """
         return True
 
-    def respond(self, user_input: str, is_continuation: bool = False) -> AgentResponse:
+    def respond(
+        self, user_input: str, is_continuation: bool = False
+    ) -> AgentResponse:
         """
         Usage:
 
@@ -592,7 +617,9 @@ class BaseResponder(Notify):
         - It updates the spinner label to show the responder name and listening duration.
         """
         if self.dashboard is not None:
-            self.dashboard.on_status_change("listening", turn_id=self._current_turn_id)
+            self.dashboard.on_status_change(
+                "listening", turn_id=self._current_turn_id
+            )
             return
         if duration is not None:
             listen_duration = duration
@@ -607,7 +634,9 @@ class BaseResponder(Notify):
             spinner=Spinner.EQUALIZER,
         )
 
-    def on_user_input(self, user_input: str, is_continuation: bool = False) -> None:
+    def on_user_input(
+        self, user_input: str, is_continuation: bool = False
+    ) -> None:
         """
         Usage:
 
@@ -638,7 +667,9 @@ class BaseResponder(Notify):
         self._current_user_input = user_input
         if self.dashboard is not None:
             self.dashboard.on_user_input(
-                user_input, is_continuation=is_continuation, turn_id=self._current_turn_id
+                user_input,
+                is_continuation=is_continuation,
+                turn_id=self._current_turn_id,
             )
             self.dashboard.on_status_change(
                 "thinking", turn_id=self._current_turn_id
@@ -676,13 +707,18 @@ class BaseResponder(Notify):
         if self.dashboard is not None:
             if response.response:
                 self.dashboard.on_response(response, self.name, elapsed)
-            
+
             # Only transition to waiting if we aren't about to speak,
             # no follow-up is needed, and this isn't an intermediate response.
-            if not response.requires_user_feedback and not response.is_intermediate_response:
+            if (
+                not response.requires_user_feedback
+                and not response.is_intermediate_response
+            ):
                 about_to_speak = self.speaker and response.response
                 if not about_to_speak:
-                    self.dashboard.on_status_change("waiting", turn_id=self._current_turn_id)
+                    self.dashboard.on_status_change(
+                        "waiting", turn_id=self._current_turn_id
+                    )
             return
         self.spinner.stop()
         if response.response:
@@ -708,7 +744,9 @@ class BaseResponder(Notify):
         - It stops the spinner and prints an informative message about the termination.
         """
         if self.dashboard is not None:
-            self.dashboard.on_status_change("terminated", turn_id=self._current_turn_id)
+            self.dashboard.on_status_change(
+                "terminated", turn_id=self._current_turn_id
+            )
             return
         self.spinner.stop()
         CliPrinter.info(f"{self.name} has been terminated.")
@@ -773,9 +811,13 @@ class BaseResponder(Notify):
 
             try:
                 while True:
-                    self.on_user_input(current_query, is_continuation=is_continuation_turn)
+                    self.on_user_input(
+                        current_query, is_continuation=is_continuation_turn
+                    )
                     self.on_before_respond(current_query)
-                    response = self.respond(current_query, is_continuation=is_continuation_turn)
+                    response = self.respond(
+                        current_query, is_continuation=is_continuation_turn
+                    )
                     self.on_after_respond(current_query, response)
 
                     # Update internal flags immediately so callbacks see the correct state
@@ -783,20 +825,22 @@ class BaseResponder(Notify):
                         self.allow_intermediate_responses
                         and response.is_intermediate_response
                     )
-                    self._awaiting_follow_up = bool(response.requires_user_feedback)
+                    self._awaiting_follow_up = bool(
+                        response.requires_user_feedback
+                    )
 
                     # Unified response handling for both intermediate and final acknowledgments.
                     # We only print/speak if there is actual response text.
                     if response.response:
                         if self.speaker:
                             self.speaker.wait_for_speak()
-
                         self.on_response(response)
 
                         if self.speaker:
                             text_to_speak = (
                                 response.response
-                                if len(response.response) <= self.summary_character_limit
+                                if len(response.response)
+                                <= self.summary_character_limit
                                 else response.summary
                             )
                             # Capture closure variables to fix race condition in dashboard status updates (Bug 5)
@@ -808,7 +852,7 @@ class BaseResponder(Notify):
                                     # Only the latest speech turn should update the status
                                     if self._last_speak_turn_id != tid:
                                         return
-                                    
+
                                     if self._continuation_in_progress:
                                         self.dashboard.on_status_change(
                                             "thinking", turn_id=tid
@@ -822,7 +866,9 @@ class BaseResponder(Notify):
                                             "waiting", turn_id=tid
                                         )
 
-                            self.speaker.speak_async(text_to_speak, on_complete=_on_complete)
+                            self.speaker.speak_async(
+                                text_to_speak, on_complete=_on_complete
+                            )
                     else:
                         # For final empty responses, still call on_response to show
                         # status (e.g. failure icon) or commit the dashboard turn.

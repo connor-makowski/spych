@@ -2,9 +2,10 @@ from spych.core import Spych
 from spych.orchestrator import SpychOrchestrator
 from spych.responders import BaseResponder, AgentResponse
 from spych.cli_tools import CliPrinter, theme
-from spych.utils import resolve_cmd, StreamSubprocess
+from spych.utils import resolve_cmd, StreamJsonCommand
 from typing import Optional, Any
-import subprocess, json, time, shutil
+import time
+import shutil
 
 
 class LocalGeminiCLIResponder(BaseResponder):
@@ -132,50 +133,27 @@ class LocalGeminiCLIResponder(BaseResponder):
             )
             return False
 
-        # --- 2. Verify authentication and connectivity ---
         # Run a minimal prompt; the CLI will emit an error event early if
         # credentials are missing or the API is unreachable.
         try:
-            proc = subprocess.Popen(
-                [
-                    resolve_cmd("gemini"),
-                    "-p",
-                    "return only 'true' then stop immediately.",
-                    "--output-format",
-                    "stream-json",
-                ],
-                stdin=subprocess.DEVNULL,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True,
+            cmd = [resolve_cmd("gemini"), "--output-format", "stream-json"]
+            stream = StreamJsonCommand(
+                cmd, input_text="return only 'true' then stop immediately.\n"
             )
 
             authenticated = False
             error_message = ""
 
-            stream = StreamSubprocess(proc)
-
             try:
-                # Read lines with a timeout — we only need the first few
-                # events to know whether auth succeeded.
                 deadline = time.time() + 10
                 while True:
                     remaining = deadline - time.time()
                     if remaining <= 0:
                         break
 
-                    raw_line = stream.get(timeout=remaining)
-                    if raw_line is None:
-                        break  # timed out or EOF
-
-                    raw_line = raw_line.strip()
-                    if not raw_line:
-                        continue
-
-                    try:
-                        event = json.loads(raw_line)
-                    except json.JSONDecodeError:
-                        continue
+                    event = stream.get(timeout=remaining)
+                    if event is None:
+                        break
 
                     etype = event.get("type")
 
@@ -186,14 +164,17 @@ class LocalGeminiCLIResponder(BaseResponder):
                         )
                         break
 
-                    # Any successful non-error event (init, message, result)
-                    # means the CLI authenticated and connected to the API.
                     if etype in ("init", "message", "result"):
                         authenticated = True
                         break
             finally:
-                proc.kill()
-                proc.wait()
+                stream.kill()
+
+            if not authenticated and not error_message:
+                # Check stderr if we didn't get a JSON error event or success
+                stderr_text = "".join(stream.stderr_lines).strip()
+                if stderr_text:
+                    error_message = stderr_text
 
             if error_message:
                 CliPrinter.info(
@@ -243,7 +224,9 @@ class LocalGeminiCLIResponder(BaseResponder):
             )
             return False
 
-    def respond(self, user_input: str, is_continuation: bool = False) -> AgentResponse:
+    def respond(
+        self, user_input: str, is_continuation: bool = False
+    ) -> AgentResponse:
         """
         Usage:
 
@@ -277,42 +260,19 @@ class LocalGeminiCLIResponder(BaseResponder):
         if is_continuation:
             prompt = "Please continue."
 
-        cmd = [
-            resolve_cmd("gemini"),
-            "-p",
-            self.format_prompt(prompt),
-            "--output-format",
-            "stream-json",
-        ]
-
+        cmd = [resolve_cmd("gemini"), "--output-format", "stream-json"]
         if self.continue_conversation:
             if self._last_session_id:
                 cmd.extend(["--resume", self._last_session_id])
             elif not is_first:
                 cmd.extend(["--resume", "latest"])
 
-        proc = subprocess.Popen(
-            cmd,
-            stdin=subprocess.DEVNULL,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-        )
+        stream = StreamJsonCommand(cmd, input_text=self.format_prompt(prompt))
 
         final_result = ""
-        # tool_id -> (name, start_time)
         active_tools: dict[str, tuple[str, float]] = {}
 
-        for raw_line in StreamSubprocess(proc):
-            raw_line = raw_line.strip()
-            if not raw_line:
-                continue
-
-            try:
-                event = json.loads(raw_line)
-            except json.JSONDecodeError:
-                continue
-
+        for event in stream:
             etype = event.get("type")
 
             if (
@@ -344,11 +304,33 @@ class LocalGeminiCLIResponder(BaseResponder):
                 if self.show_tool_events:
                     # Extract a short human-readable detail from the parameters dict.
                     # Prefer well-known keys; fall back to the first string value.
-                    _PREF_KEYS = ("path", "file_path", "command", "query", "url", "pattern", "summary", "strategic_intent", "title")
-                    detail = next((str(params[k]) for k in _PREF_KEYS if k in params), None)
+                    _PREF_KEYS = (
+                        "path",
+                        "file_path",
+                        "command",
+                        "query",
+                        "url",
+                        "pattern",
+                        "summary",
+                        "strategic_intent",
+                        "title",
+                    )
+                    detail = next(
+                        (str(params[k]) for k in _PREF_KEYS if k in params),
+                        None,
+                    )
                     if not detail:
-                        detail = next((str(v) for v in params.values() if isinstance(v, str) and v), None)
-                    self.tool_event(tool_name, "running", is_running=True, detail=detail)
+                        detail = next(
+                            (
+                                str(v)
+                                for v in params.values()
+                                if isinstance(v, str) and v
+                            ),
+                            None,
+                        )
+                    self.tool_event(
+                        tool_name, "running", is_running=True, detail=detail
+                    )
 
             elif etype == "tool_result":
                 tool_id = event.get("tool_id", event.get("tool_name"))
@@ -368,7 +350,13 @@ class LocalGeminiCLIResponder(BaseResponder):
             elif etype == "error":
                 final_result = f"Error: {event.get('message', 'unknown error')}"
 
-        proc.wait()
+        stream.wait()
+
+        if not final_result:
+            stderr_text = "".join(stream.stderr_lines).strip()
+            if stderr_text:
+                final_result = f"Error: {stderr_text}"
+
         return self.parse_output(final_result)
 
 

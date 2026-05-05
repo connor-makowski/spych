@@ -1,5 +1,5 @@
 import json
-import traceback, sys, os, wave, shutil, threading, queue, subprocess
+import traceback, sys, os, wave, shutil, threading, queue, subprocess, time
 from pvrecorder import PvRecorder
 import numpy as np
 from typing import Any, Union, Optional
@@ -13,8 +13,9 @@ def resolve_cmd(name: str) -> str:
 
     - Resolves a CLI command name to its full executable path using shutil.which.
       On Windows, Node.js CLI tools are installed as .cmd wrappers (e.g. gemini.cmd).
-      subprocess.Popen with shell=False cannot find them by bare name, but shutil.which
-      respects PATHEXT and returns the full path including the extension.
+      While shutil.which returns the full path including the extension,
+      subprocess.Popen on Windows often requires shell=True to correctly
+      execute these batch wrappers.
 
     Requires:
 
@@ -29,6 +30,22 @@ def resolve_cmd(name: str) -> str:
         - What: The full path to the executable if found, otherwise the original name
     """
     return shutil.which(name) or name
+
+
+def supports_unicode() -> bool:
+    """
+    Check if the terminal likely supports Unicode icons (like braille or emoji).
+    On Windows, we check for 'utf-8' encoding or typical modern terminal indicators.
+    """
+    if sys.platform != "win32":
+        return True
+    # Modern Windows Terminal or VS Code terminal usually support Unicode
+    if os.environ.get("WT_SESSION") or os.environ.get("VSCODE_PID"):
+        return True
+    # If the output encoding is explicitly set to utf-8, we trust it
+    if getattr(sys.stdout, "encoding", "").lower() == "utf-8":
+        return True
+    return False
 
 
 def get_cache_dir(folder="voices") -> str:
@@ -52,7 +69,7 @@ def get_setting(key: str, default: Any = None) -> Any:
     path = os.path.join(get_cache_dir("settings"), "settings.json")
     if not os.path.exists(path):
         return default
-    with open(path, "r") as f:
+    with open(path, "r", encoding="utf-8") as f:
         try:
             settings = json.load(f)
         except json.JSONDecodeError:
@@ -66,13 +83,13 @@ def set_setting(key: str, value: Any) -> None:
     path = os.path.join(folder, "settings.json")
     settings = {}
     if os.path.exists(path):
-        with open(path, "r") as f:
+        with open(path, "r", encoding="utf-8") as f:
             try:
                 settings = json.load(f)
             except json.JSONDecodeError:
                 settings = {}
     settings[key] = value
-    with open(path, "w") as f:
+    with open(path, "w", encoding="utf-8") as f:
         json.dump(settings, f, indent=4)
 
 
@@ -81,7 +98,7 @@ def get_user(name: str) -> Optional[dict]:
     path = os.path.join(get_cache_dir("users"), f"{name}.json")
     if not os.path.exists(path):
         return None
-    with open(path, "r") as f:
+    with open(path, "r", encoding="utf-8") as f:
         try:
             return json.load(f)
         except json.JSONDecodeError:
@@ -98,7 +115,7 @@ def set_user(name: str, data: dict) -> None:
     """Sets a user profile in the cache."""
     folder = get_cache_dir("users")
     path = os.path.join(folder, f"{name}.json")
-    with open(path, "w") as f:
+    with open(path, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=4)
 
 
@@ -504,7 +521,6 @@ PERSONALITIES: dict[str, dict] = {
         "use_speaker": True,
         "response_style": "pirate",
     },
-
     "news_anchor": {
         "name": "Bella the News Anchor",
         "wake_words": ["bella", "news anchor", "anchor"],
@@ -556,7 +572,9 @@ def get_personality(name: str) -> dict:
     key = name.lower()
     if key not in PERSONALITIES:
         valid = ", ".join(sorted(PERSONALITIES))
-        raise ValueError(f"Unknown personality {name!r}. Valid options: {valid}")
+        raise ValueError(
+            f"Unknown personality {name!r}. Valid options: {valid}"
+        )
     return dict(PERSONALITIES[key])
 
 
@@ -572,7 +590,7 @@ class StreamSubprocess:
     Example:
 
     ```python
-    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, encoding='utf-8')
     for line in StreamSubprocess(proc):
         print(line)
     ```
@@ -582,6 +600,7 @@ class StreamSubprocess:
         self.proc = proc
         self.q = queue.Queue()
         self._sentinel = object()
+        self.stderr_lines: list[str] = []
 
         self._stdout_thread = threading.Thread(
             target=self._reader, args=(self.proc.stdout,), daemon=True
@@ -595,8 +614,9 @@ class StreamSubprocess:
 
     def _reader(self, pipe):
         try:
-            for line in pipe:
-                self.q.put(line)
+            if pipe:
+                for line in pipe:
+                    self.q.put(line)
         except Exception:
             pass
         finally:
@@ -604,8 +624,9 @@ class StreamSubprocess:
 
     def _drain(self, pipe):
         try:
-            for _ in pipe:
-                pass
+            if pipe:
+                for line in pipe:
+                    self.stderr_lines.append(line)
         except Exception:
             pass
         finally:
@@ -633,3 +654,199 @@ class StreamSubprocess:
             return item
         except queue.Empty:
             return None
+
+    def kill(self):
+        """Kills the underlying process and waits for threads to finish."""
+        try:
+            self.proc.kill()
+            self.proc.wait()
+        except Exception:
+            pass
+
+
+class StreamJsonCommand:
+    """
+    Usage:
+
+    - Launches a subprocess, writes optional stdin input, and provides a
+      thread-safe iterator over parsed JSON objects from stdout. Blank lines
+      and non-JSON lines are skipped silently. On Windows, wraps the command
+      in ``cmd.exe /c`` to ensure ``.cmd`` wrappers execute correctly.
+
+    Example:
+
+    ```python
+    for event in StreamJsonCommand(["gemini", "--output-format", "stream-json"], input_text="hello"):
+        print(event.get("type"))
+    ```
+    """
+
+    def __init__(
+        self, cmd: list[str], input_text: Optional[str] = None
+    ) -> None:
+        """
+        Usage:
+
+        - Launches the given command as a subprocess, writes optional input to
+          stdin, then immediately closes stdin so the process knows no more
+          input is coming.
+
+        Requires:
+
+        - `cmd`:
+            - Type: list[str]
+            - What: The command and arguments to execute.
+
+        Optional:
+
+        - `input_text`:
+            - Type: str | None
+            - What: Text to write to the process's stdin before closing it.
+            - Default: None
+        """
+        if os.name == "nt":
+            cmd = ["cmd.exe", "/c"] + cmd
+
+        proc = subprocess.Popen(
+            cmd,
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            shell=False,
+        )
+
+        if input_text:
+            try:
+                proc.stdin.write(input_text + "\n")
+                proc.stdin.flush()
+            except BrokenPipeError:
+                pass
+        try:
+            proc.stdin.close()
+        except Exception:
+            pass
+
+        self._proc = proc
+        self._stream = StreamSubprocess(proc)
+        self.stderr_lines: list[str] = self._stream.stderr_lines
+
+    def __iter__(self) -> "StreamJsonCommand":
+        return self
+
+    def __next__(self) -> dict:
+        while True:
+            line = next(self._stream)
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                return json.loads(line)
+            except json.JSONDecodeError:
+                continue
+
+    def get(self, timeout: Optional[float] = None) -> Optional[dict]:
+        """
+        Usage:
+
+        - Get the next parsed JSON event from stdout with an optional timeout.
+          Blank lines and non-JSON lines are skipped; only valid JSON objects
+          are returned.
+
+        Optional:
+
+        - `timeout`:
+            - Type: float | None
+            - What: Maximum seconds to wait for the next valid JSON event.
+            - Default: None (block indefinitely)
+
+        Returns:
+
+        - `event`:
+            - Type: dict | None
+            - What: The next parsed JSON event, or None if the timeout expires
+              or the process exits before emitting another valid event.
+        """
+        deadline = (time.time() + timeout) if timeout is not None else None
+        while True:
+            if deadline is not None:
+                remaining = deadline - time.time()
+                if remaining <= 0:
+                    return None
+            else:
+                remaining = None
+            raw = self._stream.get(timeout=remaining)
+            if raw is None:
+                return None
+            raw = raw.strip()
+            if not raw:
+                continue
+            try:
+                return json.loads(raw)
+            except json.JSONDecodeError:
+                continue
+
+    def wait(self) -> None:
+        """Wait for the subprocess to exit after all output has been consumed."""
+        try:
+            self._proc.wait()
+        except Exception:
+            pass
+
+    def kill(self) -> None:
+        """Kill the underlying subprocess and wait for reader threads to finish."""
+        self._stream.kill()
+
+
+def stream_json_command(
+    cmd: list[str], input_text: Optional[str] = None
+) -> StreamSubprocess:
+    """
+    Usage:
+
+    - Runs a command and returns a StreamSubprocess object that can be
+      iterated over to receive parsed JSON objects from stdout.
+
+    Requires:
+
+    - `cmd`:
+        - Type: list[str]
+        - What: The command and arguments to execute.
+
+    Optional:
+
+    - `input_text`:
+        - Type: str | None
+        - What: Text to write to the process's stdin before closing it.
+    """
+    if os.name == "nt":
+        # Always use cmd.exe /c for wrappers on Windows for stability
+        cmd = ["cmd.exe", "/c"] + cmd
+
+    proc = subprocess.Popen(
+        cmd,
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        shell=False,
+    )
+
+    if input_text:
+        try:
+            proc.stdin.write(input_text + "\n")
+            proc.stdin.flush()
+        except BrokenPipeError:
+            pass
+
+    # Always close stdin so the process knows no more input is coming
+    try:
+        proc.stdin.close()
+    except Exception:
+        pass
+
+    return StreamSubprocess(proc)

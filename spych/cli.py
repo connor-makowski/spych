@@ -686,8 +686,10 @@ def main():
             if profile:
                 profile_name = profile.get("name", "User") or "User"
 
-        wake_words = kwargs.get("wake_words", _DEFAULT_WAKE_WORDS.get(args.agent, []))
-        
+        wake_words = kwargs.get(
+            "wake_words", _DEFAULT_WAKE_WORDS.get(args.agent, [])
+        )
+
         display_responder = _AGENT_RESPONDERS.get(args.agent, responder_name)
         kwargs["display_name"] = display_responder
 
@@ -832,7 +834,15 @@ def main():
         )
 
     elif args.agent == "users":
-        from spych.utils import get_all_users, get_user, set_user, set_default_user, get_default_user, set_setting, get_setting
+        from spych.utils import (
+            get_all_users,
+            get_user,
+            set_user,
+            set_default_user,
+            get_default_user,
+            set_setting,
+            get_setting,
+        )
         from spych.cli_tools import set_theme
 
         def users_menu():
@@ -840,19 +850,21 @@ def main():
                 print("\n  " + "=" * 20)
                 print("  SPYCH USER MANAGEMENT")
                 print("  " + "=" * 20)
-                
+
                 users = get_all_users()
                 default_user = get_default_user()
                 current_theme = get_setting("theme", "dark")
-                
+
                 print(f"\n  Default User: {default_user or 'None'}")
                 print(f"  Current Theme: {current_theme}")
                 print("\n  Users:")
                 if not users:
                     print("    (No users found)")
                 for u in users:
-                    print(f"    - {u}{' (default)' if u == default_user else ''}")
-                
+                    print(
+                        f"    - {u}{' (default)' if u == default_user else ''}"
+                    )
+
                 print("\n  Options:")
                 print("    1. Create new user")
                 print("    2. Edit user")
@@ -860,9 +872,9 @@ def main():
                 print("    4. Set default user")
                 print("    5. Set theme")
                 print("    6. Exit")
-                
+
                 choice = input("\n  Choice: ").strip()
-                
+
                 if choice == "1":
                     name = input("  User name: ").strip()
                     if name:
@@ -874,21 +886,29 @@ def main():
                         }
                         set_user(name, data)
                         print(f"  User '{name}' created.")
-                
+
                 elif choice == "2":
                     name = input("  User name to edit: ").strip()
                     user = get_user(name)
                     if user:
                         print(f"  Editing {name} (leave blank to keep current)")
-                        user["name"] = input(f"    Full name [{user.get('name', '')}]: ").strip() or user.get("name", "")
-                        user["age"] = input(f"    Age [{user.get('age', '')}]: ").strip() or user.get("age", "")
-                        user["gender"] = input(f"    Gender [{user.get('gender', '')}]: ").strip() or user.get("gender", "")
-                        user["extra"] = input(f"    Extra info [{user.get('extra', '')}]: ").strip() or user.get("extra", "")
+                        user["name"] = input(
+                            f"    Full name [{user.get('name', '')}]: "
+                        ).strip() or user.get("name", "")
+                        user["age"] = input(
+                            f"    Age [{user.get('age', '')}]: "
+                        ).strip() or user.get("age", "")
+                        user["gender"] = input(
+                            f"    Gender [{user.get('gender', '')}]: "
+                        ).strip() or user.get("gender", "")
+                        user["extra"] = input(
+                            f"    Extra info [{user.get('extra', '')}]: "
+                        ).strip() or user.get("extra", "")
                         set_user(name, user)
                         print(f"  User '{name}' updated.")
                     else:
                         print("  User not found.")
-                
+
                 elif choice == "3":
                     name = input("  User name to delete: ").strip()
                     path = os.path.join(get_cache_dir("users"), f"{name}.json")
@@ -899,7 +919,7 @@ def main():
                         print(f"  User '{name}' deleted.")
                     else:
                         print("  User not found.")
-                
+
                 elif choice == "4":
                     name = input("  Default user name (or 'none'): ").strip()
                     if name.lower() == "none":
@@ -910,16 +930,20 @@ def main():
                         print(f"  Default user set to '{name}'.")
                     else:
                         print("  User not found.")
-                
+
                 elif choice == "5":
-                    theme = input("  Theme (dark, light, solarized, mono): ").strip().lower()
+                    theme = (
+                        input("  Theme (dark, light, solarized, mono): ")
+                        .strip()
+                        .lower()
+                    )
                     if theme in ["dark", "light", "solarized", "mono"]:
                         set_setting("theme", theme)
                         set_theme(theme)
                         print(f"  Theme set to '{theme}'.")
                     else:
                         print("  Invalid theme.")
-                
+
                 elif choice == "6":
                     break
 
@@ -985,7 +1009,9 @@ def main():
                             show_tool_events=args.show_tool_events,
                             dashboard=multi_dashboard,
                             user=args.user,
-                            display_name=_AGENT_RESPONDERS.get("claude_code_cli"),
+                            display_name=_AGENT_RESPONDERS.get(
+                                "claude_code_cli"
+                            ),
                         ),
                         "wake_words": ["claude", "clod", "cloud", "clawed"],
                         "terminate_words": args.terminate_words,
@@ -1009,7 +1035,9 @@ def main():
                             show_tool_events=args.show_tool_events,
                             dashboard=multi_dashboard,
                             user=args.user,
-                            display_name=_AGENT_RESPONDERS.get("claude_code_sdk"),
+                            display_name=_AGENT_RESPONDERS.get(
+                                "claude_code_sdk"
+                            ),
                         ),
                         "wake_words": ["claude", "clod", "cloud", "clawed"],
                         "terminate_words": args.terminate_words,

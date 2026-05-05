@@ -1,6 +1,13 @@
-import sys, time, threading, re, random
+import sys
+import time
+import threading
+import re
+import random
 
 from spych.spinners import Spinner
+from spych.utils import supports_unicode
+
+_HAS_UNICODE = supports_unicode()
 
 # Helper to strip ANSI escape codes before measuring string length,
 # so box-drawing alignment is based on visible characters only.
@@ -417,8 +424,15 @@ class CliSpinner:
                 f"{theme.body}{self._message}{theme.chrome}{dots:<3}{theme.reset}"
                 f"{padding}"
             )
-            sys.stdout.write(line)
-            sys.stdout.flush()
+            try:
+                sys.stdout.write(line)
+                sys.stdout.flush()
+            except UnicodeEncodeError:
+                # Fallback: strip non-ASCII characters (like braille) from the line
+                # but keep the rest of the message and formatting.
+                safe_line = "".join(c if ord(c) < 128 else " " for c in line)
+                sys.stdout.write(safe_line)
+                sys.stdout.flush()
 
             time.sleep(0.12)
             frame_idx += 1
@@ -469,8 +483,14 @@ class CliPrinter:
     def divider(
         char: str = "─", width: int = 60, color: str | None = None
     ) -> None:
+        if not _HAS_UNICODE and char == "─":
+            char = "-"
         color = color if color is not None else theme.accent
-        print(f"{color}{char * width}{theme.reset}")
+        try:
+            print(f"{color}{char * width}{theme.reset}")
+        except UnicodeEncodeError:
+            # Fallback to standard hyphen if the chosen char fails
+            print(f"{color}{'-' * width}{theme.reset}")
 
     @staticmethod
     def empty_line() -> None:
@@ -484,12 +504,29 @@ class CliPrinter:
             f": {theme.body}{label}{theme.reset}"
         )
         pad = max(0, 58 - _visible_len(inner))
-        print(
-            f"\n{theme.chrome}┌{'─' * 58}┐{theme.reset}\n"
-            f"{theme.chrome}│{theme.reset}{inner}{theme.reset}"
-            f"{' ' * pad}{theme.chrome}│{theme.reset}\n"
-            f"{theme.chrome}└{'─' * 58}┘{theme.reset}"
+
+        # Safe characters for box drawing
+        tl, tr, bl, br, h, v = (
+            ("┌", "┐", "└", "┘", "─", "│")
+            if _HAS_UNICODE
+            else ("+", "+", "+", "+", "-", "|")
         )
+
+        try:
+            print(
+                f"\n{theme.chrome}{tl}{h * 58}{tr}{theme.reset}\n"
+                f"{theme.chrome}{v}{theme.reset}{inner}{theme.reset}"
+                f"{' ' * pad}{theme.chrome}{v}{theme.reset}\n"
+                f"{theme.chrome}{bl}{h * 58}{br}{theme.reset}"
+            )
+        except UnicodeEncodeError:
+            # Absolute ASCII fallback
+            print(
+                f"\n{theme.chrome}+{'=' * 58}+{theme.reset}\n"
+                f"{theme.chrome}|{theme.reset}{inner}{theme.reset}"
+                f"{' ' * pad}{theme.chrome}|{theme.reset}\n"
+                f"{theme.chrome}+{'=' * 58}+{theme.reset}"
+            )
 
     @staticmethod
     def kwarg_inputs(**kwargs) -> None:
@@ -513,7 +550,11 @@ class CliPrinter:
         elapsed: float | None = None,
         detail: str | None = None,
     ) -> None:
-        icon = "⚙" if is_running else "✓"
+        icon = (
+            ("⚙" if _HAS_UNICODE else "*")
+            if is_running
+            else ("✓" if _HAS_UNICODE else "+")
+        )
         color = theme.running if is_running else theme.success
         elapsed_str = (
             f" {theme.chrome}({elapsed:.2f}s){theme.reset}" if elapsed else ""
@@ -546,15 +587,19 @@ class CliPrinter:
             - Default: None
         """
         color = color if color is not None else theme.accent
+        icon = "i"
         print(
-            f"  {color}{theme.bold}i{theme.reset}  {theme.body}{message}{theme.reset}"
+            f"  {color}{theme.bold}{icon}{theme.reset}  {theme.body}{message}{theme.reset}"
         )
 
     @staticmethod
     def typewrite(text: str, delay: float = 0.008) -> None:
         """Print text with a subtle typewriter effect."""
         for ch in text:
-            sys.stdout.write(ch)
+            try:
+                sys.stdout.write(ch)
+            except UnicodeEncodeError:
+                sys.stdout.write(" ")
             sys.stdout.flush()
             time.sleep(delay)
         print()
@@ -564,18 +609,33 @@ class CliPrinter:
         """Render the final response with light formatting."""
         print(f"  {theme.highlight}{theme.bold}{name}:{theme.reset}")
         print()
-        print(text)
+        # Use a safe way to print the response text to avoid UnicodeEncodeError on Windows
+        try:
+            print(text)
+        except UnicodeEncodeError:
+            # Fallback for the whole block of text
+            print(text.encode("ascii", "replace").decode("ascii"))
 
     @staticmethod
     def print_summary(text: str) -> None:
         """Render a condensed summary line below the full response."""
-        print(
-            f"\n  {theme.dim}Summary:{theme.reset} {theme.body}{text}{theme.reset}"
-        )
+        try:
+            print(
+                f"\n  {theme.dim}Summary:{theme.reset} {theme.body}{text}{theme.reset}"
+            )
+        except UnicodeEncodeError:
+            safe_text = text.encode("ascii", "replace").decode("ascii")
+            print(
+                f"\n  {theme.dim}Summary:{theme.reset} {theme.body}{safe_text}{theme.reset}"
+            )
 
     @staticmethod
     def print_status(name: str, success: bool, elapsed: float) -> None:
-        icon = "✓" if success else "✗"
+        icon = (
+            ("✓" if _HAS_UNICODE else "+")
+            if success
+            else ("✗" if _HAS_UNICODE else "x")
+        )
         color = theme.success if success else theme.error
         print(
             f"\n  {color}{icon}{theme.reset} {theme.dim}{name} {elapsed:.2f}s{theme.reset}"

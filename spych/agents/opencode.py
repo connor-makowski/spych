@@ -1,9 +1,10 @@
 from spych.core import Spych
 from spych.orchestrator import SpychOrchestrator
 from spych.responders import BaseResponder, AgentResponse
-from spych.utils import resolve_cmd, StreamSubprocess
+from spych.utils import resolve_cmd, StreamJsonCommand
 from typing import Optional, Any
-import subprocess, json, re, time
+import re
+import time
 
 
 class LocalOpenCodeCLIResponder(BaseResponder):
@@ -127,7 +128,9 @@ class LocalOpenCodeCLIResponder(BaseResponder):
         """Strip inline tool-call XML from text, return clean prose only."""
         return self.TOOL_CALL_RE.sub("", text).strip()
 
-    def respond(self, user_input: str, is_continuation: bool = False) -> AgentResponse:
+    def respond(
+        self, user_input: str, is_continuation: bool = False
+    ) -> AgentResponse:
         """
         Usage:
 
@@ -161,7 +164,6 @@ class LocalOpenCodeCLIResponder(BaseResponder):
         if is_continuation:
             prompt = "Please continue."
 
-        # Build command — prompt goes last as positional arg
         cmd = [resolve_cmd("opencode"), "run", "--format", "json"]
 
         if self.continue_conversation:
@@ -173,15 +175,7 @@ class LocalOpenCodeCLIResponder(BaseResponder):
         if self.model:
             cmd.extend(["--model", self.model])
 
-        cmd.append(self.format_prompt(prompt))
-
-        proc = subprocess.Popen(
-            cmd,
-            stdin=subprocess.DEVNULL,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-        )
+        stream = StreamJsonCommand(cmd, input_text=self.format_prompt(prompt))
 
         # Accumulates the full streamed text for the current step.
         # Resets on each intermediate step_finish (tool turn), kept on final stop.
@@ -191,16 +185,7 @@ class LocalOpenCodeCLIResponder(BaseResponder):
         # Keyed by tool name since inline XML has no unique call ID.
         active_tools: dict[str, float] = {}
 
-        for raw_line in StreamSubprocess(proc):
-            raw_line = raw_line.strip()
-            if not raw_line:
-                continue
-
-            try:
-                event = json.loads(raw_line)
-            except json.JSONDecodeError:
-                continue
-
+        for event in stream:
             etype = event.get("type")
 
             # Capture session ID from any event for conversation continuity
@@ -229,7 +214,9 @@ class LocalOpenCodeCLIResponder(BaseResponder):
                             ).strip()
                             active_tools[tool_name] = time.time()
                             self.tool_event(
-                                tool_name, "running", is_running=True,
+                                tool_name,
+                                "running",
+                                is_running=True,
                                 detail=explanation or None,
                             )
 
@@ -253,7 +240,12 @@ class LocalOpenCodeCLIResponder(BaseResponder):
 
                 # On reason == "stop", keep accumulated_text as the final answer
 
-        proc.wait()
+        stream.wait()
+
+        if not accumulated_text:
+            stderr_text = "".join(stream.stderr_lines).strip()
+            if stderr_text:
+                accumulated_text = f"Error: {stderr_text}"
 
         # Close any still-open tool events (e.g. if process ended unexpectedly)
         for tool_name, start in list(active_tools.items()):
