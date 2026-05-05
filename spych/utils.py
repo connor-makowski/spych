@@ -521,7 +521,6 @@ PERSONALITIES: dict[str, dict] = {
         "use_speaker": True,
         "response_style": "pirate",
     },
-
     "news_anchor": {
         "name": "Bella the News Anchor",
         "wake_words": ["bella", "news anchor", "anchor"],
@@ -573,7 +572,9 @@ def get_personality(name: str) -> dict:
     key = name.lower()
     if key not in PERSONALITIES:
         valid = ", ".join(sorted(PERSONALITIES))
-        raise ValueError(f"Unknown personality {name!r}. Valid options: {valid}")
+        raise ValueError(
+            f"Unknown personality {name!r}. Valid options: {valid}"
+        )
     return dict(PERSONALITIES[key])
 
 
@@ -680,7 +681,9 @@ class StreamJsonCommand:
     ```
     """
 
-    def __init__(self, cmd: list[str], input_text: Optional[str] = None) -> None:
+    def __init__(
+        self, cmd: list[str], input_text: Optional[str] = None
+    ) -> None:
         """
         Usage:
 
@@ -839,7 +842,7 @@ def stream_json_command(
             proc.stdin.flush()
         except BrokenPipeError:
             pass
-    
+
     # Always close stdin so the process knows no more input is coming
     try:
         proc.stdin.close()

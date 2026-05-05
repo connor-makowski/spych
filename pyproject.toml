@@ -9,7 +9,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "spych"
-version = "4.1.0"
+version = "4.1.1"
 description = "Communicate with your favorite AI model by talking to it."
 authors = [
     {name="Connor Makowski", email="conmak@mit.edu"}

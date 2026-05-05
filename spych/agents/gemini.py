@@ -4,7 +4,8 @@ from spych.responders import BaseResponder, AgentResponse
 from spych.cli_tools import CliPrinter, theme
 from spych.utils import resolve_cmd, StreamJsonCommand
 from typing import Optional, Any
-import time, shutil, os
+import time
+import shutil
 
 
 class LocalGeminiCLIResponder(BaseResponder):
@@ -136,7 +137,9 @@ class LocalGeminiCLIResponder(BaseResponder):
         # credentials are missing or the API is unreachable.
         try:
             cmd = [resolve_cmd("gemini"), "--output-format", "stream-json"]
-            stream = StreamJsonCommand(cmd, input_text="return only 'true' then stop immediately.\n")
+            stream = StreamJsonCommand(
+                cmd, input_text="return only 'true' then stop immediately.\n"
+            )
 
             authenticated = False
             error_message = ""
@@ -221,7 +224,9 @@ class LocalGeminiCLIResponder(BaseResponder):
             )
             return False
 
-    def respond(self, user_input: str, is_continuation: bool = False) -> AgentResponse:
+    def respond(
+        self, user_input: str, is_continuation: bool = False
+    ) -> AgentResponse:
         """
         Usage:
 
@@ -299,11 +304,33 @@ class LocalGeminiCLIResponder(BaseResponder):
                 if self.show_tool_events:
                     # Extract a short human-readable detail from the parameters dict.
                     # Prefer well-known keys; fall back to the first string value.
-                    _PREF_KEYS = ("path", "file_path", "command", "query", "url", "pattern", "summary", "strategic_intent", "title")
-                    detail = next((str(params[k]) for k in _PREF_KEYS if k in params), None)
+                    _PREF_KEYS = (
+                        "path",
+                        "file_path",
+                        "command",
+                        "query",
+                        "url",
+                        "pattern",
+                        "summary",
+                        "strategic_intent",
+                        "title",
+                    )
+                    detail = next(
+                        (str(params[k]) for k in _PREF_KEYS if k in params),
+                        None,
+                    )
                     if not detail:
-                        detail = next((str(v) for v in params.values() if isinstance(v, str) and v), None)
-                    self.tool_event(tool_name, "running", is_running=True, detail=detail)
+                        detail = next(
+                            (
+                                str(v)
+                                for v in params.values()
+                                if isinstance(v, str) and v
+                            ),
+                            None,
+                        )
+                    self.tool_event(
+                        tool_name, "running", is_running=True, detail=detail
+                    )
 
             elif etype == "tool_result":
                 tool_id = event.get("tool_id", event.get("tool_name"))

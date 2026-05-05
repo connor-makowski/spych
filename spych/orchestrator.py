@@ -66,9 +66,11 @@ class SpychOrchestrator:
 
         self.entries = self.build_entries(entries)
         # Inherit the dashboard from the first responder if one was injected.
-        self._dashboard: Optional[AgentDashboard] = getattr(
-            self.entries[0]["responder"], "dashboard", None
-        ) if self.entries else None
+        self._dashboard: Optional[AgentDashboard] = (
+            getattr(self.entries[0]["responder"], "dashboard", None)
+            if self.entries
+            else None
+        )
         self.spinner = self.build_spinner()
         self.wake_word_map, self.terminate_words = self.build_wake_word_map()
         self.spych_wake = self.build_spych_wake(spych_wake_kwargs)
@@ -172,7 +174,9 @@ class SpychOrchestrator:
                 if w not in terminate_words:
                     terminate_words.append(w)
 
-        def make_tracked_call(resp: "BaseResponder", entry_wake_words: list[str]):
+        def make_tracked_call(
+            resp: "BaseResponder", entry_wake_words: list[str]
+        ):
             original = resp.__call__
 
             def tracked():
@@ -181,7 +185,8 @@ class SpychOrchestrator:
                     self._dashboard.set_agent(
                         name=resp.name,
                         wake_words=entry_wake_words,
-                        responder_name=getattr(resp, "display_name", None) or resp.__class__.__name__,
+                        responder_name=getattr(resp, "display_name", None)
+                        or resp.__class__.__name__,
                         response_style=getattr(resp, "response_style", ""),
                         use_speaker=getattr(resp, "use_speaker", False),
                         speaker_voice=getattr(resp, "speaker_voice", ""),
@@ -198,7 +203,9 @@ class SpychOrchestrator:
                 entry_wake_words_by_resp[word.lower()] = entry["wake_words"]
 
         tracked_wake_map: dict[str, callable] = {
-            word: make_tracked_call(resp, entry_wake_words_by_resp.get(word, []))
+            word: make_tracked_call(
+                resp, entry_wake_words_by_resp.get(word, [])
+            )
             for word, resp in wake_word_map.items()
         }
 

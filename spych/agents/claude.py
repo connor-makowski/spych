@@ -1,4 +1,8 @@
-import sys, json, time, importlib, re, os
+import sys
+import json
+import time
+import importlib
+import re
 from spych.core import Spych
 from spych.utils import resolve_cmd, StreamJsonCommand
 from spych.orchestrator import SpychOrchestrator
@@ -49,7 +53,9 @@ def _extract_tool_detail(tool_name: str, tool_input: dict) -> str:
         "WebFetch": lambda i: i.get("url", ""),
         "WebSearch": lambda i: i.get("query", ""),
         "Agent": lambda i: i.get("description", "subagent"),
-        "NotebookEdit": lambda i: i.get("notebook_path", i.get("cell_type", "")),
+        "NotebookEdit": lambda i: i.get(
+            "notebook_path", i.get("cell_type", "")
+        ),
         "TodoWrite": lambda i: "updating todos",
     }
     fn = _MAP.get(tool_name)
@@ -160,7 +166,9 @@ class LocalClaudeCodeSDKResponder(BaseResponder):
         self._first_call = True
         self._last_session_id: str | None = None
 
-    def respond(self, user_input: str, is_continuation: bool = False) -> AgentResponse:
+    def respond(
+        self, user_input: str, is_continuation: bool = False
+    ) -> AgentResponse:
         """
         Spawns _sdk_worker.py as a subprocess, writes the request payload to
         its stdin, then reads newline-delimited JSON events from its stdout.
@@ -187,7 +195,9 @@ class LocalClaudeCodeSDKResponder(BaseResponder):
 
         # print(payload)
 
-        stream = StreamJsonCommand([sys.executable, str(CLAUDE_SDK_WORKER_PATH)], input_text=payload)
+        stream = StreamJsonCommand(
+            [sys.executable, str(CLAUDE_SDK_WORKER_PATH)], input_text=payload
+        )
 
         final_result = ""
         active_tools: dict[str, tuple[str, float]] = {}
@@ -210,7 +220,12 @@ class LocalClaudeCodeSDKResponder(BaseResponder):
                 active_tools[tool_id] = (tool_name, time.time())
                 if self.show_tool_events:
                     detail = _extract_tool_detail(tool_name, raw_input)
-                    self.tool_event(tool_name, "running", is_running=True, detail=detail or None)
+                    self.tool_event(
+                        tool_name,
+                        "running",
+                        is_running=True,
+                        detail=detail or None,
+                    )
 
             elif etype == "tool_end":
                 tool_id = event["id"]
@@ -227,7 +242,7 @@ class LocalClaudeCodeSDKResponder(BaseResponder):
 
             elif etype == "error":
                 final_result = f"Error: {event.get('text', 'unknown error')}"
-        
+
         stream.kill()
 
         if not final_result:
@@ -526,7 +541,9 @@ class LocalClaudeCodeCLIResponder(BaseResponder):
                                     preceding
                                 ).strip()
                                 self.tool_event(
-                                    tool_name, "running", is_running=True,
+                                    tool_name,
+                                    "running",
+                                    is_running=True,
                                     detail=explanation or None,
                                 )
 
@@ -575,7 +592,9 @@ class LocalClaudeCodeCLIResponder(BaseResponder):
 
         return False, self.__strip_tool_calls__(result_text).strip()
 
-    def respond(self, user_input: str, is_continuation: bool = False) -> AgentResponse:
+    def respond(
+        self, user_input: str, is_continuation: bool = False
+    ) -> AgentResponse:
         """
         Runs one or more `claude -p` subprocess turns until a clean result is
         received. Intermediate turns (where tool calls are in flight) print
@@ -585,11 +604,11 @@ class LocalClaudeCodeCLIResponder(BaseResponder):
         self.first_call = False
 
         active_tools: dict[str, float] = {}
-        
+
         prompt = user_input
         if is_continuation:
             prompt = "Please continue."
-            
+
         current_input = self.format_prompt(prompt)
 
         while True:

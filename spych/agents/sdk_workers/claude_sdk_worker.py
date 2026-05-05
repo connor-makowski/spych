@@ -92,6 +92,7 @@ async def process_messages(
 async def main() -> None:
     # Ensure stdin and stdout are using utf-8, especially on Windows
     import io
+
     sys.stdin = io.TextIOWrapper(sys.stdin.buffer, encoding="utf-8")
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
 

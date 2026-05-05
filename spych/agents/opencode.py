@@ -3,7 +3,8 @@ from spych.orchestrator import SpychOrchestrator
 from spych.responders import BaseResponder, AgentResponse
 from spych.utils import resolve_cmd, StreamJsonCommand
 from typing import Optional, Any
-import re, time, os
+import re
+import time
 
 
 class LocalOpenCodeCLIResponder(BaseResponder):
@@ -127,7 +128,9 @@ class LocalOpenCodeCLIResponder(BaseResponder):
         """Strip inline tool-call XML from text, return clean prose only."""
         return self.TOOL_CALL_RE.sub("", text).strip()
 
-    def respond(self, user_input: str, is_continuation: bool = False) -> AgentResponse:
+    def respond(
+        self, user_input: str, is_continuation: bool = False
+    ) -> AgentResponse:
         """
         Usage:
 
@@ -211,7 +214,9 @@ class LocalOpenCodeCLIResponder(BaseResponder):
                             ).strip()
                             active_tools[tool_name] = time.time()
                             self.tool_event(
-                                tool_name, "running", is_running=True,
+                                tool_name,
+                                "running",
+                                is_running=True,
                                 detail=explanation or None,
                             )
 

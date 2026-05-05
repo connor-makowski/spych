@@ -3,7 +3,7 @@ from spych.orchestrator import SpychOrchestrator
 from spych.responders import BaseResponder, AgentResponse
 from spych.utils import resolve_cmd, StreamJsonCommand
 from typing import Optional, Any
-import time, os
+import time
 
 
 class LocalCodexCLIResponder(BaseResponder):
@@ -166,7 +166,12 @@ class LocalCodexCLIResponder(BaseResponder):
                     explanation = item.get("command", "")
                     active_tools[item_id] = (tool_name, time.time())
                     if self.show_tool_events:
-                        self.tool_event(tool_name, "running", is_running=True, detail=explanation or None)
+                        self.tool_event(
+                            tool_name,
+                            "running",
+                            is_running=True,
+                            detail=explanation or None,
+                        )
 
             elif etype == "item.completed":
                 item = event.get("item", {})
@@ -213,7 +218,9 @@ class LocalCodexCLIResponder(BaseResponder):
 
         return final_text.strip()
 
-    def respond(self, user_input: str, is_continuation: bool = False) -> AgentResponse:
+    def respond(
+        self, user_input: str, is_continuation: bool = False
+    ) -> AgentResponse:
         """
         Runs a single `codex exec` subprocess turn and returns a structured
         AgentResponse. Tool calls are handled natively by the CLI.

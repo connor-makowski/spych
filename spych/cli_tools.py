@@ -1,4 +1,8 @@
-import sys, time, threading, re, random, os
+import sys
+import time
+import threading
+import re
+import random
 
 from spych.spinners import Spinner
 from spych.utils import supports_unicode
@@ -500,10 +504,14 @@ class CliPrinter:
             f": {theme.body}{label}{theme.reset}"
         )
         pad = max(0, 58 - _visible_len(inner))
-        
+
         # Safe characters for box drawing
-        tl, tr, bl, br, h, v = ("┌", "┐", "└", "┘", "─", "│") if _HAS_UNICODE else ("+", "+", "+", "+", "-", "|")
-        
+        tl, tr, bl, br, h, v = (
+            ("┌", "┐", "└", "┘", "─", "│")
+            if _HAS_UNICODE
+            else ("+", "+", "+", "+", "-", "|")
+        )
+
         try:
             print(
                 f"\n{theme.chrome}{tl}{h * 58}{tr}{theme.reset}\n"
@@ -542,7 +550,11 @@ class CliPrinter:
         elapsed: float | None = None,
         detail: str | None = None,
     ) -> None:
-        icon = ("⚙" if _HAS_UNICODE else "*") if is_running else ("✓" if _HAS_UNICODE else "+")
+        icon = (
+            ("⚙" if _HAS_UNICODE else "*")
+            if is_running
+            else ("✓" if _HAS_UNICODE else "+")
+        )
         color = theme.running if is_running else theme.success
         elapsed_str = (
             f" {theme.chrome}({elapsed:.2f}s){theme.reset}" if elapsed else ""
@@ -619,7 +631,11 @@ class CliPrinter:
 
     @staticmethod
     def print_status(name: str, success: bool, elapsed: float) -> None:
-        icon = ("✓" if _HAS_UNICODE else "+") if success else ("✗" if _HAS_UNICODE else "x")
+        icon = (
+            ("✓" if _HAS_UNICODE else "+")
+            if success
+            else ("✗" if _HAS_UNICODE else "x")
+        )
         color = theme.success if success else theme.error
         print(
             f"\n  {color}{icon}{theme.reset} {theme.dim}{name} {elapsed:.2f}s{theme.reset}"

@@ -66,7 +66,7 @@
 <footer>
 <select id="version-selector">
     <option value="latest">latest</option>
-        <option value="4.1.0">4.1.0</option>
+        <option value="4.1.1">4.1.1</option>
         <option value="4.0.1">4.0.1</option>
         <option value="3.6.0">3.6.0</option>
         <option value="2.0.2">2.0.2</option>
@@ -262,180 +262,182 @@
 </span><span id="L-142"><a href="#L-142"><span class="linenos">142</span></a>            <span class="p">)</span>
 </span><span id="L-143"><a href="#L-143"><span class="linenos">143</span></a>            <span class="k">return</span> <span class="kc">False</span>
 </span><span id="L-144"><a href="#L-144"><span class="linenos">144</span></a>
-</span><span id="L-145"><a href="#L-145"><span class="linenos">145</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">respond</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user_input</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">is_continuation</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AgentResponse</span><span class="p">:</span>
-</span><span id="L-146"><a href="#L-146"><span class="linenos">146</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="L-147"><a href="#L-147"><span class="linenos">147</span></a><span class="sd">        Usage:</span>
-</span><span id="L-148"><a href="#L-148"><span class="linenos">148</span></a>
-</span><span id="L-149"><a href="#L-149"><span class="linenos">149</span></a><span class="sd">        - Sends the transcribed user input to Ollama and returns a structured</span>
-</span><span id="L-150"><a href="#L-150"><span class="linenos">150</span></a><span class="sd">          response. Maintains a rolling conversation history across calls.</span>
-</span><span id="L-151"><a href="#L-151"><span class="linenos">151</span></a>
-</span><span id="L-152"><a href="#L-152"><span class="linenos">152</span></a><span class="sd">        Requires:</span>
+</span><span id="L-145"><a href="#L-145"><span class="linenos">145</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">respond</span><span class="p">(</span>
+</span><span id="L-146"><a href="#L-146"><span class="linenos">146</span></a>        <span class="bp">self</span><span class="p">,</span> <span class="n">user_input</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">is_continuation</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+</span><span id="L-147"><a href="#L-147"><span class="linenos">147</span></a>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AgentResponse</span><span class="p">:</span>
+</span><span id="L-148"><a href="#L-148"><span class="linenos">148</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-149"><a href="#L-149"><span class="linenos">149</span></a><span class="sd">        Usage:</span>
+</span><span id="L-150"><a href="#L-150"><span class="linenos">150</span></a>
+</span><span id="L-151"><a href="#L-151"><span class="linenos">151</span></a><span class="sd">        - Sends the transcribed user input to Ollama and returns a structured</span>
+</span><span id="L-152"><a href="#L-152"><span class="linenos">152</span></a><span class="sd">          response. Maintains a rolling conversation history across calls.</span>
 </span><span id="L-153"><a href="#L-153"><span class="linenos">153</span></a>
-</span><span id="L-154"><a href="#L-154"><span class="linenos">154</span></a><span class="sd">        - `user_input`:</span>
-</span><span id="L-155"><a href="#L-155"><span class="linenos">155</span></a><span class="sd">            - Type: str</span>
-</span><span id="L-156"><a href="#L-156"><span class="linenos">156</span></a><span class="sd">            - What: The transcribed text from the user&#39;s audio input</span>
-</span><span id="L-157"><a href="#L-157"><span class="linenos">157</span></a>
-</span><span id="L-158"><a href="#L-158"><span class="linenos">158</span></a><span class="sd">        Returns:</span>
+</span><span id="L-154"><a href="#L-154"><span class="linenos">154</span></a><span class="sd">        Requires:</span>
+</span><span id="L-155"><a href="#L-155"><span class="linenos">155</span></a>
+</span><span id="L-156"><a href="#L-156"><span class="linenos">156</span></a><span class="sd">        - `user_input`:</span>
+</span><span id="L-157"><a href="#L-157"><span class="linenos">157</span></a><span class="sd">            - Type: str</span>
+</span><span id="L-158"><a href="#L-158"><span class="linenos">158</span></a><span class="sd">            - What: The transcribed text from the user&#39;s audio input</span>
 </span><span id="L-159"><a href="#L-159"><span class="linenos">159</span></a>
-</span><span id="L-160"><a href="#L-160"><span class="linenos">160</span></a><span class="sd">        - `response`:</span>
-</span><span id="L-161"><a href="#L-161"><span class="linenos">161</span></a><span class="sd">            - Type: AgentResponse</span>
-</span><span id="L-162"><a href="#L-162"><span class="linenos">162</span></a><span class="sd">            - What: Parsed structured response from the Ollama model</span>
-</span><span id="L-163"><a href="#L-163"><span class="linenos">163</span></a><span class="sd">        &quot;&quot;&quot;</span>
-</span><span id="L-164"><a href="#L-164"><span class="linenos">164</span></a>        <span class="n">prompt</span> <span class="o">=</span> <span class="n">user_input</span>
-</span><span id="L-165"><a href="#L-165"><span class="linenos">165</span></a>        <span class="k">if</span> <span class="n">is_continuation</span><span class="p">:</span>
-</span><span id="L-166"><a href="#L-166"><span class="linenos">166</span></a>            <span class="n">prompt</span> <span class="o">=</span> <span class="s2">&quot;Please continue.&quot;</span>
-</span><span id="L-167"><a href="#L-167"><span class="linenos">167</span></a>        <span class="k">else</span><span class="p">:</span>
-</span><span id="L-168"><a href="#L-168"><span class="linenos">168</span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">history</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;user&quot;</span><span class="p">,</span> <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="n">user_input</span><span class="p">})</span>
-</span><span id="L-169"><a href="#L-169"><span class="linenos">169</span></a>
-</span><span id="L-170"><a href="#L-170"><span class="linenos">170</span></a>        <span class="n">prompt_history</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
-</span><span id="L-171"><a href="#L-171"><span class="linenos">171</span></a>            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">e</span><span class="p">[</span><span class="s1">&#39;role&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">capitalize</span><span class="p">()</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="p">[</span><span class="s1">&#39;content&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">history</span>
-</span><span id="L-172"><a href="#L-172"><span class="linenos">172</span></a>        <span class="p">)</span>
-</span><span id="L-173"><a href="#L-173"><span class="linenos">173</span></a>        <span class="n">prompt</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;&quot;&quot;</span>
-</span><span id="L-174"><a href="#L-174"><span class="linenos">174</span></a><span class="s2">        Your conversation history:</span>
-</span><span id="L-175"><a href="#L-175"><span class="linenos">175</span></a>
-</span><span id="L-176"><a href="#L-176"><span class="linenos">176</span></a><span class="s2">        </span><span class="si">{</span><span class="n">prompt_history</span><span class="si">}</span>
+</span><span id="L-160"><a href="#L-160"><span class="linenos">160</span></a><span class="sd">        Returns:</span>
+</span><span id="L-161"><a href="#L-161"><span class="linenos">161</span></a>
+</span><span id="L-162"><a href="#L-162"><span class="linenos">162</span></a><span class="sd">        - `response`:</span>
+</span><span id="L-163"><a href="#L-163"><span class="linenos">163</span></a><span class="sd">            - Type: AgentResponse</span>
+</span><span id="L-164"><a href="#L-164"><span class="linenos">164</span></a><span class="sd">            - What: Parsed structured response from the Ollama model</span>
+</span><span id="L-165"><a href="#L-165"><span class="linenos">165</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="L-166"><a href="#L-166"><span class="linenos">166</span></a>        <span class="n">prompt</span> <span class="o">=</span> <span class="n">user_input</span>
+</span><span id="L-167"><a href="#L-167"><span class="linenos">167</span></a>        <span class="k">if</span> <span class="n">is_continuation</span><span class="p">:</span>
+</span><span id="L-168"><a href="#L-168"><span class="linenos">168</span></a>            <span class="n">prompt</span> <span class="o">=</span> <span class="s2">&quot;Please continue.&quot;</span>
+</span><span id="L-169"><a href="#L-169"><span class="linenos">169</span></a>        <span class="k">else</span><span class="p">:</span>
+</span><span id="L-170"><a href="#L-170"><span class="linenos">170</span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">history</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;user&quot;</span><span class="p">,</span> <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="n">user_input</span><span class="p">})</span>
+</span><span id="L-171"><a href="#L-171"><span class="linenos">171</span></a>
+</span><span id="L-172"><a href="#L-172"><span class="linenos">172</span></a>        <span class="n">prompt_history</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+</span><span id="L-173"><a href="#L-173"><span class="linenos">173</span></a>            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">e</span><span class="p">[</span><span class="s1">&#39;role&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">capitalize</span><span class="p">()</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="p">[</span><span class="s1">&#39;content&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">history</span>
+</span><span id="L-174"><a href="#L-174"><span class="linenos">174</span></a>        <span class="p">)</span>
+</span><span id="L-175"><a href="#L-175"><span class="linenos">175</span></a>        <span class="n">prompt</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;&quot;&quot;</span>
+</span><span id="L-176"><a href="#L-176"><span class="linenos">176</span></a><span class="s2">        Your conversation history:</span>
 </span><span id="L-177"><a href="#L-177"><span class="linenos">177</span></a>
-</span><span id="L-178"><a href="#L-178"><span class="linenos">178</span></a><span class="s2">        Now here is your current prompt:</span>
+</span><span id="L-178"><a href="#L-178"><span class="linenos">178</span></a><span class="s2">        </span><span class="si">{</span><span class="n">prompt_history</span><span class="si">}</span>
 </span><span id="L-179"><a href="#L-179"><span class="linenos">179</span></a>
-</span><span id="L-180"><a href="#L-180"><span class="linenos">180</span></a><span class="s2">        </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">format_prompt</span><span class="p">(</span><span class="n">prompt</span><span class="p">)</span><span class="si">}</span>
-</span><span id="L-181"><a href="#L-181"><span class="linenos">181</span></a><span class="s2">        &quot;&quot;&quot;</span>
-</span><span id="L-182"><a href="#L-182"><span class="linenos">182</span></a>
-</span><span id="L-183"><a href="#L-183"><span class="linenos">183</span></a>        <span class="n">output</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">post</span><span class="p">(</span>
-</span><span id="L-184"><a href="#L-184"><span class="linenos">184</span></a>            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">host</span><span class="si">}</span><span class="s2">/api/generate&quot;</span><span class="p">,</span>
-</span><span id="L-185"><a href="#L-185"><span class="linenos">185</span></a>            <span class="n">json</span><span class="o">=</span><span class="p">{</span>
-</span><span id="L-186"><a href="#L-186"><span class="linenos">186</span></a>                <span class="s2">&quot;model&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">,</span>
-</span><span id="L-187"><a href="#L-187"><span class="linenos">187</span></a>                <span class="s2">&quot;prompt&quot;</span><span class="p">:</span> <span class="n">prompt</span><span class="p">,</span>
-</span><span id="L-188"><a href="#L-188"><span class="linenos">188</span></a>                <span class="s2">&quot;format&quot;</span><span class="p">:</span> <span class="s2">&quot;json&quot;</span><span class="p">,</span>
-</span><span id="L-189"><a href="#L-189"><span class="linenos">189</span></a>                <span class="s2">&quot;stream&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
-</span><span id="L-190"><a href="#L-190"><span class="linenos">190</span></a>            <span class="p">},</span>
-</span><span id="L-191"><a href="#L-191"><span class="linenos">191</span></a>        <span class="p">)</span>
-</span><span id="L-192"><a href="#L-192"><span class="linenos">192</span></a>
-</span><span id="L-193"><a href="#L-193"><span class="linenos">193</span></a>        <span class="n">agent_response</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parse_output</span><span class="p">(</span><span class="n">output</span><span class="o">.</span><span class="n">json</span><span class="p">()</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;response&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">))</span>
-</span><span id="L-194"><a href="#L-194"><span class="linenos">194</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">history</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
-</span><span id="L-195"><a href="#L-195"><span class="linenos">195</span></a>            <span class="p">{</span><span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;assistant&quot;</span><span class="p">,</span> <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="n">agent_response</span><span class="o">.</span><span class="n">response</span><span class="p">}</span>
-</span><span id="L-196"><a href="#L-196"><span class="linenos">196</span></a>        <span class="p">)</span>
-</span><span id="L-197"><a href="#L-197"><span class="linenos">197</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">history</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">history</span><span class="p">[</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">history_length</span> <span class="o">*</span> <span class="mi">2</span> <span class="p">:]</span>
-</span><span id="L-198"><a href="#L-198"><span class="linenos">198</span></a>        <span class="k">return</span> <span class="n">agent_response</span>
-</span><span id="L-199"><a href="#L-199"><span class="linenos">199</span></a>
-</span><span id="L-200"><a href="#L-200"><span class="linenos">200</span></a>
-</span><span id="L-201"><a href="#L-201"><span class="linenos">201</span></a><span class="k">def</span><span class="w"> </span><span class="nf">ollama</span><span class="p">(</span>
-</span><span id="L-202"><a href="#L-202"><span class="linenos">202</span></a>    <span class="n">model</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-</span><span id="L-203"><a href="#L-203"><span class="linenos">203</span></a>    <span class="n">wake_words</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;llama&quot;</span><span class="p">,</span> <span class="s2">&quot;ollama&quot;</span><span class="p">,</span> <span class="s2">&quot;lama&quot;</span><span class="p">],</span>
-</span><span id="L-204"><a href="#L-204"><span class="linenos">204</span></a>    <span class="n">terminate_words</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;terminate&quot;</span><span class="p">],</span>
-</span><span id="L-205"><a href="#L-205"><span class="linenos">205</span></a>    <span class="n">listen_duration</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
-</span><span id="L-206"><a href="#L-206"><span class="linenos">206</span></a>    <span class="n">history_length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span>
-</span><span id="L-207"><a href="#L-207"><span class="linenos">207</span></a>    <span class="n">host</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;http://localhost:11434&quot;</span><span class="p">,</span>
-</span><span id="L-208"><a href="#L-208"><span class="linenos">208</span></a>    <span class="n">name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="L-209"><a href="#L-209"><span class="linenos">209</span></a>    <span class="n">use_speaker</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
-</span><span id="L-210"><a href="#L-210"><span class="linenos">210</span></a>    <span class="n">speaker_voice</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;af_heart&quot;</span><span class="p">,</span>
-</span><span id="L-211"><a href="#L-211"><span class="linenos">211</span></a>    <span class="n">response_style</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="L-212"><a href="#L-212"><span class="linenos">212</span></a>    <span class="n">spych_kwargs</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="L-213"><a href="#L-213"><span class="linenos">213</span></a>    <span class="n">spych_wake_kwargs</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="L-214"><a href="#L-214"><span class="linenos">214</span></a>    <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
-</span><span id="L-215"><a href="#L-215"><span class="linenos">215</span></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="L-216"><a href="#L-216"><span class="linenos">216</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="L-217"><a href="#L-217"><span class="linenos">217</span></a><span class="sd">    Usage:</span>
-</span><span id="L-218"><a href="#L-218"><span class="linenos">218</span></a>
-</span><span id="L-219"><a href="#L-219"><span class="linenos">219</span></a><span class="sd">    - Starts a wake word listener that pipes detected speech into a locally running</span>
-</span><span id="L-220"><a href="#L-220"><span class="linenos">220</span></a><span class="sd">      Ollama instance</span>
-</span><span id="L-221"><a href="#L-221"><span class="linenos">221</span></a>
-</span><span id="L-222"><a href="#L-222"><span class="linenos">222</span></a><span class="sd">    Requires:</span>
+</span><span id="L-180"><a href="#L-180"><span class="linenos">180</span></a><span class="s2">        Now here is your current prompt:</span>
+</span><span id="L-181"><a href="#L-181"><span class="linenos">181</span></a>
+</span><span id="L-182"><a href="#L-182"><span class="linenos">182</span></a><span class="s2">        </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">format_prompt</span><span class="p">(</span><span class="n">prompt</span><span class="p">)</span><span class="si">}</span>
+</span><span id="L-183"><a href="#L-183"><span class="linenos">183</span></a><span class="s2">        &quot;&quot;&quot;</span>
+</span><span id="L-184"><a href="#L-184"><span class="linenos">184</span></a>
+</span><span id="L-185"><a href="#L-185"><span class="linenos">185</span></a>        <span class="n">output</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">post</span><span class="p">(</span>
+</span><span id="L-186"><a href="#L-186"><span class="linenos">186</span></a>            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">host</span><span class="si">}</span><span class="s2">/api/generate&quot;</span><span class="p">,</span>
+</span><span id="L-187"><a href="#L-187"><span class="linenos">187</span></a>            <span class="n">json</span><span class="o">=</span><span class="p">{</span>
+</span><span id="L-188"><a href="#L-188"><span class="linenos">188</span></a>                <span class="s2">&quot;model&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">,</span>
+</span><span id="L-189"><a href="#L-189"><span class="linenos">189</span></a>                <span class="s2">&quot;prompt&quot;</span><span class="p">:</span> <span class="n">prompt</span><span class="p">,</span>
+</span><span id="L-190"><a href="#L-190"><span class="linenos">190</span></a>                <span class="s2">&quot;format&quot;</span><span class="p">:</span> <span class="s2">&quot;json&quot;</span><span class="p">,</span>
+</span><span id="L-191"><a href="#L-191"><span class="linenos">191</span></a>                <span class="s2">&quot;stream&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+</span><span id="L-192"><a href="#L-192"><span class="linenos">192</span></a>            <span class="p">},</span>
+</span><span id="L-193"><a href="#L-193"><span class="linenos">193</span></a>        <span class="p">)</span>
+</span><span id="L-194"><a href="#L-194"><span class="linenos">194</span></a>
+</span><span id="L-195"><a href="#L-195"><span class="linenos">195</span></a>        <span class="n">agent_response</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parse_output</span><span class="p">(</span><span class="n">output</span><span class="o">.</span><span class="n">json</span><span class="p">()</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;response&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">))</span>
+</span><span id="L-196"><a href="#L-196"><span class="linenos">196</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">history</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+</span><span id="L-197"><a href="#L-197"><span class="linenos">197</span></a>            <span class="p">{</span><span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;assistant&quot;</span><span class="p">,</span> <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="n">agent_response</span><span class="o">.</span><span class="n">response</span><span class="p">}</span>
+</span><span id="L-198"><a href="#L-198"><span class="linenos">198</span></a>        <span class="p">)</span>
+</span><span id="L-199"><a href="#L-199"><span class="linenos">199</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">history</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">history</span><span class="p">[</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">history_length</span> <span class="o">*</span> <span class="mi">2</span> <span class="p">:]</span>
+</span><span id="L-200"><a href="#L-200"><span class="linenos">200</span></a>        <span class="k">return</span> <span class="n">agent_response</span>
+</span><span id="L-201"><a href="#L-201"><span class="linenos">201</span></a>
+</span><span id="L-202"><a href="#L-202"><span class="linenos">202</span></a>
+</span><span id="L-203"><a href="#L-203"><span class="linenos">203</span></a><span class="k">def</span><span class="w"> </span><span class="nf">ollama</span><span class="p">(</span>
+</span><span id="L-204"><a href="#L-204"><span class="linenos">204</span></a>    <span class="n">model</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+</span><span id="L-205"><a href="#L-205"><span class="linenos">205</span></a>    <span class="n">wake_words</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;llama&quot;</span><span class="p">,</span> <span class="s2">&quot;ollama&quot;</span><span class="p">,</span> <span class="s2">&quot;lama&quot;</span><span class="p">],</span>
+</span><span id="L-206"><a href="#L-206"><span class="linenos">206</span></a>    <span class="n">terminate_words</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;terminate&quot;</span><span class="p">],</span>
+</span><span id="L-207"><a href="#L-207"><span class="linenos">207</span></a>    <span class="n">listen_duration</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+</span><span id="L-208"><a href="#L-208"><span class="linenos">208</span></a>    <span class="n">history_length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span>
+</span><span id="L-209"><a href="#L-209"><span class="linenos">209</span></a>    <span class="n">host</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;http://localhost:11434&quot;</span><span class="p">,</span>
+</span><span id="L-210"><a href="#L-210"><span class="linenos">210</span></a>    <span class="n">name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="L-211"><a href="#L-211"><span class="linenos">211</span></a>    <span class="n">use_speaker</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+</span><span id="L-212"><a href="#L-212"><span class="linenos">212</span></a>    <span class="n">speaker_voice</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;af_heart&quot;</span><span class="p">,</span>
+</span><span id="L-213"><a href="#L-213"><span class="linenos">213</span></a>    <span class="n">response_style</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="L-214"><a href="#L-214"><span class="linenos">214</span></a>    <span class="n">spych_kwargs</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="L-215"><a href="#L-215"><span class="linenos">215</span></a>    <span class="n">spych_wake_kwargs</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="L-216"><a href="#L-216"><span class="linenos">216</span></a>    <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+</span><span id="L-217"><a href="#L-217"><span class="linenos">217</span></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="L-218"><a href="#L-218"><span class="linenos">218</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-219"><a href="#L-219"><span class="linenos">219</span></a><span class="sd">    Usage:</span>
+</span><span id="L-220"><a href="#L-220"><span class="linenos">220</span></a>
+</span><span id="L-221"><a href="#L-221"><span class="linenos">221</span></a><span class="sd">    - Starts a wake word listener that pipes detected speech into a locally running</span>
+</span><span id="L-222"><a href="#L-222"><span class="linenos">222</span></a><span class="sd">      Ollama instance</span>
 </span><span id="L-223"><a href="#L-223"><span class="linenos">223</span></a>
-</span><span id="L-224"><a href="#L-224"><span class="linenos">224</span></a><span class="sd">    - `model`:</span>
-</span><span id="L-225"><a href="#L-225"><span class="linenos">225</span></a><span class="sd">        - Type: str</span>
-</span><span id="L-226"><a href="#L-226"><span class="linenos">226</span></a><span class="sd">        - What: The Ollama model name to use for generating responses</span>
-</span><span id="L-227"><a href="#L-227"><span class="linenos">227</span></a><span class="sd">        - Example: &quot;llama3.2:latest&quot;</span>
-</span><span id="L-228"><a href="#L-228"><span class="linenos">228</span></a><span class="sd">        - Note: Run `ollama list` in your terminal to see available models</span>
-</span><span id="L-229"><a href="#L-229"><span class="linenos">229</span></a>
-</span><span id="L-230"><a href="#L-230"><span class="linenos">230</span></a><span class="sd">    Optional:</span>
+</span><span id="L-224"><a href="#L-224"><span class="linenos">224</span></a><span class="sd">    Requires:</span>
+</span><span id="L-225"><a href="#L-225"><span class="linenos">225</span></a>
+</span><span id="L-226"><a href="#L-226"><span class="linenos">226</span></a><span class="sd">    - `model`:</span>
+</span><span id="L-227"><a href="#L-227"><span class="linenos">227</span></a><span class="sd">        - Type: str</span>
+</span><span id="L-228"><a href="#L-228"><span class="linenos">228</span></a><span class="sd">        - What: The Ollama model name to use for generating responses</span>
+</span><span id="L-229"><a href="#L-229"><span class="linenos">229</span></a><span class="sd">        - Example: &quot;llama3.2:latest&quot;</span>
+</span><span id="L-230"><a href="#L-230"><span class="linenos">230</span></a><span class="sd">        - Note: Run `ollama list` in your terminal to see available models</span>
 </span><span id="L-231"><a href="#L-231"><span class="linenos">231</span></a>
-</span><span id="L-232"><a href="#L-232"><span class="linenos">232</span></a><span class="sd">    - `wake_words`:</span>
-</span><span id="L-233"><a href="#L-233"><span class="linenos">233</span></a><span class="sd">        - Type: list[str]</span>
-</span><span id="L-234"><a href="#L-234"><span class="linenos">234</span></a><span class="sd">        - What: A list of wake words that each trigger the Ollama responder</span>
-</span><span id="L-235"><a href="#L-235"><span class="linenos">235</span></a><span class="sd">        - Default: [&quot;llama&quot;, &quot;ollama&quot;, &quot;lama&quot;]</span>
-</span><span id="L-236"><a href="#L-236"><span class="linenos">236</span></a><span class="sd">        - Note: All wake words in this list map to the same OllamaResponder instance,</span>
-</span><span id="L-237"><a href="#L-237"><span class="linenos">237</span></a><span class="sd">          sharing conversation history across triggers</span>
-</span><span id="L-238"><a href="#L-238"><span class="linenos">238</span></a>
-</span><span id="L-239"><a href="#L-239"><span class="linenos">239</span></a><span class="sd">    - `terminate_words`:</span>
-</span><span id="L-240"><a href="#L-240"><span class="linenos">240</span></a><span class="sd">        - Type: list[str]</span>
-</span><span id="L-241"><a href="#L-241"><span class="linenos">241</span></a><span class="sd">        - What: A list of terminate words that each trigger the termination of the Ollama responder</span>
-</span><span id="L-242"><a href="#L-242"><span class="linenos">242</span></a><span class="sd">        - Default: [&quot;terminate&quot;]</span>
-</span><span id="L-243"><a href="#L-243"><span class="linenos">243</span></a><span class="sd">        - Note: All terminate words in this list map to the same OllamaResponder instance,</span>
-</span><span id="L-244"><a href="#L-244"><span class="linenos">244</span></a><span class="sd">            sharing conversation history across triggers</span>
-</span><span id="L-245"><a href="#L-245"><span class="linenos">245</span></a>
-</span><span id="L-246"><a href="#L-246"><span class="linenos">246</span></a><span class="sd">    - `listen_duration`:</span>
-</span><span id="L-247"><a href="#L-247"><span class="linenos">247</span></a><span class="sd">        - Type: int | float</span>
-</span><span id="L-248"><a href="#L-248"><span class="linenos">248</span></a><span class="sd">        - What: The number of seconds to listen for after the wake word is detected</span>
-</span><span id="L-249"><a href="#L-249"><span class="linenos">249</span></a><span class="sd">        - Default: 0 (Auto detect)</span>
-</span><span id="L-250"><a href="#L-250"><span class="linenos">250</span></a>
-</span><span id="L-251"><a href="#L-251"><span class="linenos">251</span></a><span class="sd">    - `history_length`:</span>
-</span><span id="L-252"><a href="#L-252"><span class="linenos">252</span></a><span class="sd">        - Type: int</span>
-</span><span id="L-253"><a href="#L-253"><span class="linenos">253</span></a><span class="sd">        - What: The number of previous interactions to include in each request for conversational context</span>
-</span><span id="L-254"><a href="#L-254"><span class="linenos">254</span></a><span class="sd">        - Default: 10</span>
-</span><span id="L-255"><a href="#L-255"><span class="linenos">255</span></a><span class="sd">        - Note: Each interaction counts as one user message and one assistant message; the actual history</span>
-</span><span id="L-256"><a href="#L-256"><span class="linenos">256</span></a><span class="sd">            buffer is `history_length * 2` entries</span>
-</span><span id="L-257"><a href="#L-257"><span class="linenos">257</span></a>
-</span><span id="L-258"><a href="#L-258"><span class="linenos">258</span></a><span class="sd">    - `host`:</span>
-</span><span id="L-259"><a href="#L-259"><span class="linenos">259</span></a><span class="sd">        - Type: str</span>
-</span><span id="L-260"><a href="#L-260"><span class="linenos">260</span></a><span class="sd">        - What: The base URL of the running Ollama instance</span>
-</span><span id="L-261"><a href="#L-261"><span class="linenos">261</span></a><span class="sd">        - Default: &quot;http://localhost:11434&quot;</span>
-</span><span id="L-262"><a href="#L-262"><span class="linenos">262</span></a>
-</span><span id="L-263"><a href="#L-263"><span class="linenos">263</span></a><span class="sd">    - `name`:</span>
-</span><span id="L-264"><a href="#L-264"><span class="linenos">264</span></a><span class="sd">        - Type: str</span>
-</span><span id="L-265"><a href="#L-265"><span class="linenos">265</span></a><span class="sd">        - What: A custom display name for the responder shown in printed messages</span>
-</span><span id="L-266"><a href="#L-266"><span class="linenos">266</span></a><span class="sd">        - Default: None (uses &quot;Ollama&quot;)</span>
-</span><span id="L-267"><a href="#L-267"><span class="linenos">267</span></a>
-</span><span id="L-268"><a href="#L-268"><span class="linenos">268</span></a><span class="sd">    - `use_speaker`:</span>
-</span><span id="L-269"><a href="#L-269"><span class="linenos">269</span></a><span class="sd">        - Type: bool</span>
-</span><span id="L-270"><a href="#L-270"><span class="linenos">270</span></a><span class="sd">        - What: Whether to speak responses aloud via kokoro TTS</span>
-</span><span id="L-271"><a href="#L-271"><span class="linenos">271</span></a><span class="sd">        - Default: False</span>
-</span><span id="L-272"><a href="#L-272"><span class="linenos">272</span></a>
-</span><span id="L-273"><a href="#L-273"><span class="linenos">273</span></a><span class="sd">    - `speaker_voice`:</span>
-</span><span id="L-274"><a href="#L-274"><span class="linenos">274</span></a><span class="sd">        - Type: str</span>
-</span><span id="L-275"><a href="#L-275"><span class="linenos">275</span></a><span class="sd">        - What: Kokoro voice ID for spoken responses</span>
-</span><span id="L-276"><a href="#L-276"><span class="linenos">276</span></a><span class="sd">        - Default: &quot;af_heart&quot;</span>
-</span><span id="L-277"><a href="#L-277"><span class="linenos">277</span></a>
-</span><span id="L-278"><a href="#L-278"><span class="linenos">278</span></a><span class="sd">    - `response_style`:</span>
-</span><span id="L-279"><a href="#L-279"><span class="linenos">279</span></a><span class="sd">        - Type: str | None</span>
-</span><span id="L-280"><a href="#L-280"><span class="linenos">280</span></a><span class="sd">        - What: Style preset for reformatting spoken output (e.g. &quot;military&quot;, &quot;fast&quot;)</span>
-</span><span id="L-281"><a href="#L-281"><span class="linenos">281</span></a><span class="sd">        - Default: None</span>
-</span><span id="L-282"><a href="#L-282"><span class="linenos">282</span></a>
-</span><span id="L-283"><a href="#L-283"><span class="linenos">283</span></a><span class="sd">    - `spych_kwargs`:</span>
-</span><span id="L-284"><a href="#L-284"><span class="linenos">284</span></a><span class="sd">        - Type: dict</span>
-</span><span id="L-285"><a href="#L-285"><span class="linenos">285</span></a><span class="sd">        - What: Additional keyword arguments to pass to the Spych constructor</span>
-</span><span id="L-286"><a href="#L-286"><span class="linenos">286</span></a><span class="sd">        - Default: None</span>
-</span><span id="L-287"><a href="#L-287"><span class="linenos">287</span></a>
-</span><span id="L-288"><a href="#L-288"><span class="linenos">288</span></a><span class="sd">    - `spych_wake_kwargs`:</span>
-</span><span id="L-289"><a href="#L-289"><span class="linenos">289</span></a><span class="sd">        - Type: str</span>
-</span><span id="L-290"><a href="#L-290"><span class="linenos">290</span></a><span class="sd">        - What: Additional keyword arguments to pass to SpychWake via SpychOrchestrator</span>
-</span><span id="L-291"><a href="#L-291"><span class="linenos">291</span></a><span class="sd">        - Default: None</span>
-</span><span id="L-292"><a href="#L-292"><span class="linenos">292</span></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="L-293"><a href="#L-293"><span class="linenos">293</span></a>    <span class="n">spych_kwargs</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;whisper_model&quot;</span><span class="p">:</span> <span class="s2">&quot;base.en&quot;</span><span class="p">,</span> <span class="o">**</span><span class="p">(</span><span class="n">spych_kwargs</span> <span class="ow">or</span> <span class="p">{})}</span>
-</span><span id="L-294"><a href="#L-294"><span class="linenos">294</span></a>    <span class="n">spych_object</span> <span class="o">=</span> <span class="n">Spych</span><span class="p">(</span><span class="o">**</span><span class="n">spych_kwargs</span><span class="p">)</span>
-</span><span id="L-295"><a href="#L-295"><span class="linenos">295</span></a>
-</span><span id="L-296"><a href="#L-296"><span class="linenos">296</span></a>    <span class="n">responder</span> <span class="o">=</span> <span class="n">OllamaResponder</span><span class="p">(</span>
-</span><span id="L-297"><a href="#L-297"><span class="linenos">297</span></a>        <span class="n">spych_object</span><span class="o">=</span><span class="n">spych_object</span><span class="p">,</span>
-</span><span id="L-298"><a href="#L-298"><span class="linenos">298</span></a>        <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span>
-</span><span id="L-299"><a href="#L-299"><span class="linenos">299</span></a>        <span class="n">listen_duration</span><span class="o">=</span><span class="n">listen_duration</span><span class="p">,</span>
-</span><span id="L-300"><a href="#L-300"><span class="linenos">300</span></a>        <span class="n">history_length</span><span class="o">=</span><span class="n">history_length</span><span class="p">,</span>
-</span><span id="L-301"><a href="#L-301"><span class="linenos">301</span></a>        <span class="n">host</span><span class="o">=</span><span class="n">host</span><span class="p">,</span>
-</span><span id="L-302"><a href="#L-302"><span class="linenos">302</span></a>        <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span>
-</span><span id="L-303"><a href="#L-303"><span class="linenos">303</span></a>        <span class="n">use_speaker</span><span class="o">=</span><span class="n">use_speaker</span><span class="p">,</span>
-</span><span id="L-304"><a href="#L-304"><span class="linenos">304</span></a>        <span class="n">speaker_voice</span><span class="o">=</span><span class="n">speaker_voice</span><span class="p">,</span>
-</span><span id="L-305"><a href="#L-305"><span class="linenos">305</span></a>        <span class="n">response_style</span><span class="o">=</span><span class="n">response_style</span><span class="p">,</span>
-</span><span id="L-306"><a href="#L-306"><span class="linenos">306</span></a>        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
-</span><span id="L-307"><a href="#L-307"><span class="linenos">307</span></a>    <span class="p">)</span>
-</span><span id="L-308"><a href="#L-308"><span class="linenos">308</span></a>
-</span><span id="L-309"><a href="#L-309"><span class="linenos">309</span></a>    <span class="n">SpychOrchestrator</span><span class="p">(</span>
-</span><span id="L-310"><a href="#L-310"><span class="linenos">310</span></a>        <span class="n">entries</span><span class="o">=</span><span class="p">[</span>
-</span><span id="L-311"><a href="#L-311"><span class="linenos">311</span></a>            <span class="p">{</span>
-</span><span id="L-312"><a href="#L-312"><span class="linenos">312</span></a>                <span class="s2">&quot;responder&quot;</span><span class="p">:</span> <span class="n">responder</span><span class="p">,</span>
-</span><span id="L-313"><a href="#L-313"><span class="linenos">313</span></a>                <span class="s2">&quot;wake_words&quot;</span><span class="p">:</span> <span class="n">wake_words</span><span class="p">,</span>
-</span><span id="L-314"><a href="#L-314"><span class="linenos">314</span></a>                <span class="s2">&quot;terminate_words&quot;</span><span class="p">:</span> <span class="n">terminate_words</span><span class="p">,</span>
-</span><span id="L-315"><a href="#L-315"><span class="linenos">315</span></a>            <span class="p">}</span>
-</span><span id="L-316"><a href="#L-316"><span class="linenos">316</span></a>        <span class="p">],</span>
-</span><span id="L-317"><a href="#L-317"><span class="linenos">317</span></a>        <span class="n">spych_wake_kwargs</span><span class="o">=</span><span class="n">spych_wake_kwargs</span><span class="p">,</span>
-</span><span id="L-318"><a href="#L-318"><span class="linenos">318</span></a>    <span class="p">)</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+</span><span id="L-232"><a href="#L-232"><span class="linenos">232</span></a><span class="sd">    Optional:</span>
+</span><span id="L-233"><a href="#L-233"><span class="linenos">233</span></a>
+</span><span id="L-234"><a href="#L-234"><span class="linenos">234</span></a><span class="sd">    - `wake_words`:</span>
+</span><span id="L-235"><a href="#L-235"><span class="linenos">235</span></a><span class="sd">        - Type: list[str]</span>
+</span><span id="L-236"><a href="#L-236"><span class="linenos">236</span></a><span class="sd">        - What: A list of wake words that each trigger the Ollama responder</span>
+</span><span id="L-237"><a href="#L-237"><span class="linenos">237</span></a><span class="sd">        - Default: [&quot;llama&quot;, &quot;ollama&quot;, &quot;lama&quot;]</span>
+</span><span id="L-238"><a href="#L-238"><span class="linenos">238</span></a><span class="sd">        - Note: All wake words in this list map to the same OllamaResponder instance,</span>
+</span><span id="L-239"><a href="#L-239"><span class="linenos">239</span></a><span class="sd">          sharing conversation history across triggers</span>
+</span><span id="L-240"><a href="#L-240"><span class="linenos">240</span></a>
+</span><span id="L-241"><a href="#L-241"><span class="linenos">241</span></a><span class="sd">    - `terminate_words`:</span>
+</span><span id="L-242"><a href="#L-242"><span class="linenos">242</span></a><span class="sd">        - Type: list[str]</span>
+</span><span id="L-243"><a href="#L-243"><span class="linenos">243</span></a><span class="sd">        - What: A list of terminate words that each trigger the termination of the Ollama responder</span>
+</span><span id="L-244"><a href="#L-244"><span class="linenos">244</span></a><span class="sd">        - Default: [&quot;terminate&quot;]</span>
+</span><span id="L-245"><a href="#L-245"><span class="linenos">245</span></a><span class="sd">        - Note: All terminate words in this list map to the same OllamaResponder instance,</span>
+</span><span id="L-246"><a href="#L-246"><span class="linenos">246</span></a><span class="sd">            sharing conversation history across triggers</span>
+</span><span id="L-247"><a href="#L-247"><span class="linenos">247</span></a>
+</span><span id="L-248"><a href="#L-248"><span class="linenos">248</span></a><span class="sd">    - `listen_duration`:</span>
+</span><span id="L-249"><a href="#L-249"><span class="linenos">249</span></a><span class="sd">        - Type: int | float</span>
+</span><span id="L-250"><a href="#L-250"><span class="linenos">250</span></a><span class="sd">        - What: The number of seconds to listen for after the wake word is detected</span>
+</span><span id="L-251"><a href="#L-251"><span class="linenos">251</span></a><span class="sd">        - Default: 0 (Auto detect)</span>
+</span><span id="L-252"><a href="#L-252"><span class="linenos">252</span></a>
+</span><span id="L-253"><a href="#L-253"><span class="linenos">253</span></a><span class="sd">    - `history_length`:</span>
+</span><span id="L-254"><a href="#L-254"><span class="linenos">254</span></a><span class="sd">        - Type: int</span>
+</span><span id="L-255"><a href="#L-255"><span class="linenos">255</span></a><span class="sd">        - What: The number of previous interactions to include in each request for conversational context</span>
+</span><span id="L-256"><a href="#L-256"><span class="linenos">256</span></a><span class="sd">        - Default: 10</span>
+</span><span id="L-257"><a href="#L-257"><span class="linenos">257</span></a><span class="sd">        - Note: Each interaction counts as one user message and one assistant message; the actual history</span>
+</span><span id="L-258"><a href="#L-258"><span class="linenos">258</span></a><span class="sd">            buffer is `history_length * 2` entries</span>
+</span><span id="L-259"><a href="#L-259"><span class="linenos">259</span></a>
+</span><span id="L-260"><a href="#L-260"><span class="linenos">260</span></a><span class="sd">    - `host`:</span>
+</span><span id="L-261"><a href="#L-261"><span class="linenos">261</span></a><span class="sd">        - Type: str</span>
+</span><span id="L-262"><a href="#L-262"><span class="linenos">262</span></a><span class="sd">        - What: The base URL of the running Ollama instance</span>
+</span><span id="L-263"><a href="#L-263"><span class="linenos">263</span></a><span class="sd">        - Default: &quot;http://localhost:11434&quot;</span>
+</span><span id="L-264"><a href="#L-264"><span class="linenos">264</span></a>
+</span><span id="L-265"><a href="#L-265"><span class="linenos">265</span></a><span class="sd">    - `name`:</span>
+</span><span id="L-266"><a href="#L-266"><span class="linenos">266</span></a><span class="sd">        - Type: str</span>
+</span><span id="L-267"><a href="#L-267"><span class="linenos">267</span></a><span class="sd">        - What: A custom display name for the responder shown in printed messages</span>
+</span><span id="L-268"><a href="#L-268"><span class="linenos">268</span></a><span class="sd">        - Default: None (uses &quot;Ollama&quot;)</span>
+</span><span id="L-269"><a href="#L-269"><span class="linenos">269</span></a>
+</span><span id="L-270"><a href="#L-270"><span class="linenos">270</span></a><span class="sd">    - `use_speaker`:</span>
+</span><span id="L-271"><a href="#L-271"><span class="linenos">271</span></a><span class="sd">        - Type: bool</span>
+</span><span id="L-272"><a href="#L-272"><span class="linenos">272</span></a><span class="sd">        - What: Whether to speak responses aloud via kokoro TTS</span>
+</span><span id="L-273"><a href="#L-273"><span class="linenos">273</span></a><span class="sd">        - Default: False</span>
+</span><span id="L-274"><a href="#L-274"><span class="linenos">274</span></a>
+</span><span id="L-275"><a href="#L-275"><span class="linenos">275</span></a><span class="sd">    - `speaker_voice`:</span>
+</span><span id="L-276"><a href="#L-276"><span class="linenos">276</span></a><span class="sd">        - Type: str</span>
+</span><span id="L-277"><a href="#L-277"><span class="linenos">277</span></a><span class="sd">        - What: Kokoro voice ID for spoken responses</span>
+</span><span id="L-278"><a href="#L-278"><span class="linenos">278</span></a><span class="sd">        - Default: &quot;af_heart&quot;</span>
+</span><span id="L-279"><a href="#L-279"><span class="linenos">279</span></a>
+</span><span id="L-280"><a href="#L-280"><span class="linenos">280</span></a><span class="sd">    - `response_style`:</span>
+</span><span id="L-281"><a href="#L-281"><span class="linenos">281</span></a><span class="sd">        - Type: str | None</span>
+</span><span id="L-282"><a href="#L-282"><span class="linenos">282</span></a><span class="sd">        - What: Style preset for reformatting spoken output (e.g. &quot;military&quot;, &quot;fast&quot;)</span>
+</span><span id="L-283"><a href="#L-283"><span class="linenos">283</span></a><span class="sd">        - Default: None</span>
+</span><span id="L-284"><a href="#L-284"><span class="linenos">284</span></a>
+</span><span id="L-285"><a href="#L-285"><span class="linenos">285</span></a><span class="sd">    - `spych_kwargs`:</span>
+</span><span id="L-286"><a href="#L-286"><span class="linenos">286</span></a><span class="sd">        - Type: dict</span>
+</span><span id="L-287"><a href="#L-287"><span class="linenos">287</span></a><span class="sd">        - What: Additional keyword arguments to pass to the Spych constructor</span>
+</span><span id="L-288"><a href="#L-288"><span class="linenos">288</span></a><span class="sd">        - Default: None</span>
+</span><span id="L-289"><a href="#L-289"><span class="linenos">289</span></a>
+</span><span id="L-290"><a href="#L-290"><span class="linenos">290</span></a><span class="sd">    - `spych_wake_kwargs`:</span>
+</span><span id="L-291"><a href="#L-291"><span class="linenos">291</span></a><span class="sd">        - Type: str</span>
+</span><span id="L-292"><a href="#L-292"><span class="linenos">292</span></a><span class="sd">        - What: Additional keyword arguments to pass to SpychWake via SpychOrchestrator</span>
+</span><span id="L-293"><a href="#L-293"><span class="linenos">293</span></a><span class="sd">        - Default: None</span>
+</span><span id="L-294"><a href="#L-294"><span class="linenos">294</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="L-295"><a href="#L-295"><span class="linenos">295</span></a>    <span class="n">spych_kwargs</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;whisper_model&quot;</span><span class="p">:</span> <span class="s2">&quot;base.en&quot;</span><span class="p">,</span> <span class="o">**</span><span class="p">(</span><span class="n">spych_kwargs</span> <span class="ow">or</span> <span class="p">{})}</span>
+</span><span id="L-296"><a href="#L-296"><span class="linenos">296</span></a>    <span class="n">spych_object</span> <span class="o">=</span> <span class="n">Spych</span><span class="p">(</span><span class="o">**</span><span class="n">spych_kwargs</span><span class="p">)</span>
+</span><span id="L-297"><a href="#L-297"><span class="linenos">297</span></a>
+</span><span id="L-298"><a href="#L-298"><span class="linenos">298</span></a>    <span class="n">responder</span> <span class="o">=</span> <span class="n">OllamaResponder</span><span class="p">(</span>
+</span><span id="L-299"><a href="#L-299"><span class="linenos">299</span></a>        <span class="n">spych_object</span><span class="o">=</span><span class="n">spych_object</span><span class="p">,</span>
+</span><span id="L-300"><a href="#L-300"><span class="linenos">300</span></a>        <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span>
+</span><span id="L-301"><a href="#L-301"><span class="linenos">301</span></a>        <span class="n">listen_duration</span><span class="o">=</span><span class="n">listen_duration</span><span class="p">,</span>
+</span><span id="L-302"><a href="#L-302"><span class="linenos">302</span></a>        <span class="n">history_length</span><span class="o">=</span><span class="n">history_length</span><span class="p">,</span>
+</span><span id="L-303"><a href="#L-303"><span class="linenos">303</span></a>        <span class="n">host</span><span class="o">=</span><span class="n">host</span><span class="p">,</span>
+</span><span id="L-304"><a href="#L-304"><span class="linenos">304</span></a>        <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span>
+</span><span id="L-305"><a href="#L-305"><span class="linenos">305</span></a>        <span class="n">use_speaker</span><span class="o">=</span><span class="n">use_speaker</span><span class="p">,</span>
+</span><span id="L-306"><a href="#L-306"><span class="linenos">306</span></a>        <span class="n">speaker_voice</span><span class="o">=</span><span class="n">speaker_voice</span><span class="p">,</span>
+</span><span id="L-307"><a href="#L-307"><span class="linenos">307</span></a>        <span class="n">response_style</span><span class="o">=</span><span class="n">response_style</span><span class="p">,</span>
+</span><span id="L-308"><a href="#L-308"><span class="linenos">308</span></a>        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+</span><span id="L-309"><a href="#L-309"><span class="linenos">309</span></a>    <span class="p">)</span>
+</span><span id="L-310"><a href="#L-310"><span class="linenos">310</span></a>
+</span><span id="L-311"><a href="#L-311"><span class="linenos">311</span></a>    <span class="n">SpychOrchestrator</span><span class="p">(</span>
+</span><span id="L-312"><a href="#L-312"><span class="linenos">312</span></a>        <span class="n">entries</span><span class="o">=</span><span class="p">[</span>
+</span><span id="L-313"><a href="#L-313"><span class="linenos">313</span></a>            <span class="p">{</span>
+</span><span id="L-314"><a href="#L-314"><span class="linenos">314</span></a>                <span class="s2">&quot;responder&quot;</span><span class="p">:</span> <span class="n">responder</span><span class="p">,</span>
+</span><span id="L-315"><a href="#L-315"><span class="linenos">315</span></a>                <span class="s2">&quot;wake_words&quot;</span><span class="p">:</span> <span class="n">wake_words</span><span class="p">,</span>
+</span><span id="L-316"><a href="#L-316"><span class="linenos">316</span></a>                <span class="s2">&quot;terminate_words&quot;</span><span class="p">:</span> <span class="n">terminate_words</span><span class="p">,</span>
+</span><span id="L-317"><a href="#L-317"><span class="linenos">317</span></a>            <span class="p">}</span>
+</span><span id="L-318"><a href="#L-318"><span class="linenos">318</span></a>        <span class="p">],</span>
+</span><span id="L-319"><a href="#L-319"><span class="linenos">319</span></a>        <span class="n">spych_wake_kwargs</span><span class="o">=</span><span class="n">spych_wake_kwargs</span><span class="p">,</span>
+</span><span id="L-320"><a href="#L-320"><span class="linenos">320</span></a>    <span class="p">)</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
 </span></pre></div>
 
 
@@ -587,60 +589,62 @@
 </span><span id="OllamaResponder-143"><a href="#OllamaResponder-143"><span class="linenos">143</span></a>            <span class="p">)</span>
 </span><span id="OllamaResponder-144"><a href="#OllamaResponder-144"><span class="linenos">144</span></a>            <span class="k">return</span> <span class="kc">False</span>
 </span><span id="OllamaResponder-145"><a href="#OllamaResponder-145"><span class="linenos">145</span></a>
-</span><span id="OllamaResponder-146"><a href="#OllamaResponder-146"><span class="linenos">146</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">respond</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user_input</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">is_continuation</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AgentResponse</span><span class="p">:</span>
-</span><span id="OllamaResponder-147"><a href="#OllamaResponder-147"><span class="linenos">147</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="OllamaResponder-148"><a href="#OllamaResponder-148"><span class="linenos">148</span></a><span class="sd">        Usage:</span>
-</span><span id="OllamaResponder-149"><a href="#OllamaResponder-149"><span class="linenos">149</span></a>
-</span><span id="OllamaResponder-150"><a href="#OllamaResponder-150"><span class="linenos">150</span></a><span class="sd">        - Sends the transcribed user input to Ollama and returns a structured</span>
-</span><span id="OllamaResponder-151"><a href="#OllamaResponder-151"><span class="linenos">151</span></a><span class="sd">          response. Maintains a rolling conversation history across calls.</span>
-</span><span id="OllamaResponder-152"><a href="#OllamaResponder-152"><span class="linenos">152</span></a>
-</span><span id="OllamaResponder-153"><a href="#OllamaResponder-153"><span class="linenos">153</span></a><span class="sd">        Requires:</span>
+</span><span id="OllamaResponder-146"><a href="#OllamaResponder-146"><span class="linenos">146</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">respond</span><span class="p">(</span>
+</span><span id="OllamaResponder-147"><a href="#OllamaResponder-147"><span class="linenos">147</span></a>        <span class="bp">self</span><span class="p">,</span> <span class="n">user_input</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">is_continuation</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+</span><span id="OllamaResponder-148"><a href="#OllamaResponder-148"><span class="linenos">148</span></a>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AgentResponse</span><span class="p">:</span>
+</span><span id="OllamaResponder-149"><a href="#OllamaResponder-149"><span class="linenos">149</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="OllamaResponder-150"><a href="#OllamaResponder-150"><span class="linenos">150</span></a><span class="sd">        Usage:</span>
+</span><span id="OllamaResponder-151"><a href="#OllamaResponder-151"><span class="linenos">151</span></a>
+</span><span id="OllamaResponder-152"><a href="#OllamaResponder-152"><span class="linenos">152</span></a><span class="sd">        - Sends the transcribed user input to Ollama and returns a structured</span>
+</span><span id="OllamaResponder-153"><a href="#OllamaResponder-153"><span class="linenos">153</span></a><span class="sd">          response. Maintains a rolling conversation history across calls.</span>
 </span><span id="OllamaResponder-154"><a href="#OllamaResponder-154"><span class="linenos">154</span></a>
-</span><span id="OllamaResponder-155"><a href="#OllamaResponder-155"><span class="linenos">155</span></a><span class="sd">        - `user_input`:</span>
-</span><span id="OllamaResponder-156"><a href="#OllamaResponder-156"><span class="linenos">156</span></a><span class="sd">            - Type: str</span>
-</span><span id="OllamaResponder-157"><a href="#OllamaResponder-157"><span class="linenos">157</span></a><span class="sd">            - What: The transcribed text from the user&#39;s audio input</span>
-</span><span id="OllamaResponder-158"><a href="#OllamaResponder-158"><span class="linenos">158</span></a>
-</span><span id="OllamaResponder-159"><a href="#OllamaResponder-159"><span class="linenos">159</span></a><span class="sd">        Returns:</span>
+</span><span id="OllamaResponder-155"><a href="#OllamaResponder-155"><span class="linenos">155</span></a><span class="sd">        Requires:</span>
+</span><span id="OllamaResponder-156"><a href="#OllamaResponder-156"><span class="linenos">156</span></a>
+</span><span id="OllamaResponder-157"><a href="#OllamaResponder-157"><span class="linenos">157</span></a><span class="sd">        - `user_input`:</span>
+</span><span id="OllamaResponder-158"><a href="#OllamaResponder-158"><span class="linenos">158</span></a><span class="sd">            - Type: str</span>
+</span><span id="OllamaResponder-159"><a href="#OllamaResponder-159"><span class="linenos">159</span></a><span class="sd">            - What: The transcribed text from the user&#39;s audio input</span>
 </span><span id="OllamaResponder-160"><a href="#OllamaResponder-160"><span class="linenos">160</span></a>
-</span><span id="OllamaResponder-161"><a href="#OllamaResponder-161"><span class="linenos">161</span></a><span class="sd">        - `response`:</span>
-</span><span id="OllamaResponder-162"><a href="#OllamaResponder-162"><span class="linenos">162</span></a><span class="sd">            - Type: AgentResponse</span>
-</span><span id="OllamaResponder-163"><a href="#OllamaResponder-163"><span class="linenos">163</span></a><span class="sd">            - What: Parsed structured response from the Ollama model</span>
-</span><span id="OllamaResponder-164"><a href="#OllamaResponder-164"><span class="linenos">164</span></a><span class="sd">        &quot;&quot;&quot;</span>
-</span><span id="OllamaResponder-165"><a href="#OllamaResponder-165"><span class="linenos">165</span></a>        <span class="n">prompt</span> <span class="o">=</span> <span class="n">user_input</span>
-</span><span id="OllamaResponder-166"><a href="#OllamaResponder-166"><span class="linenos">166</span></a>        <span class="k">if</span> <span class="n">is_continuation</span><span class="p">:</span>
-</span><span id="OllamaResponder-167"><a href="#OllamaResponder-167"><span class="linenos">167</span></a>            <span class="n">prompt</span> <span class="o">=</span> <span class="s2">&quot;Please continue.&quot;</span>
-</span><span id="OllamaResponder-168"><a href="#OllamaResponder-168"><span class="linenos">168</span></a>        <span class="k">else</span><span class="p">:</span>
-</span><span id="OllamaResponder-169"><a href="#OllamaResponder-169"><span class="linenos">169</span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">history</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;user&quot;</span><span class="p">,</span> <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="n">user_input</span><span class="p">})</span>
-</span><span id="OllamaResponder-170"><a href="#OllamaResponder-170"><span class="linenos">170</span></a>
-</span><span id="OllamaResponder-171"><a href="#OllamaResponder-171"><span class="linenos">171</span></a>        <span class="n">prompt_history</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
-</span><span id="OllamaResponder-172"><a href="#OllamaResponder-172"><span class="linenos">172</span></a>            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">e</span><span class="p">[</span><span class="s1">&#39;role&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">capitalize</span><span class="p">()</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="p">[</span><span class="s1">&#39;content&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">history</span>
-</span><span id="OllamaResponder-173"><a href="#OllamaResponder-173"><span class="linenos">173</span></a>        <span class="p">)</span>
-</span><span id="OllamaResponder-174"><a href="#OllamaResponder-174"><span class="linenos">174</span></a>        <span class="n">prompt</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;&quot;&quot;</span>
-</span><span id="OllamaResponder-175"><a href="#OllamaResponder-175"><span class="linenos">175</span></a><span class="s2">        Your conversation history:</span>
-</span><span id="OllamaResponder-176"><a href="#OllamaResponder-176"><span class="linenos">176</span></a>
-</span><span id="OllamaResponder-177"><a href="#OllamaResponder-177"><span class="linenos">177</span></a><span class="s2">        </span><span class="si">{</span><span class="n">prompt_history</span><span class="si">}</span>
+</span><span id="OllamaResponder-161"><a href="#OllamaResponder-161"><span class="linenos">161</span></a><span class="sd">        Returns:</span>
+</span><span id="OllamaResponder-162"><a href="#OllamaResponder-162"><span class="linenos">162</span></a>
+</span><span id="OllamaResponder-163"><a href="#OllamaResponder-163"><span class="linenos">163</span></a><span class="sd">        - `response`:</span>
+</span><span id="OllamaResponder-164"><a href="#OllamaResponder-164"><span class="linenos">164</span></a><span class="sd">            - Type: AgentResponse</span>
+</span><span id="OllamaResponder-165"><a href="#OllamaResponder-165"><span class="linenos">165</span></a><span class="sd">            - What: Parsed structured response from the Ollama model</span>
+</span><span id="OllamaResponder-166"><a href="#OllamaResponder-166"><span class="linenos">166</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="OllamaResponder-167"><a href="#OllamaResponder-167"><span class="linenos">167</span></a>        <span class="n">prompt</span> <span class="o">=</span> <span class="n">user_input</span>
+</span><span id="OllamaResponder-168"><a href="#OllamaResponder-168"><span class="linenos">168</span></a>        <span class="k">if</span> <span class="n">is_continuation</span><span class="p">:</span>
+</span><span id="OllamaResponder-169"><a href="#OllamaResponder-169"><span class="linenos">169</span></a>            <span class="n">prompt</span> <span class="o">=</span> <span class="s2">&quot;Please continue.&quot;</span>
+</span><span id="OllamaResponder-170"><a href="#OllamaResponder-170"><span class="linenos">170</span></a>        <span class="k">else</span><span class="p">:</span>
+</span><span id="OllamaResponder-171"><a href="#OllamaResponder-171"><span class="linenos">171</span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">history</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;user&quot;</span><span class="p">,</span> <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="n">user_input</span><span class="p">})</span>
+</span><span id="OllamaResponder-172"><a href="#OllamaResponder-172"><span class="linenos">172</span></a>
+</span><span id="OllamaResponder-173"><a href="#OllamaResponder-173"><span class="linenos">173</span></a>        <span class="n">prompt_history</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+</span><span id="OllamaResponder-174"><a href="#OllamaResponder-174"><span class="linenos">174</span></a>            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">e</span><span class="p">[</span><span class="s1">&#39;role&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">capitalize</span><span class="p">()</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="p">[</span><span class="s1">&#39;content&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">history</span>
+</span><span id="OllamaResponder-175"><a href="#OllamaResponder-175"><span class="linenos">175</span></a>        <span class="p">)</span>
+</span><span id="OllamaResponder-176"><a href="#OllamaResponder-176"><span class="linenos">176</span></a>        <span class="n">prompt</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;&quot;&quot;</span>
+</span><span id="OllamaResponder-177"><a href="#OllamaResponder-177"><span class="linenos">177</span></a><span class="s2">        Your conversation history:</span>
 </span><span id="OllamaResponder-178"><a href="#OllamaResponder-178"><span class="linenos">178</span></a>
-</span><span id="OllamaResponder-179"><a href="#OllamaResponder-179"><span class="linenos">179</span></a><span class="s2">        Now here is your current prompt:</span>
+</span><span id="OllamaResponder-179"><a href="#OllamaResponder-179"><span class="linenos">179</span></a><span class="s2">        </span><span class="si">{</span><span class="n">prompt_history</span><span class="si">}</span>
 </span><span id="OllamaResponder-180"><a href="#OllamaResponder-180"><span class="linenos">180</span></a>
-</span><span id="OllamaResponder-181"><a href="#OllamaResponder-181"><span class="linenos">181</span></a><span class="s2">        </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">format_prompt</span><span class="p">(</span><span class="n">prompt</span><span class="p">)</span><span class="si">}</span>
-</span><span id="OllamaResponder-182"><a href="#OllamaResponder-182"><span class="linenos">182</span></a><span class="s2">        &quot;&quot;&quot;</span>
-</span><span id="OllamaResponder-183"><a href="#OllamaResponder-183"><span class="linenos">183</span></a>
-</span><span id="OllamaResponder-184"><a href="#OllamaResponder-184"><span class="linenos">184</span></a>        <span class="n">output</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">post</span><span class="p">(</span>
-</span><span id="OllamaResponder-185"><a href="#OllamaResponder-185"><span class="linenos">185</span></a>            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">host</span><span class="si">}</span><span class="s2">/api/generate&quot;</span><span class="p">,</span>
-</span><span id="OllamaResponder-186"><a href="#OllamaResponder-186"><span class="linenos">186</span></a>            <span class="n">json</span><span class="o">=</span><span class="p">{</span>
-</span><span id="OllamaResponder-187"><a href="#OllamaResponder-187"><span class="linenos">187</span></a>                <span class="s2">&quot;model&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">,</span>
-</span><span id="OllamaResponder-188"><a href="#OllamaResponder-188"><span class="linenos">188</span></a>                <span class="s2">&quot;prompt&quot;</span><span class="p">:</span> <span class="n">prompt</span><span class="p">,</span>
-</span><span id="OllamaResponder-189"><a href="#OllamaResponder-189"><span class="linenos">189</span></a>                <span class="s2">&quot;format&quot;</span><span class="p">:</span> <span class="s2">&quot;json&quot;</span><span class="p">,</span>
-</span><span id="OllamaResponder-190"><a href="#OllamaResponder-190"><span class="linenos">190</span></a>                <span class="s2">&quot;stream&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
-</span><span id="OllamaResponder-191"><a href="#OllamaResponder-191"><span class="linenos">191</span></a>            <span class="p">},</span>
-</span><span id="OllamaResponder-192"><a href="#OllamaResponder-192"><span class="linenos">192</span></a>        <span class="p">)</span>
-</span><span id="OllamaResponder-193"><a href="#OllamaResponder-193"><span class="linenos">193</span></a>
-</span><span id="OllamaResponder-194"><a href="#OllamaResponder-194"><span class="linenos">194</span></a>        <span class="n">agent_response</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parse_output</span><span class="p">(</span><span class="n">output</span><span class="o">.</span><span class="n">json</span><span class="p">()</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;response&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">))</span>
-</span><span id="OllamaResponder-195"><a href="#OllamaResponder-195"><span class="linenos">195</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">history</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
-</span><span id="OllamaResponder-196"><a href="#OllamaResponder-196"><span class="linenos">196</span></a>            <span class="p">{</span><span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;assistant&quot;</span><span class="p">,</span> <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="n">agent_response</span><span class="o">.</span><span class="n">response</span><span class="p">}</span>
-</span><span id="OllamaResponder-197"><a href="#OllamaResponder-197"><span class="linenos">197</span></a>        <span class="p">)</span>
-</span><span id="OllamaResponder-198"><a href="#OllamaResponder-198"><span class="linenos">198</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">history</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">history</span><span class="p">[</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">history_length</span> <span class="o">*</span> <span class="mi">2</span> <span class="p">:]</span>
-</span><span id="OllamaResponder-199"><a href="#OllamaResponder-199"><span class="linenos">199</span></a>        <span class="k">return</span> <span class="n">agent_response</span>
+</span><span id="OllamaResponder-181"><a href="#OllamaResponder-181"><span class="linenos">181</span></a><span class="s2">        Now here is your current prompt:</span>
+</span><span id="OllamaResponder-182"><a href="#OllamaResponder-182"><span class="linenos">182</span></a>
+</span><span id="OllamaResponder-183"><a href="#OllamaResponder-183"><span class="linenos">183</span></a><span class="s2">        </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">format_prompt</span><span class="p">(</span><span class="n">prompt</span><span class="p">)</span><span class="si">}</span>
+</span><span id="OllamaResponder-184"><a href="#OllamaResponder-184"><span class="linenos">184</span></a><span class="s2">        &quot;&quot;&quot;</span>
+</span><span id="OllamaResponder-185"><a href="#OllamaResponder-185"><span class="linenos">185</span></a>
+</span><span id="OllamaResponder-186"><a href="#OllamaResponder-186"><span class="linenos">186</span></a>        <span class="n">output</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">post</span><span class="p">(</span>
+</span><span id="OllamaResponder-187"><a href="#OllamaResponder-187"><span class="linenos">187</span></a>            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">host</span><span class="si">}</span><span class="s2">/api/generate&quot;</span><span class="p">,</span>
+</span><span id="OllamaResponder-188"><a href="#OllamaResponder-188"><span class="linenos">188</span></a>            <span class="n">json</span><span class="o">=</span><span class="p">{</span>
+</span><span id="OllamaResponder-189"><a href="#OllamaResponder-189"><span class="linenos">189</span></a>                <span class="s2">&quot;model&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">,</span>
+</span><span id="OllamaResponder-190"><a href="#OllamaResponder-190"><span class="linenos">190</span></a>                <span class="s2">&quot;prompt&quot;</span><span class="p">:</span> <span class="n">prompt</span><span class="p">,</span>
+</span><span id="OllamaResponder-191"><a href="#OllamaResponder-191"><span class="linenos">191</span></a>                <span class="s2">&quot;format&quot;</span><span class="p">:</span> <span class="s2">&quot;json&quot;</span><span class="p">,</span>
+</span><span id="OllamaResponder-192"><a href="#OllamaResponder-192"><span class="linenos">192</span></a>                <span class="s2">&quot;stream&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+</span><span id="OllamaResponder-193"><a href="#OllamaResponder-193"><span class="linenos">193</span></a>            <span class="p">},</span>
+</span><span id="OllamaResponder-194"><a href="#OllamaResponder-194"><span class="linenos">194</span></a>        <span class="p">)</span>
+</span><span id="OllamaResponder-195"><a href="#OllamaResponder-195"><span class="linenos">195</span></a>
+</span><span id="OllamaResponder-196"><a href="#OllamaResponder-196"><span class="linenos">196</span></a>        <span class="n">agent_response</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parse_output</span><span class="p">(</span><span class="n">output</span><span class="o">.</span><span class="n">json</span><span class="p">()</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;response&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">))</span>
+</span><span id="OllamaResponder-197"><a href="#OllamaResponder-197"><span class="linenos">197</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">history</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+</span><span id="OllamaResponder-198"><a href="#OllamaResponder-198"><span class="linenos">198</span></a>            <span class="p">{</span><span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;assistant&quot;</span><span class="p">,</span> <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="n">agent_response</span><span class="o">.</span><span class="n">response</span><span class="p">}</span>
+</span><span id="OllamaResponder-199"><a href="#OllamaResponder-199"><span class="linenos">199</span></a>        <span class="p">)</span>
+</span><span id="OllamaResponder-200"><a href="#OllamaResponder-200"><span class="linenos">200</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">history</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">history</span><span class="p">[</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">history_length</span> <span class="o">*</span> <span class="mi">2</span> <span class="p">:]</span>
+</span><span id="OllamaResponder-201"><a href="#OllamaResponder-201"><span class="linenos">201</span></a>        <span class="k">return</span> <span class="n">agent_response</span>
 </span></pre></div>
 
 
@@ -977,60 +981,62 @@ Any other string is used verbatim as a custom instruction.</li>
 
     </div>
     <a class="headerlink" href="#OllamaResponder.respond"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="OllamaResponder.respond-146"><a href="#OllamaResponder.respond-146"><span class="linenos">146</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">respond</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user_input</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">is_continuation</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AgentResponse</span><span class="p">:</span>
-</span><span id="OllamaResponder.respond-147"><a href="#OllamaResponder.respond-147"><span class="linenos">147</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="OllamaResponder.respond-148"><a href="#OllamaResponder.respond-148"><span class="linenos">148</span></a><span class="sd">        Usage:</span>
-</span><span id="OllamaResponder.respond-149"><a href="#OllamaResponder.respond-149"><span class="linenos">149</span></a>
-</span><span id="OllamaResponder.respond-150"><a href="#OllamaResponder.respond-150"><span class="linenos">150</span></a><span class="sd">        - Sends the transcribed user input to Ollama and returns a structured</span>
-</span><span id="OllamaResponder.respond-151"><a href="#OllamaResponder.respond-151"><span class="linenos">151</span></a><span class="sd">          response. Maintains a rolling conversation history across calls.</span>
-</span><span id="OllamaResponder.respond-152"><a href="#OllamaResponder.respond-152"><span class="linenos">152</span></a>
-</span><span id="OllamaResponder.respond-153"><a href="#OllamaResponder.respond-153"><span class="linenos">153</span></a><span class="sd">        Requires:</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="OllamaResponder.respond-146"><a href="#OllamaResponder.respond-146"><span class="linenos">146</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">respond</span><span class="p">(</span>
+</span><span id="OllamaResponder.respond-147"><a href="#OllamaResponder.respond-147"><span class="linenos">147</span></a>        <span class="bp">self</span><span class="p">,</span> <span class="n">user_input</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">is_continuation</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+</span><span id="OllamaResponder.respond-148"><a href="#OllamaResponder.respond-148"><span class="linenos">148</span></a>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AgentResponse</span><span class="p">:</span>
+</span><span id="OllamaResponder.respond-149"><a href="#OllamaResponder.respond-149"><span class="linenos">149</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="OllamaResponder.respond-150"><a href="#OllamaResponder.respond-150"><span class="linenos">150</span></a><span class="sd">        Usage:</span>
+</span><span id="OllamaResponder.respond-151"><a href="#OllamaResponder.respond-151"><span class="linenos">151</span></a>
+</span><span id="OllamaResponder.respond-152"><a href="#OllamaResponder.respond-152"><span class="linenos">152</span></a><span class="sd">        - Sends the transcribed user input to Ollama and returns a structured</span>
+</span><span id="OllamaResponder.respond-153"><a href="#OllamaResponder.respond-153"><span class="linenos">153</span></a><span class="sd">          response. Maintains a rolling conversation history across calls.</span>
 </span><span id="OllamaResponder.respond-154"><a href="#OllamaResponder.respond-154"><span class="linenos">154</span></a>
-</span><span id="OllamaResponder.respond-155"><a href="#OllamaResponder.respond-155"><span class="linenos">155</span></a><span class="sd">        - `user_input`:</span>
-</span><span id="OllamaResponder.respond-156"><a href="#OllamaResponder.respond-156"><span class="linenos">156</span></a><span class="sd">            - Type: str</span>
-</span><span id="OllamaResponder.respond-157"><a href="#OllamaResponder.respond-157"><span class="linenos">157</span></a><span class="sd">            - What: The transcribed text from the user&#39;s audio input</span>
-</span><span id="OllamaResponder.respond-158"><a href="#OllamaResponder.respond-158"><span class="linenos">158</span></a>
-</span><span id="OllamaResponder.respond-159"><a href="#OllamaResponder.respond-159"><span class="linenos">159</span></a><span class="sd">        Returns:</span>
+</span><span id="OllamaResponder.respond-155"><a href="#OllamaResponder.respond-155"><span class="linenos">155</span></a><span class="sd">        Requires:</span>
+</span><span id="OllamaResponder.respond-156"><a href="#OllamaResponder.respond-156"><span class="linenos">156</span></a>
+</span><span id="OllamaResponder.respond-157"><a href="#OllamaResponder.respond-157"><span class="linenos">157</span></a><span class="sd">        - `user_input`:</span>
+</span><span id="OllamaResponder.respond-158"><a href="#OllamaResponder.respond-158"><span class="linenos">158</span></a><span class="sd">            - Type: str</span>
+</span><span id="OllamaResponder.respond-159"><a href="#OllamaResponder.respond-159"><span class="linenos">159</span></a><span class="sd">            - What: The transcribed text from the user&#39;s audio input</span>
 </span><span id="OllamaResponder.respond-160"><a href="#OllamaResponder.respond-160"><span class="linenos">160</span></a>
-</span><span id="OllamaResponder.respond-161"><a href="#OllamaResponder.respond-161"><span class="linenos">161</span></a><span class="sd">        - `response`:</span>
-</span><span id="OllamaResponder.respond-162"><a href="#OllamaResponder.respond-162"><span class="linenos">162</span></a><span class="sd">            - Type: AgentResponse</span>
-</span><span id="OllamaResponder.respond-163"><a href="#OllamaResponder.respond-163"><span class="linenos">163</span></a><span class="sd">            - What: Parsed structured response from the Ollama model</span>
-</span><span id="OllamaResponder.respond-164"><a href="#OllamaResponder.respond-164"><span class="linenos">164</span></a><span class="sd">        &quot;&quot;&quot;</span>
-</span><span id="OllamaResponder.respond-165"><a href="#OllamaResponder.respond-165"><span class="linenos">165</span></a>        <span class="n">prompt</span> <span class="o">=</span> <span class="n">user_input</span>
-</span><span id="OllamaResponder.respond-166"><a href="#OllamaResponder.respond-166"><span class="linenos">166</span></a>        <span class="k">if</span> <span class="n">is_continuation</span><span class="p">:</span>
-</span><span id="OllamaResponder.respond-167"><a href="#OllamaResponder.respond-167"><span class="linenos">167</span></a>            <span class="n">prompt</span> <span class="o">=</span> <span class="s2">&quot;Please continue.&quot;</span>
-</span><span id="OllamaResponder.respond-168"><a href="#OllamaResponder.respond-168"><span class="linenos">168</span></a>        <span class="k">else</span><span class="p">:</span>
-</span><span id="OllamaResponder.respond-169"><a href="#OllamaResponder.respond-169"><span class="linenos">169</span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">history</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;user&quot;</span><span class="p">,</span> <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="n">user_input</span><span class="p">})</span>
-</span><span id="OllamaResponder.respond-170"><a href="#OllamaResponder.respond-170"><span class="linenos">170</span></a>
-</span><span id="OllamaResponder.respond-171"><a href="#OllamaResponder.respond-171"><span class="linenos">171</span></a>        <span class="n">prompt_history</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
-</span><span id="OllamaResponder.respond-172"><a href="#OllamaResponder.respond-172"><span class="linenos">172</span></a>            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">e</span><span class="p">[</span><span class="s1">&#39;role&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">capitalize</span><span class="p">()</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="p">[</span><span class="s1">&#39;content&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">history</span>
-</span><span id="OllamaResponder.respond-173"><a href="#OllamaResponder.respond-173"><span class="linenos">173</span></a>        <span class="p">)</span>
-</span><span id="OllamaResponder.respond-174"><a href="#OllamaResponder.respond-174"><span class="linenos">174</span></a>        <span class="n">prompt</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;&quot;&quot;</span>
-</span><span id="OllamaResponder.respond-175"><a href="#OllamaResponder.respond-175"><span class="linenos">175</span></a><span class="s2">        Your conversation history:</span>
-</span><span id="OllamaResponder.respond-176"><a href="#OllamaResponder.respond-176"><span class="linenos">176</span></a>
-</span><span id="OllamaResponder.respond-177"><a href="#OllamaResponder.respond-177"><span class="linenos">177</span></a><span class="s2">        </span><span class="si">{</span><span class="n">prompt_history</span><span class="si">}</span>
+</span><span id="OllamaResponder.respond-161"><a href="#OllamaResponder.respond-161"><span class="linenos">161</span></a><span class="sd">        Returns:</span>
+</span><span id="OllamaResponder.respond-162"><a href="#OllamaResponder.respond-162"><span class="linenos">162</span></a>
+</span><span id="OllamaResponder.respond-163"><a href="#OllamaResponder.respond-163"><span class="linenos">163</span></a><span class="sd">        - `response`:</span>
+</span><span id="OllamaResponder.respond-164"><a href="#OllamaResponder.respond-164"><span class="linenos">164</span></a><span class="sd">            - Type: AgentResponse</span>
+</span><span id="OllamaResponder.respond-165"><a href="#OllamaResponder.respond-165"><span class="linenos">165</span></a><span class="sd">            - What: Parsed structured response from the Ollama model</span>
+</span><span id="OllamaResponder.respond-166"><a href="#OllamaResponder.respond-166"><span class="linenos">166</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="OllamaResponder.respond-167"><a href="#OllamaResponder.respond-167"><span class="linenos">167</span></a>        <span class="n">prompt</span> <span class="o">=</span> <span class="n">user_input</span>
+</span><span id="OllamaResponder.respond-168"><a href="#OllamaResponder.respond-168"><span class="linenos">168</span></a>        <span class="k">if</span> <span class="n">is_continuation</span><span class="p">:</span>
+</span><span id="OllamaResponder.respond-169"><a href="#OllamaResponder.respond-169"><span class="linenos">169</span></a>            <span class="n">prompt</span> <span class="o">=</span> <span class="s2">&quot;Please continue.&quot;</span>
+</span><span id="OllamaResponder.respond-170"><a href="#OllamaResponder.respond-170"><span class="linenos">170</span></a>        <span class="k">else</span><span class="p">:</span>
+</span><span id="OllamaResponder.respond-171"><a href="#OllamaResponder.respond-171"><span class="linenos">171</span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">history</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;user&quot;</span><span class="p">,</span> <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="n">user_input</span><span class="p">})</span>
+</span><span id="OllamaResponder.respond-172"><a href="#OllamaResponder.respond-172"><span class="linenos">172</span></a>
+</span><span id="OllamaResponder.respond-173"><a href="#OllamaResponder.respond-173"><span class="linenos">173</span></a>        <span class="n">prompt_history</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+</span><span id="OllamaResponder.respond-174"><a href="#OllamaResponder.respond-174"><span class="linenos">174</span></a>            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">e</span><span class="p">[</span><span class="s1">&#39;role&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">capitalize</span><span class="p">()</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="p">[</span><span class="s1">&#39;content&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">history</span>
+</span><span id="OllamaResponder.respond-175"><a href="#OllamaResponder.respond-175"><span class="linenos">175</span></a>        <span class="p">)</span>
+</span><span id="OllamaResponder.respond-176"><a href="#OllamaResponder.respond-176"><span class="linenos">176</span></a>        <span class="n">prompt</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;&quot;&quot;</span>
+</span><span id="OllamaResponder.respond-177"><a href="#OllamaResponder.respond-177"><span class="linenos">177</span></a><span class="s2">        Your conversation history:</span>
 </span><span id="OllamaResponder.respond-178"><a href="#OllamaResponder.respond-178"><span class="linenos">178</span></a>
-</span><span id="OllamaResponder.respond-179"><a href="#OllamaResponder.respond-179"><span class="linenos">179</span></a><span class="s2">        Now here is your current prompt:</span>
+</span><span id="OllamaResponder.respond-179"><a href="#OllamaResponder.respond-179"><span class="linenos">179</span></a><span class="s2">        </span><span class="si">{</span><span class="n">prompt_history</span><span class="si">}</span>
 </span><span id="OllamaResponder.respond-180"><a href="#OllamaResponder.respond-180"><span class="linenos">180</span></a>
-</span><span id="OllamaResponder.respond-181"><a href="#OllamaResponder.respond-181"><span class="linenos">181</span></a><span class="s2">        </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">format_prompt</span><span class="p">(</span><span class="n">prompt</span><span class="p">)</span><span class="si">}</span>
-</span><span id="OllamaResponder.respond-182"><a href="#OllamaResponder.respond-182"><span class="linenos">182</span></a><span class="s2">        &quot;&quot;&quot;</span>
-</span><span id="OllamaResponder.respond-183"><a href="#OllamaResponder.respond-183"><span class="linenos">183</span></a>
-</span><span id="OllamaResponder.respond-184"><a href="#OllamaResponder.respond-184"><span class="linenos">184</span></a>        <span class="n">output</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">post</span><span class="p">(</span>
-</span><span id="OllamaResponder.respond-185"><a href="#OllamaResponder.respond-185"><span class="linenos">185</span></a>            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">host</span><span class="si">}</span><span class="s2">/api/generate&quot;</span><span class="p">,</span>
-</span><span id="OllamaResponder.respond-186"><a href="#OllamaResponder.respond-186"><span class="linenos">186</span></a>            <span class="n">json</span><span class="o">=</span><span class="p">{</span>
-</span><span id="OllamaResponder.respond-187"><a href="#OllamaResponder.respond-187"><span class="linenos">187</span></a>                <span class="s2">&quot;model&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">,</span>
-</span><span id="OllamaResponder.respond-188"><a href="#OllamaResponder.respond-188"><span class="linenos">188</span></a>                <span class="s2">&quot;prompt&quot;</span><span class="p">:</span> <span class="n">prompt</span><span class="p">,</span>
-</span><span id="OllamaResponder.respond-189"><a href="#OllamaResponder.respond-189"><span class="linenos">189</span></a>                <span class="s2">&quot;format&quot;</span><span class="p">:</span> <span class="s2">&quot;json&quot;</span><span class="p">,</span>
-</span><span id="OllamaResponder.respond-190"><a href="#OllamaResponder.respond-190"><span class="linenos">190</span></a>                <span class="s2">&quot;stream&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
-</span><span id="OllamaResponder.respond-191"><a href="#OllamaResponder.respond-191"><span class="linenos">191</span></a>            <span class="p">},</span>
-</span><span id="OllamaResponder.respond-192"><a href="#OllamaResponder.respond-192"><span class="linenos">192</span></a>        <span class="p">)</span>
-</span><span id="OllamaResponder.respond-193"><a href="#OllamaResponder.respond-193"><span class="linenos">193</span></a>
-</span><span id="OllamaResponder.respond-194"><a href="#OllamaResponder.respond-194"><span class="linenos">194</span></a>        <span class="n">agent_response</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parse_output</span><span class="p">(</span><span class="n">output</span><span class="o">.</span><span class="n">json</span><span class="p">()</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;response&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">))</span>
-</span><span id="OllamaResponder.respond-195"><a href="#OllamaResponder.respond-195"><span class="linenos">195</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">history</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
-</span><span id="OllamaResponder.respond-196"><a href="#OllamaResponder.respond-196"><span class="linenos">196</span></a>            <span class="p">{</span><span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;assistant&quot;</span><span class="p">,</span> <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="n">agent_response</span><span class="o">.</span><span class="n">response</span><span class="p">}</span>
-</span><span id="OllamaResponder.respond-197"><a href="#OllamaResponder.respond-197"><span class="linenos">197</span></a>        <span class="p">)</span>
-</span><span id="OllamaResponder.respond-198"><a href="#OllamaResponder.respond-198"><span class="linenos">198</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">history</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">history</span><span class="p">[</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">history_length</span> <span class="o">*</span> <span class="mi">2</span> <span class="p">:]</span>
-</span><span id="OllamaResponder.respond-199"><a href="#OllamaResponder.respond-199"><span class="linenos">199</span></a>        <span class="k">return</span> <span class="n">agent_response</span>
+</span><span id="OllamaResponder.respond-181"><a href="#OllamaResponder.respond-181"><span class="linenos">181</span></a><span class="s2">        Now here is your current prompt:</span>
+</span><span id="OllamaResponder.respond-182"><a href="#OllamaResponder.respond-182"><span class="linenos">182</span></a>
+</span><span id="OllamaResponder.respond-183"><a href="#OllamaResponder.respond-183"><span class="linenos">183</span></a><span class="s2">        </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">format_prompt</span><span class="p">(</span><span class="n">prompt</span><span class="p">)</span><span class="si">}</span>
+</span><span id="OllamaResponder.respond-184"><a href="#OllamaResponder.respond-184"><span class="linenos">184</span></a><span class="s2">        &quot;&quot;&quot;</span>
+</span><span id="OllamaResponder.respond-185"><a href="#OllamaResponder.respond-185"><span class="linenos">185</span></a>
+</span><span id="OllamaResponder.respond-186"><a href="#OllamaResponder.respond-186"><span class="linenos">186</span></a>        <span class="n">output</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">post</span><span class="p">(</span>
+</span><span id="OllamaResponder.respond-187"><a href="#OllamaResponder.respond-187"><span class="linenos">187</span></a>            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">host</span><span class="si">}</span><span class="s2">/api/generate&quot;</span><span class="p">,</span>
+</span><span id="OllamaResponder.respond-188"><a href="#OllamaResponder.respond-188"><span class="linenos">188</span></a>            <span class="n">json</span><span class="o">=</span><span class="p">{</span>
+</span><span id="OllamaResponder.respond-189"><a href="#OllamaResponder.respond-189"><span class="linenos">189</span></a>                <span class="s2">&quot;model&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">,</span>
+</span><span id="OllamaResponder.respond-190"><a href="#OllamaResponder.respond-190"><span class="linenos">190</span></a>                <span class="s2">&quot;prompt&quot;</span><span class="p">:</span> <span class="n">prompt</span><span class="p">,</span>
+</span><span id="OllamaResponder.respond-191"><a href="#OllamaResponder.respond-191"><span class="linenos">191</span></a>                <span class="s2">&quot;format&quot;</span><span class="p">:</span> <span class="s2">&quot;json&quot;</span><span class="p">,</span>
+</span><span id="OllamaResponder.respond-192"><a href="#OllamaResponder.respond-192"><span class="linenos">192</span></a>                <span class="s2">&quot;stream&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+</span><span id="OllamaResponder.respond-193"><a href="#OllamaResponder.respond-193"><span class="linenos">193</span></a>            <span class="p">},</span>
+</span><span id="OllamaResponder.respond-194"><a href="#OllamaResponder.respond-194"><span class="linenos">194</span></a>        <span class="p">)</span>
+</span><span id="OllamaResponder.respond-195"><a href="#OllamaResponder.respond-195"><span class="linenos">195</span></a>
+</span><span id="OllamaResponder.respond-196"><a href="#OllamaResponder.respond-196"><span class="linenos">196</span></a>        <span class="n">agent_response</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parse_output</span><span class="p">(</span><span class="n">output</span><span class="o">.</span><span class="n">json</span><span class="p">()</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;response&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">))</span>
+</span><span id="OllamaResponder.respond-197"><a href="#OllamaResponder.respond-197"><span class="linenos">197</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">history</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+</span><span id="OllamaResponder.respond-198"><a href="#OllamaResponder.respond-198"><span class="linenos">198</span></a>            <span class="p">{</span><span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;assistant&quot;</span><span class="p">,</span> <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="n">agent_response</span><span class="o">.</span><span class="n">response</span><span class="p">}</span>
+</span><span id="OllamaResponder.respond-199"><a href="#OllamaResponder.respond-199"><span class="linenos">199</span></a>        <span class="p">)</span>
+</span><span id="OllamaResponder.respond-200"><a href="#OllamaResponder.respond-200"><span class="linenos">200</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">history</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">history</span><span class="p">[</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">history_length</span> <span class="o">*</span> <span class="mi">2</span> <span class="p">:]</span>
+</span><span id="OllamaResponder.respond-201"><a href="#OllamaResponder.respond-201"><span class="linenos">201</span></a>        <span class="k">return</span> <span class="n">agent_response</span>
 </span></pre></div>
 
 
@@ -1120,124 +1126,124 @@ response. Maintains a rolling conversation history across calls.</li>
 
     </div>
     <a class="headerlink" href="#ollama"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="ollama-202"><a href="#ollama-202"><span class="linenos">202</span></a><span class="k">def</span><span class="w"> </span><span class="nf">ollama</span><span class="p">(</span>
-</span><span id="ollama-203"><a href="#ollama-203"><span class="linenos">203</span></a>    <span class="n">model</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-</span><span id="ollama-204"><a href="#ollama-204"><span class="linenos">204</span></a>    <span class="n">wake_words</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;llama&quot;</span><span class="p">,</span> <span class="s2">&quot;ollama&quot;</span><span class="p">,</span> <span class="s2">&quot;lama&quot;</span><span class="p">],</span>
-</span><span id="ollama-205"><a href="#ollama-205"><span class="linenos">205</span></a>    <span class="n">terminate_words</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;terminate&quot;</span><span class="p">],</span>
-</span><span id="ollama-206"><a href="#ollama-206"><span class="linenos">206</span></a>    <span class="n">listen_duration</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
-</span><span id="ollama-207"><a href="#ollama-207"><span class="linenos">207</span></a>    <span class="n">history_length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span>
-</span><span id="ollama-208"><a href="#ollama-208"><span class="linenos">208</span></a>    <span class="n">host</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;http://localhost:11434&quot;</span><span class="p">,</span>
-</span><span id="ollama-209"><a href="#ollama-209"><span class="linenos">209</span></a>    <span class="n">name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="ollama-210"><a href="#ollama-210"><span class="linenos">210</span></a>    <span class="n">use_speaker</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
-</span><span id="ollama-211"><a href="#ollama-211"><span class="linenos">211</span></a>    <span class="n">speaker_voice</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;af_heart&quot;</span><span class="p">,</span>
-</span><span id="ollama-212"><a href="#ollama-212"><span class="linenos">212</span></a>    <span class="n">response_style</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="ollama-213"><a href="#ollama-213"><span class="linenos">213</span></a>    <span class="n">spych_kwargs</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="ollama-214"><a href="#ollama-214"><span class="linenos">214</span></a>    <span class="n">spych_wake_kwargs</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="ollama-215"><a href="#ollama-215"><span class="linenos">215</span></a>    <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
-</span><span id="ollama-216"><a href="#ollama-216"><span class="linenos">216</span></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="ollama-217"><a href="#ollama-217"><span class="linenos">217</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="ollama-218"><a href="#ollama-218"><span class="linenos">218</span></a><span class="sd">    Usage:</span>
-</span><span id="ollama-219"><a href="#ollama-219"><span class="linenos">219</span></a>
-</span><span id="ollama-220"><a href="#ollama-220"><span class="linenos">220</span></a><span class="sd">    - Starts a wake word listener that pipes detected speech into a locally running</span>
-</span><span id="ollama-221"><a href="#ollama-221"><span class="linenos">221</span></a><span class="sd">      Ollama instance</span>
-</span><span id="ollama-222"><a href="#ollama-222"><span class="linenos">222</span></a>
-</span><span id="ollama-223"><a href="#ollama-223"><span class="linenos">223</span></a><span class="sd">    Requires:</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="ollama-204"><a href="#ollama-204"><span class="linenos">204</span></a><span class="k">def</span><span class="w"> </span><span class="nf">ollama</span><span class="p">(</span>
+</span><span id="ollama-205"><a href="#ollama-205"><span class="linenos">205</span></a>    <span class="n">model</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+</span><span id="ollama-206"><a href="#ollama-206"><span class="linenos">206</span></a>    <span class="n">wake_words</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;llama&quot;</span><span class="p">,</span> <span class="s2">&quot;ollama&quot;</span><span class="p">,</span> <span class="s2">&quot;lama&quot;</span><span class="p">],</span>
+</span><span id="ollama-207"><a href="#ollama-207"><span class="linenos">207</span></a>    <span class="n">terminate_words</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;terminate&quot;</span><span class="p">],</span>
+</span><span id="ollama-208"><a href="#ollama-208"><span class="linenos">208</span></a>    <span class="n">listen_duration</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+</span><span id="ollama-209"><a href="#ollama-209"><span class="linenos">209</span></a>    <span class="n">history_length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span>
+</span><span id="ollama-210"><a href="#ollama-210"><span class="linenos">210</span></a>    <span class="n">host</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;http://localhost:11434&quot;</span><span class="p">,</span>
+</span><span id="ollama-211"><a href="#ollama-211"><span class="linenos">211</span></a>    <span class="n">name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="ollama-212"><a href="#ollama-212"><span class="linenos">212</span></a>    <span class="n">use_speaker</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+</span><span id="ollama-213"><a href="#ollama-213"><span class="linenos">213</span></a>    <span class="n">speaker_voice</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;af_heart&quot;</span><span class="p">,</span>
+</span><span id="ollama-214"><a href="#ollama-214"><span class="linenos">214</span></a>    <span class="n">response_style</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="ollama-215"><a href="#ollama-215"><span class="linenos">215</span></a>    <span class="n">spych_kwargs</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="ollama-216"><a href="#ollama-216"><span class="linenos">216</span></a>    <span class="n">spych_wake_kwargs</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="ollama-217"><a href="#ollama-217"><span class="linenos">217</span></a>    <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+</span><span id="ollama-218"><a href="#ollama-218"><span class="linenos">218</span></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="ollama-219"><a href="#ollama-219"><span class="linenos">219</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="ollama-220"><a href="#ollama-220"><span class="linenos">220</span></a><span class="sd">    Usage:</span>
+</span><span id="ollama-221"><a href="#ollama-221"><span class="linenos">221</span></a>
+</span><span id="ollama-222"><a href="#ollama-222"><span class="linenos">222</span></a><span class="sd">    - Starts a wake word listener that pipes detected speech into a locally running</span>
+</span><span id="ollama-223"><a href="#ollama-223"><span class="linenos">223</span></a><span class="sd">      Ollama instance</span>
 </span><span id="ollama-224"><a href="#ollama-224"><span class="linenos">224</span></a>
-</span><span id="ollama-225"><a href="#ollama-225"><span class="linenos">225</span></a><span class="sd">    - `model`:</span>
-</span><span id="ollama-226"><a href="#ollama-226"><span class="linenos">226</span></a><span class="sd">        - Type: str</span>
-</span><span id="ollama-227"><a href="#ollama-227"><span class="linenos">227</span></a><span class="sd">        - What: The Ollama model name to use for generating responses</span>
-</span><span id="ollama-228"><a href="#ollama-228"><span class="linenos">228</span></a><span class="sd">        - Example: &quot;llama3.2:latest&quot;</span>
-</span><span id="ollama-229"><a href="#ollama-229"><span class="linenos">229</span></a><span class="sd">        - Note: Run `ollama list` in your terminal to see available models</span>
-</span><span id="ollama-230"><a href="#ollama-230"><span class="linenos">230</span></a>
-</span><span id="ollama-231"><a href="#ollama-231"><span class="linenos">231</span></a><span class="sd">    Optional:</span>
+</span><span id="ollama-225"><a href="#ollama-225"><span class="linenos">225</span></a><span class="sd">    Requires:</span>
+</span><span id="ollama-226"><a href="#ollama-226"><span class="linenos">226</span></a>
+</span><span id="ollama-227"><a href="#ollama-227"><span class="linenos">227</span></a><span class="sd">    - `model`:</span>
+</span><span id="ollama-228"><a href="#ollama-228"><span class="linenos">228</span></a><span class="sd">        - Type: str</span>
+</span><span id="ollama-229"><a href="#ollama-229"><span class="linenos">229</span></a><span class="sd">        - What: The Ollama model name to use for generating responses</span>
+</span><span id="ollama-230"><a href="#ollama-230"><span class="linenos">230</span></a><span class="sd">        - Example: &quot;llama3.2:latest&quot;</span>
+</span><span id="ollama-231"><a href="#ollama-231"><span class="linenos">231</span></a><span class="sd">        - Note: Run `ollama list` in your terminal to see available models</span>
 </span><span id="ollama-232"><a href="#ollama-232"><span class="linenos">232</span></a>
-</span><span id="ollama-233"><a href="#ollama-233"><span class="linenos">233</span></a><span class="sd">    - `wake_words`:</span>
-</span><span id="ollama-234"><a href="#ollama-234"><span class="linenos">234</span></a><span class="sd">        - Type: list[str]</span>
-</span><span id="ollama-235"><a href="#ollama-235"><span class="linenos">235</span></a><span class="sd">        - What: A list of wake words that each trigger the Ollama responder</span>
-</span><span id="ollama-236"><a href="#ollama-236"><span class="linenos">236</span></a><span class="sd">        - Default: [&quot;llama&quot;, &quot;ollama&quot;, &quot;lama&quot;]</span>
-</span><span id="ollama-237"><a href="#ollama-237"><span class="linenos">237</span></a><span class="sd">        - Note: All wake words in this list map to the same OllamaResponder instance,</span>
-</span><span id="ollama-238"><a href="#ollama-238"><span class="linenos">238</span></a><span class="sd">          sharing conversation history across triggers</span>
-</span><span id="ollama-239"><a href="#ollama-239"><span class="linenos">239</span></a>
-</span><span id="ollama-240"><a href="#ollama-240"><span class="linenos">240</span></a><span class="sd">    - `terminate_words`:</span>
-</span><span id="ollama-241"><a href="#ollama-241"><span class="linenos">241</span></a><span class="sd">        - Type: list[str]</span>
-</span><span id="ollama-242"><a href="#ollama-242"><span class="linenos">242</span></a><span class="sd">        - What: A list of terminate words that each trigger the termination of the Ollama responder</span>
-</span><span id="ollama-243"><a href="#ollama-243"><span class="linenos">243</span></a><span class="sd">        - Default: [&quot;terminate&quot;]</span>
-</span><span id="ollama-244"><a href="#ollama-244"><span class="linenos">244</span></a><span class="sd">        - Note: All terminate words in this list map to the same OllamaResponder instance,</span>
-</span><span id="ollama-245"><a href="#ollama-245"><span class="linenos">245</span></a><span class="sd">            sharing conversation history across triggers</span>
-</span><span id="ollama-246"><a href="#ollama-246"><span class="linenos">246</span></a>
-</span><span id="ollama-247"><a href="#ollama-247"><span class="linenos">247</span></a><span class="sd">    - `listen_duration`:</span>
-</span><span id="ollama-248"><a href="#ollama-248"><span class="linenos">248</span></a><span class="sd">        - Type: int | float</span>
-</span><span id="ollama-249"><a href="#ollama-249"><span class="linenos">249</span></a><span class="sd">        - What: The number of seconds to listen for after the wake word is detected</span>
-</span><span id="ollama-250"><a href="#ollama-250"><span class="linenos">250</span></a><span class="sd">        - Default: 0 (Auto detect)</span>
-</span><span id="ollama-251"><a href="#ollama-251"><span class="linenos">251</span></a>
-</span><span id="ollama-252"><a href="#ollama-252"><span class="linenos">252</span></a><span class="sd">    - `history_length`:</span>
-</span><span id="ollama-253"><a href="#ollama-253"><span class="linenos">253</span></a><span class="sd">        - Type: int</span>
-</span><span id="ollama-254"><a href="#ollama-254"><span class="linenos">254</span></a><span class="sd">        - What: The number of previous interactions to include in each request for conversational context</span>
-</span><span id="ollama-255"><a href="#ollama-255"><span class="linenos">255</span></a><span class="sd">        - Default: 10</span>
-</span><span id="ollama-256"><a href="#ollama-256"><span class="linenos">256</span></a><span class="sd">        - Note: Each interaction counts as one user message and one assistant message; the actual history</span>
-</span><span id="ollama-257"><a href="#ollama-257"><span class="linenos">257</span></a><span class="sd">            buffer is `history_length * 2` entries</span>
-</span><span id="ollama-258"><a href="#ollama-258"><span class="linenos">258</span></a>
-</span><span id="ollama-259"><a href="#ollama-259"><span class="linenos">259</span></a><span class="sd">    - `host`:</span>
-</span><span id="ollama-260"><a href="#ollama-260"><span class="linenos">260</span></a><span class="sd">        - Type: str</span>
-</span><span id="ollama-261"><a href="#ollama-261"><span class="linenos">261</span></a><span class="sd">        - What: The base URL of the running Ollama instance</span>
-</span><span id="ollama-262"><a href="#ollama-262"><span class="linenos">262</span></a><span class="sd">        - Default: &quot;http://localhost:11434&quot;</span>
-</span><span id="ollama-263"><a href="#ollama-263"><span class="linenos">263</span></a>
-</span><span id="ollama-264"><a href="#ollama-264"><span class="linenos">264</span></a><span class="sd">    - `name`:</span>
-</span><span id="ollama-265"><a href="#ollama-265"><span class="linenos">265</span></a><span class="sd">        - Type: str</span>
-</span><span id="ollama-266"><a href="#ollama-266"><span class="linenos">266</span></a><span class="sd">        - What: A custom display name for the responder shown in printed messages</span>
-</span><span id="ollama-267"><a href="#ollama-267"><span class="linenos">267</span></a><span class="sd">        - Default: None (uses &quot;Ollama&quot;)</span>
-</span><span id="ollama-268"><a href="#ollama-268"><span class="linenos">268</span></a>
-</span><span id="ollama-269"><a href="#ollama-269"><span class="linenos">269</span></a><span class="sd">    - `use_speaker`:</span>
-</span><span id="ollama-270"><a href="#ollama-270"><span class="linenos">270</span></a><span class="sd">        - Type: bool</span>
-</span><span id="ollama-271"><a href="#ollama-271"><span class="linenos">271</span></a><span class="sd">        - What: Whether to speak responses aloud via kokoro TTS</span>
-</span><span id="ollama-272"><a href="#ollama-272"><span class="linenos">272</span></a><span class="sd">        - Default: False</span>
-</span><span id="ollama-273"><a href="#ollama-273"><span class="linenos">273</span></a>
-</span><span id="ollama-274"><a href="#ollama-274"><span class="linenos">274</span></a><span class="sd">    - `speaker_voice`:</span>
-</span><span id="ollama-275"><a href="#ollama-275"><span class="linenos">275</span></a><span class="sd">        - Type: str</span>
-</span><span id="ollama-276"><a href="#ollama-276"><span class="linenos">276</span></a><span class="sd">        - What: Kokoro voice ID for spoken responses</span>
-</span><span id="ollama-277"><a href="#ollama-277"><span class="linenos">277</span></a><span class="sd">        - Default: &quot;af_heart&quot;</span>
-</span><span id="ollama-278"><a href="#ollama-278"><span class="linenos">278</span></a>
-</span><span id="ollama-279"><a href="#ollama-279"><span class="linenos">279</span></a><span class="sd">    - `response_style`:</span>
-</span><span id="ollama-280"><a href="#ollama-280"><span class="linenos">280</span></a><span class="sd">        - Type: str | None</span>
-</span><span id="ollama-281"><a href="#ollama-281"><span class="linenos">281</span></a><span class="sd">        - What: Style preset for reformatting spoken output (e.g. &quot;military&quot;, &quot;fast&quot;)</span>
-</span><span id="ollama-282"><a href="#ollama-282"><span class="linenos">282</span></a><span class="sd">        - Default: None</span>
-</span><span id="ollama-283"><a href="#ollama-283"><span class="linenos">283</span></a>
-</span><span id="ollama-284"><a href="#ollama-284"><span class="linenos">284</span></a><span class="sd">    - `spych_kwargs`:</span>
-</span><span id="ollama-285"><a href="#ollama-285"><span class="linenos">285</span></a><span class="sd">        - Type: dict</span>
-</span><span id="ollama-286"><a href="#ollama-286"><span class="linenos">286</span></a><span class="sd">        - What: Additional keyword arguments to pass to the Spych constructor</span>
-</span><span id="ollama-287"><a href="#ollama-287"><span class="linenos">287</span></a><span class="sd">        - Default: None</span>
-</span><span id="ollama-288"><a href="#ollama-288"><span class="linenos">288</span></a>
-</span><span id="ollama-289"><a href="#ollama-289"><span class="linenos">289</span></a><span class="sd">    - `spych_wake_kwargs`:</span>
-</span><span id="ollama-290"><a href="#ollama-290"><span class="linenos">290</span></a><span class="sd">        - Type: str</span>
-</span><span id="ollama-291"><a href="#ollama-291"><span class="linenos">291</span></a><span class="sd">        - What: Additional keyword arguments to pass to SpychWake via SpychOrchestrator</span>
-</span><span id="ollama-292"><a href="#ollama-292"><span class="linenos">292</span></a><span class="sd">        - Default: None</span>
-</span><span id="ollama-293"><a href="#ollama-293"><span class="linenos">293</span></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="ollama-294"><a href="#ollama-294"><span class="linenos">294</span></a>    <span class="n">spych_kwargs</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;whisper_model&quot;</span><span class="p">:</span> <span class="s2">&quot;base.en&quot;</span><span class="p">,</span> <span class="o">**</span><span class="p">(</span><span class="n">spych_kwargs</span> <span class="ow">or</span> <span class="p">{})}</span>
-</span><span id="ollama-295"><a href="#ollama-295"><span class="linenos">295</span></a>    <span class="n">spych_object</span> <span class="o">=</span> <span class="n">Spych</span><span class="p">(</span><span class="o">**</span><span class="n">spych_kwargs</span><span class="p">)</span>
-</span><span id="ollama-296"><a href="#ollama-296"><span class="linenos">296</span></a>
-</span><span id="ollama-297"><a href="#ollama-297"><span class="linenos">297</span></a>    <span class="n">responder</span> <span class="o">=</span> <span class="n">OllamaResponder</span><span class="p">(</span>
-</span><span id="ollama-298"><a href="#ollama-298"><span class="linenos">298</span></a>        <span class="n">spych_object</span><span class="o">=</span><span class="n">spych_object</span><span class="p">,</span>
-</span><span id="ollama-299"><a href="#ollama-299"><span class="linenos">299</span></a>        <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span>
-</span><span id="ollama-300"><a href="#ollama-300"><span class="linenos">300</span></a>        <span class="n">listen_duration</span><span class="o">=</span><span class="n">listen_duration</span><span class="p">,</span>
-</span><span id="ollama-301"><a href="#ollama-301"><span class="linenos">301</span></a>        <span class="n">history_length</span><span class="o">=</span><span class="n">history_length</span><span class="p">,</span>
-</span><span id="ollama-302"><a href="#ollama-302"><span class="linenos">302</span></a>        <span class="n">host</span><span class="o">=</span><span class="n">host</span><span class="p">,</span>
-</span><span id="ollama-303"><a href="#ollama-303"><span class="linenos">303</span></a>        <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span>
-</span><span id="ollama-304"><a href="#ollama-304"><span class="linenos">304</span></a>        <span class="n">use_speaker</span><span class="o">=</span><span class="n">use_speaker</span><span class="p">,</span>
-</span><span id="ollama-305"><a href="#ollama-305"><span class="linenos">305</span></a>        <span class="n">speaker_voice</span><span class="o">=</span><span class="n">speaker_voice</span><span class="p">,</span>
-</span><span id="ollama-306"><a href="#ollama-306"><span class="linenos">306</span></a>        <span class="n">response_style</span><span class="o">=</span><span class="n">response_style</span><span class="p">,</span>
-</span><span id="ollama-307"><a href="#ollama-307"><span class="linenos">307</span></a>        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
-</span><span id="ollama-308"><a href="#ollama-308"><span class="linenos">308</span></a>    <span class="p">)</span>
-</span><span id="ollama-309"><a href="#ollama-309"><span class="linenos">309</span></a>
-</span><span id="ollama-310"><a href="#ollama-310"><span class="linenos">310</span></a>    <span class="n">SpychOrchestrator</span><span class="p">(</span>
-</span><span id="ollama-311"><a href="#ollama-311"><span class="linenos">311</span></a>        <span class="n">entries</span><span class="o">=</span><span class="p">[</span>
-</span><span id="ollama-312"><a href="#ollama-312"><span class="linenos">312</span></a>            <span class="p">{</span>
-</span><span id="ollama-313"><a href="#ollama-313"><span class="linenos">313</span></a>                <span class="s2">&quot;responder&quot;</span><span class="p">:</span> <span class="n">responder</span><span class="p">,</span>
-</span><span id="ollama-314"><a href="#ollama-314"><span class="linenos">314</span></a>                <span class="s2">&quot;wake_words&quot;</span><span class="p">:</span> <span class="n">wake_words</span><span class="p">,</span>
-</span><span id="ollama-315"><a href="#ollama-315"><span class="linenos">315</span></a>                <span class="s2">&quot;terminate_words&quot;</span><span class="p">:</span> <span class="n">terminate_words</span><span class="p">,</span>
-</span><span id="ollama-316"><a href="#ollama-316"><span class="linenos">316</span></a>            <span class="p">}</span>
-</span><span id="ollama-317"><a href="#ollama-317"><span class="linenos">317</span></a>        <span class="p">],</span>
-</span><span id="ollama-318"><a href="#ollama-318"><span class="linenos">318</span></a>        <span class="n">spych_wake_kwargs</span><span class="o">=</span><span class="n">spych_wake_kwargs</span><span class="p">,</span>
-</span><span id="ollama-319"><a href="#ollama-319"><span class="linenos">319</span></a>    <span class="p">)</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+</span><span id="ollama-233"><a href="#ollama-233"><span class="linenos">233</span></a><span class="sd">    Optional:</span>
+</span><span id="ollama-234"><a href="#ollama-234"><span class="linenos">234</span></a>
+</span><span id="ollama-235"><a href="#ollama-235"><span class="linenos">235</span></a><span class="sd">    - `wake_words`:</span>
+</span><span id="ollama-236"><a href="#ollama-236"><span class="linenos">236</span></a><span class="sd">        - Type: list[str]</span>
+</span><span id="ollama-237"><a href="#ollama-237"><span class="linenos">237</span></a><span class="sd">        - What: A list of wake words that each trigger the Ollama responder</span>
+</span><span id="ollama-238"><a href="#ollama-238"><span class="linenos">238</span></a><span class="sd">        - Default: [&quot;llama&quot;, &quot;ollama&quot;, &quot;lama&quot;]</span>
+</span><span id="ollama-239"><a href="#ollama-239"><span class="linenos">239</span></a><span class="sd">        - Note: All wake words in this list map to the same OllamaResponder instance,</span>
+</span><span id="ollama-240"><a href="#ollama-240"><span class="linenos">240</span></a><span class="sd">          sharing conversation history across triggers</span>
+</span><span id="ollama-241"><a href="#ollama-241"><span class="linenos">241</span></a>
+</span><span id="ollama-242"><a href="#ollama-242"><span class="linenos">242</span></a><span class="sd">    - `terminate_words`:</span>
+</span><span id="ollama-243"><a href="#ollama-243"><span class="linenos">243</span></a><span class="sd">        - Type: list[str]</span>
+</span><span id="ollama-244"><a href="#ollama-244"><span class="linenos">244</span></a><span class="sd">        - What: A list of terminate words that each trigger the termination of the Ollama responder</span>
+</span><span id="ollama-245"><a href="#ollama-245"><span class="linenos">245</span></a><span class="sd">        - Default: [&quot;terminate&quot;]</span>
+</span><span id="ollama-246"><a href="#ollama-246"><span class="linenos">246</span></a><span class="sd">        - Note: All terminate words in this list map to the same OllamaResponder instance,</span>
+</span><span id="ollama-247"><a href="#ollama-247"><span class="linenos">247</span></a><span class="sd">            sharing conversation history across triggers</span>
+</span><span id="ollama-248"><a href="#ollama-248"><span class="linenos">248</span></a>
+</span><span id="ollama-249"><a href="#ollama-249"><span class="linenos">249</span></a><span class="sd">    - `listen_duration`:</span>
+</span><span id="ollama-250"><a href="#ollama-250"><span class="linenos">250</span></a><span class="sd">        - Type: int | float</span>
+</span><span id="ollama-251"><a href="#ollama-251"><span class="linenos">251</span></a><span class="sd">        - What: The number of seconds to listen for after the wake word is detected</span>
+</span><span id="ollama-252"><a href="#ollama-252"><span class="linenos">252</span></a><span class="sd">        - Default: 0 (Auto detect)</span>
+</span><span id="ollama-253"><a href="#ollama-253"><span class="linenos">253</span></a>
+</span><span id="ollama-254"><a href="#ollama-254"><span class="linenos">254</span></a><span class="sd">    - `history_length`:</span>
+</span><span id="ollama-255"><a href="#ollama-255"><span class="linenos">255</span></a><span class="sd">        - Type: int</span>
+</span><span id="ollama-256"><a href="#ollama-256"><span class="linenos">256</span></a><span class="sd">        - What: The number of previous interactions to include in each request for conversational context</span>
+</span><span id="ollama-257"><a href="#ollama-257"><span class="linenos">257</span></a><span class="sd">        - Default: 10</span>
+</span><span id="ollama-258"><a href="#ollama-258"><span class="linenos">258</span></a><span class="sd">        - Note: Each interaction counts as one user message and one assistant message; the actual history</span>
+</span><span id="ollama-259"><a href="#ollama-259"><span class="linenos">259</span></a><span class="sd">            buffer is `history_length * 2` entries</span>
+</span><span id="ollama-260"><a href="#ollama-260"><span class="linenos">260</span></a>
+</span><span id="ollama-261"><a href="#ollama-261"><span class="linenos">261</span></a><span class="sd">    - `host`:</span>
+</span><span id="ollama-262"><a href="#ollama-262"><span class="linenos">262</span></a><span class="sd">        - Type: str</span>
+</span><span id="ollama-263"><a href="#ollama-263"><span class="linenos">263</span></a><span class="sd">        - What: The base URL of the running Ollama instance</span>
+</span><span id="ollama-264"><a href="#ollama-264"><span class="linenos">264</span></a><span class="sd">        - Default: &quot;http://localhost:11434&quot;</span>
+</span><span id="ollama-265"><a href="#ollama-265"><span class="linenos">265</span></a>
+</span><span id="ollama-266"><a href="#ollama-266"><span class="linenos">266</span></a><span class="sd">    - `name`:</span>
+</span><span id="ollama-267"><a href="#ollama-267"><span class="linenos">267</span></a><span class="sd">        - Type: str</span>
+</span><span id="ollama-268"><a href="#ollama-268"><span class="linenos">268</span></a><span class="sd">        - What: A custom display name for the responder shown in printed messages</span>
+</span><span id="ollama-269"><a href="#ollama-269"><span class="linenos">269</span></a><span class="sd">        - Default: None (uses &quot;Ollama&quot;)</span>
+</span><span id="ollama-270"><a href="#ollama-270"><span class="linenos">270</span></a>
+</span><span id="ollama-271"><a href="#ollama-271"><span class="linenos">271</span></a><span class="sd">    - `use_speaker`:</span>
+</span><span id="ollama-272"><a href="#ollama-272"><span class="linenos">272</span></a><span class="sd">        - Type: bool</span>
+</span><span id="ollama-273"><a href="#ollama-273"><span class="linenos">273</span></a><span class="sd">        - What: Whether to speak responses aloud via kokoro TTS</span>
+</span><span id="ollama-274"><a href="#ollama-274"><span class="linenos">274</span></a><span class="sd">        - Default: False</span>
+</span><span id="ollama-275"><a href="#ollama-275"><span class="linenos">275</span></a>
+</span><span id="ollama-276"><a href="#ollama-276"><span class="linenos">276</span></a><span class="sd">    - `speaker_voice`:</span>
+</span><span id="ollama-277"><a href="#ollama-277"><span class="linenos">277</span></a><span class="sd">        - Type: str</span>
+</span><span id="ollama-278"><a href="#ollama-278"><span class="linenos">278</span></a><span class="sd">        - What: Kokoro voice ID for spoken responses</span>
+</span><span id="ollama-279"><a href="#ollama-279"><span class="linenos">279</span></a><span class="sd">        - Default: &quot;af_heart&quot;</span>
+</span><span id="ollama-280"><a href="#ollama-280"><span class="linenos">280</span></a>
+</span><span id="ollama-281"><a href="#ollama-281"><span class="linenos">281</span></a><span class="sd">    - `response_style`:</span>
+</span><span id="ollama-282"><a href="#ollama-282"><span class="linenos">282</span></a><span class="sd">        - Type: str | None</span>
+</span><span id="ollama-283"><a href="#ollama-283"><span class="linenos">283</span></a><span class="sd">        - What: Style preset for reformatting spoken output (e.g. &quot;military&quot;, &quot;fast&quot;)</span>
+</span><span id="ollama-284"><a href="#ollama-284"><span class="linenos">284</span></a><span class="sd">        - Default: None</span>
+</span><span id="ollama-285"><a href="#ollama-285"><span class="linenos">285</span></a>
+</span><span id="ollama-286"><a href="#ollama-286"><span class="linenos">286</span></a><span class="sd">    - `spych_kwargs`:</span>
+</span><span id="ollama-287"><a href="#ollama-287"><span class="linenos">287</span></a><span class="sd">        - Type: dict</span>
+</span><span id="ollama-288"><a href="#ollama-288"><span class="linenos">288</span></a><span class="sd">        - What: Additional keyword arguments to pass to the Spych constructor</span>
+</span><span id="ollama-289"><a href="#ollama-289"><span class="linenos">289</span></a><span class="sd">        - Default: None</span>
+</span><span id="ollama-290"><a href="#ollama-290"><span class="linenos">290</span></a>
+</span><span id="ollama-291"><a href="#ollama-291"><span class="linenos">291</span></a><span class="sd">    - `spych_wake_kwargs`:</span>
+</span><span id="ollama-292"><a href="#ollama-292"><span class="linenos">292</span></a><span class="sd">        - Type: str</span>
+</span><span id="ollama-293"><a href="#ollama-293"><span class="linenos">293</span></a><span class="sd">        - What: Additional keyword arguments to pass to SpychWake via SpychOrchestrator</span>
+</span><span id="ollama-294"><a href="#ollama-294"><span class="linenos">294</span></a><span class="sd">        - Default: None</span>
+</span><span id="ollama-295"><a href="#ollama-295"><span class="linenos">295</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="ollama-296"><a href="#ollama-296"><span class="linenos">296</span></a>    <span class="n">spych_kwargs</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;whisper_model&quot;</span><span class="p">:</span> <span class="s2">&quot;base.en&quot;</span><span class="p">,</span> <span class="o">**</span><span class="p">(</span><span class="n">spych_kwargs</span> <span class="ow">or</span> <span class="p">{})}</span>
+</span><span id="ollama-297"><a href="#ollama-297"><span class="linenos">297</span></a>    <span class="n">spych_object</span> <span class="o">=</span> <span class="n">Spych</span><span class="p">(</span><span class="o">**</span><span class="n">spych_kwargs</span><span class="p">)</span>
+</span><span id="ollama-298"><a href="#ollama-298"><span class="linenos">298</span></a>
+</span><span id="ollama-299"><a href="#ollama-299"><span class="linenos">299</span></a>    <span class="n">responder</span> <span class="o">=</span> <span class="n">OllamaResponder</span><span class="p">(</span>
+</span><span id="ollama-300"><a href="#ollama-300"><span class="linenos">300</span></a>        <span class="n">spych_object</span><span class="o">=</span><span class="n">spych_object</span><span class="p">,</span>
+</span><span id="ollama-301"><a href="#ollama-301"><span class="linenos">301</span></a>        <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span>
+</span><span id="ollama-302"><a href="#ollama-302"><span class="linenos">302</span></a>        <span class="n">listen_duration</span><span class="o">=</span><span class="n">listen_duration</span><span class="p">,</span>
+</span><span id="ollama-303"><a href="#ollama-303"><span class="linenos">303</span></a>        <span class="n">history_length</span><span class="o">=</span><span class="n">history_length</span><span class="p">,</span>
+</span><span id="ollama-304"><a href="#ollama-304"><span class="linenos">304</span></a>        <span class="n">host</span><span class="o">=</span><span class="n">host</span><span class="p">,</span>
+</span><span id="ollama-305"><a href="#ollama-305"><span class="linenos">305</span></a>        <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span>
+</span><span id="ollama-306"><a href="#ollama-306"><span class="linenos">306</span></a>        <span class="n">use_speaker</span><span class="o">=</span><span class="n">use_speaker</span><span class="p">,</span>
+</span><span id="ollama-307"><a href="#ollama-307"><span class="linenos">307</span></a>        <span class="n">speaker_voice</span><span class="o">=</span><span class="n">speaker_voice</span><span class="p">,</span>
+</span><span id="ollama-308"><a href="#ollama-308"><span class="linenos">308</span></a>        <span class="n">response_style</span><span class="o">=</span><span class="n">response_style</span><span class="p">,</span>
+</span><span id="ollama-309"><a href="#ollama-309"><span class="linenos">309</span></a>        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+</span><span id="ollama-310"><a href="#ollama-310"><span class="linenos">310</span></a>    <span class="p">)</span>
+</span><span id="ollama-311"><a href="#ollama-311"><span class="linenos">311</span></a>
+</span><span id="ollama-312"><a href="#ollama-312"><span class="linenos">312</span></a>    <span class="n">SpychOrchestrator</span><span class="p">(</span>
+</span><span id="ollama-313"><a href="#ollama-313"><span class="linenos">313</span></a>        <span class="n">entries</span><span class="o">=</span><span class="p">[</span>
+</span><span id="ollama-314"><a href="#ollama-314"><span class="linenos">314</span></a>            <span class="p">{</span>
+</span><span id="ollama-315"><a href="#ollama-315"><span class="linenos">315</span></a>                <span class="s2">&quot;responder&quot;</span><span class="p">:</span> <span class="n">responder</span><span class="p">,</span>
+</span><span id="ollama-316"><a href="#ollama-316"><span class="linenos">316</span></a>                <span class="s2">&quot;wake_words&quot;</span><span class="p">:</span> <span class="n">wake_words</span><span class="p">,</span>
+</span><span id="ollama-317"><a href="#ollama-317"><span class="linenos">317</span></a>                <span class="s2">&quot;terminate_words&quot;</span><span class="p">:</span> <span class="n">terminate_words</span><span class="p">,</span>
+</span><span id="ollama-318"><a href="#ollama-318"><span class="linenos">318</span></a>            <span class="p">}</span>
+</span><span id="ollama-319"><a href="#ollama-319"><span class="linenos">319</span></a>        <span class="p">],</span>
+</span><span id="ollama-320"><a href="#ollama-320"><span class="linenos">320</span></a>        <span class="n">spych_wake_kwargs</span><span class="o">=</span><span class="n">spych_wake_kwargs</span><span class="p">,</span>
+</span><span id="ollama-321"><a href="#ollama-321"><span class="linenos">321</span></a>    <span class="p">)</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
 </span></pre></div>
 
 
