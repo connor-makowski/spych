@@ -790,7 +790,6 @@ class BaseResponder(Notify):
                     if response.response:
                         if self.speaker:
                             self.speaker.wait_for_speak()
-
                         self.on_response(response)
 
                         if self.speaker:
@@ -821,7 +820,6 @@ class BaseResponder(Notify):
                                         self.dashboard.on_status_change(
                                             "waiting", turn_id=tid
                                         )
-
                             self.speaker.speak_async(text_to_speak, on_complete=_on_complete)
                     else:
                         # For final empty responses, still call on_response to show

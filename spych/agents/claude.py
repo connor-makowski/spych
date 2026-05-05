@@ -1,6 +1,6 @@
-import sys, json, time, subprocess, importlib, re
+import sys, json, time, importlib, re, os
 from spych.core import Spych
-from spych.utils import resolve_cmd, StreamSubprocess
+from spych.utils import resolve_cmd, StreamJsonCommand
 from spych.orchestrator import SpychOrchestrator
 from spych.responders import BaseResponder, AgentResponse
 from typing import Optional, Any
@@ -187,32 +187,12 @@ class LocalClaudeCodeSDKResponder(BaseResponder):
 
         # print(payload)
 
-        # The worker is at spych/agents/claude_sdk_worker.py relative to the spych package root
-        proc = subprocess.Popen(
-            [sys.executable, str(CLAUDE_SDK_WORKER_PATH)],
-            stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-        )
-        proc.stdin.write(payload + "\n")
-        proc.stdin.close()
+        stream = StreamJsonCommand([sys.executable, str(CLAUDE_SDK_WORKER_PATH)], input_text=payload)
 
         final_result = ""
-        # tool_id -> (name, start_time)
         active_tools: dict[str, tuple[str, float]] = {}
 
-        for raw_line in StreamSubprocess(proc):
-            # print(raw_line, end="")  # Echo raw line for debugging
-            raw_line = raw_line.strip()
-            if not raw_line:
-                continue
-
-            try:
-                event = json.loads(raw_line)
-            except json.JSONDecodeError:
-                continue
-
+        for event in stream:
             etype = event.get("type")
 
             if etype == "session":
@@ -247,7 +227,14 @@ class LocalClaudeCodeSDKResponder(BaseResponder):
 
             elif etype == "error":
                 final_result = f"Error: {event.get('text', 'unknown error')}"
-        proc.wait()
+        
+        stream.kill()
+
+        if not final_result:
+            stderr_text = "".join(stream.stderr_lines).strip()
+            if stderr_text:
+                final_result = f"Error: {stderr_text}"
+
         return self.parse_output(final_result)
 
 
@@ -500,8 +487,6 @@ class LocalClaudeCodeCLIResponder(BaseResponder):
         """
         cmd = [
             resolve_cmd("claude"),
-            "-p",
-            user_input,
             "--output-format",
             "stream-json",
             "--verbose",
@@ -513,26 +498,10 @@ class LocalClaudeCodeCLIResponder(BaseResponder):
             elif not is_first:
                 cmd.extend(["--resume", "latest"])
 
-        proc = subprocess.Popen(
-            cmd,
-            stdin=subprocess.DEVNULL,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-        )
-
+        stream = StreamJsonCommand(cmd, input_text=user_input)
         result_text = ""
 
-        for raw_line in StreamSubprocess(proc):
-            raw_line = raw_line.strip()
-            if not raw_line:
-                continue
-
-            try:
-                event = json.loads(raw_line)
-            except json.JSONDecodeError:
-                continue
-
+        for event in stream:
             etype = event.get("type")
 
             if etype == "system" and event.get("subtype") == "init":
@@ -581,10 +550,15 @@ class LocalClaudeCodeCLIResponder(BaseResponder):
                                 elapsed=time.time() - start,
                             )
                     active_tools.clear()
-                    proc.wait()
+                    stream.wait()
                     return False, f"Error: {result_text}"
 
-        proc.wait()
+        stream.wait()
+
+        if not result_text:
+            stderr_text = "".join(stream.stderr_lines).strip()
+            if stderr_text:
+                return False, f"Error: {stderr_text}"
 
         # Mirror sdk_worker: if the result contains a raw <tool_call>, re-submit
         if "</tool_call>" in result_text:

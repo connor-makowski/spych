@@ -24,10 +24,14 @@ import sys
 import textwrap
 import threading
 import time
+import os
 from dataclasses import dataclass
 from typing import Optional
 
 from spych.spinners import Spinner
+from spych.utils import supports_unicode
+
+_HAS_UNICODE = supports_unicode()
 
 try:
     import select
@@ -41,7 +45,7 @@ except ImportError:
     _IS_WINDOWS = True
 
 
-# ── ANSI escape codes ──────────────────────────────────────────────────────
+# -- ANSI escape codes ------------------------------------------------------
 
 _RESET = "\033[0m"
 _BOLD = "\033[1m"
@@ -62,7 +66,7 @@ _CURSOR_HOME = "\033[H"
 _CLEAR_BELOW = "\033[J"
 _CLEAR_EOL = "\033[K"
 
-# ── Status constants ───────────────────────────────────────────────────────
+# -- Status constants -------------------------------------------------------
 
 WAITING = "waiting"
 LISTENING = "listening"
@@ -71,7 +75,7 @@ SPEAKING = "speaking"
 TERMINATED = "terminated"
 
 
-# ── Data structures ────────────────────────────────────────────────────────
+# -- Data structures --------------------------------------------------------
 
 
 @dataclass
@@ -206,7 +210,7 @@ class ConversationEntry:
     user_duration: float
 
 
-# ── Renderer ───────────────────────────────────────────────────────────────
+# -- Renderer ---------------------------------------------------------------
 
 
 class _DashboardRenderer:
@@ -303,10 +307,10 @@ class _DashboardRenderer:
             return f"{_DIM}{spinner} Waiting{_RESET}"
 
         indicators: dict[str, str] = {
-            SPEAKING: f"{_CYAN}♪ Speaking{_RESET}",
-            TERMINATED: f"{_DIM}✗ Stopped{_RESET}",
+            SPEAKING: f"{_CYAN}♪ Speaking{_RESET}" if _HAS_UNICODE else f"{_CYAN}> Speaking{_RESET}",
+            TERMINATED: f"{_DIM}✗ Stopped{_RESET}" if _HAS_UNICODE else f"{_DIM}x Stopped{_RESET}",
         }
-        return indicators.get(status, f"{_DIM}○ Waiting{_RESET}")
+        return indicators.get(status, f"{_DIM}○ Waiting{_RESET}" if _HAS_UNICODE else f"{_DIM}o Waiting{_RESET}")
 
     @staticmethod
     def _truncate(text: str, width: int) -> str:
@@ -315,6 +319,7 @@ class _DashboardRenderer:
         
         res = ""
         cur_width = 0
+        ell = "…" if _HAS_UNICODE else "..."
         # Split by ANSI escape sequences to preserve them
         parts = re.split(r"(\033\[[0-9;]*[mK])", text)
         for part in parts:
@@ -325,12 +330,12 @@ class _DashboardRenderer:
             else:
                 for char in part:
                     w = _DashboardRenderer._visible_len(char)
-                    if cur_width + w + 1 > width:
+                    if cur_width + w + _DashboardRenderer._visible_len(ell) > width:
                         # Append reset to prevent color bleed if we truncated mid-color
-                        return res + "…" + _RESET
+                        return res + ell + _RESET
                     res += char
                     cur_width += w
-        return res + "…" + _RESET
+        return res + ell + _RESET
 
     _ANSI_ESCAPE = re.compile(r"\033\[[0-9;]*[mK]")
 
@@ -447,7 +452,7 @@ class _DashboardRenderer:
             return self._format_line_group(prefix, text, cols)
 
     def _format_tool(self, ts: str, name: str, status: str, is_running: bool, elapsed: Optional[float], cols: int, show_ts: bool = False, detail: Optional[str] = None) -> list[str]:
-        icon = "⚙" if is_running else "✓"
+        icon = ("⚙" if _HAS_UNICODE else "*") if is_running else ("✓" if _HAS_UNICODE else "+")
         color = _YELLOW if is_running else _GREEN
         elapsed_str = f" {_DIM}({elapsed:.2f}s){_RESET}" if elapsed else ""
         if detail:
@@ -511,8 +516,9 @@ class _DashboardRenderer:
         budget = rows - 1
         lines: list[str] = []
 
-        # ── Header ────────────────────────────────────────────────────────
-        lines.append(f"  {_BOLD}{'━' * bar_width}{_RESET}")
+        # Header
+        h_bar = "━" if _HAS_UNICODE else "="
+        lines.append(f"  {_BOLD}{h_bar * bar_width}{_RESET}")
 
         header_parts: list[str] = [
             f"  {_BOLD}{_CYAN}SPYCH{_RESET}",
@@ -527,25 +533,27 @@ class _DashboardRenderer:
         if responder_name:
             header_parts.append(f"{_DIM}{responder_name}{_RESET}")
         if use_speaker and speaker_voice:
-            header_parts.append(f"{_DIM}🔊 {speaker_voice}{_RESET}")
+            spk = "🔊 " if _HAS_UNICODE else "Voice: "
+            header_parts.append(f"{_DIM}{spk}{speaker_voice}{_RESET}")
         if show_all:
             header_parts.append(f"{_BOLD}{_YELLOW}ALL LOGS{_RESET}")
 
-        title = "  │  ".join(header_parts)
+        sep = "  │  " if _HAS_UNICODE else "  |  "
+        title = sep.join(header_parts)
         # Truncate title if it exceeds width
         if self._visible_len(title) > cols - 1:
-            while len(header_parts) > 3 and self._visible_len("  │  ".join(header_parts)) > cols - 5:
+            while len(header_parts) > 3 and self._visible_len(sep.join(header_parts)) > cols - 5:
                 header_parts.pop()
-            title = "  │  ".join(header_parts)
+            title = sep.join(header_parts)
             if self._visible_len(title) > cols - 1:
                 title = title[:cols-5] + "..." + _RESET
 
         lines.append(title)
-        lines.append(f"  {_BOLD}{'━' * bar_width}{_RESET}")
+        lines.append(f"  {_BOLD}{h_bar * bar_width}{_RESET}")
         lines.append("")
 
         if show_all:
-            # ── All Logs Mode ──────────────────────────────────────────────
+            # All Logs Mode
             max_log_lines = max(0, budget - self._HEADER_LINES - self._FOOTER_LINES)
 
             log_lines: list[str] = []
@@ -586,7 +594,8 @@ class _DashboardRenderer:
                 ):
                     block.extend(self._format_line_group(f"  {ts}  {_BOLD}Summary:{_RESET} ", entry.summary, cols))
                 
-                block.append(f"  {_DIM}{'─' * min(bar_width, 60)}{_RESET}")
+                bar = "─" if _HAS_UNICODE else "-"
+                block.append(f"  {_DIM}{bar * min(bar_width, 60)}{_RESET}")
                 
                 self._conv_cache[entry_cache_key] = block
                 log_lines.extend(block)
@@ -621,7 +630,7 @@ class _DashboardRenderer:
                 lines.append("")
 
         else:
-            # ── Default Mode ───────────────────────────────────────────────
+            # Default Mode
             has_tools = bool(current_tool_calls)
             
             tool_content_lines = []
@@ -703,13 +712,16 @@ class _DashboardRenderer:
 
             if has_tools:
                 lines.append(f"  {_BOLD}Active Tools{_RESET}")
-                lines.append(f"  {'─' * bar_width}")
+                bar = "─" if _HAS_UNICODE else "-"
+                lines.append(f"  {bar * bar_width}")
                 for line in tool_content_lines:
                     lines.append(line)
-                lines.append(f"  {'─' * bar_width}")
+                lines.append(f"  {bar * bar_width}")
         lines.append("")
+        
+        sep = "│" if _HAS_UNICODE else "|"
         lines.append(
-            f"  {_DIM}Ctrl+C to stop  │  Ctrl+A to toggle mode  │  ↑/↓ to scroll{_RESET}"
+            f"  {_DIM}Ctrl+C to stop  {sep}  Ctrl+A to toggle mode  {sep}  ↑/↓ to scroll{_RESET}"
         )
 
         buf = ""
@@ -721,11 +733,17 @@ class _DashboardRenderer:
             if i < len(lines) - 1:
                 buf += "\n"
         buf += _CLEAR_BELOW
-        sys.stdout.write(buf)
-        sys.stdout.flush()
+        try:
+            sys.stdout.write(buf)
+            sys.stdout.flush()
+        except UnicodeEncodeError:
+            # Absolute fallback: strip non-ASCII and try again
+            safe_buf = "".join(c if ord(c) < 128 else "?" for c in buf)
+            sys.stdout.write(safe_buf)
+            sys.stdout.flush()
 
 
-# ── Dashboard controller ────────────────────────────────────────────────────
+# -- Dashboard controller ----------------------------------------------------
 
 
 class AgentDashboard:
@@ -856,7 +874,7 @@ class AgentDashboard:
         )
         self._started: bool = False
 
-    # ── Public event API ───────────────────────────────────────────────────
+    # -- Public event API ---------------------------------------------------
 
     def set_agent(
         self,
@@ -1149,7 +1167,7 @@ class AgentDashboard:
             self._current_thoughts = []
             self._current_user_input = ""
 
-    # ── TUI control ────────────────────────────────────────────────────────
+    # -- TUI control --------------------------------------------------------
 
     def toggle_show_all(self) -> None:
         """Toggle between minimal and all-logs mode."""
@@ -1228,7 +1246,7 @@ class AgentDashboard:
         sys.stdout.write(_CURSOR_SHOW + _ALT_SCREEN_EXIT)
         sys.stdout.flush()
 
-    # ── Internal threads ───────────────────────────────────────────────────
+    # -- Internal threads ---------------------------------------------------
 
     def _display_loop(self) -> None:
         while not self._stop_event.is_set():
