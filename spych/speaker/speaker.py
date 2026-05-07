@@ -13,7 +13,7 @@ from spych.speaker.backends import get_backend
 
 
 class Speaker:
-    def __init__(self, voice: str = "", backend: str = "") -> None:
+    def __init__(self, voice: str = "", backend: str = "", language_id: str = "") -> None:
         """
         Usage:
 
@@ -36,8 +36,15 @@ class Speaker:
 
         - `backend`:
             - Type: str
-            - What: Explicit backend to use ("chatterbox" or "kokoro").
+            - What: Explicit backend to use ("chatterbox", "kokoro", or
+              "chatterbox_multilingual").
             - Default: "" (priority order: Chatterbox → Kokoro)
+
+        - `language_id`:
+            - Type: str
+            - What: BCP-47 language code forwarded to ChatterboxMultilingualBackend
+              when backend="chatterbox_multilingual" (e.g. "es", "en", "fr").
+            - Default: "" (resolved to "en" by the multilingual backend)
         """
         pygame.mixer.init()
         self.voice = voice
@@ -49,7 +56,7 @@ class Speaker:
         self.on_playback_complete = None
 
         self.backend = get_backend(
-            speaker=self, voice=voice, backend_name=backend
+            speaker=self, voice=voice, backend_name=backend, language_id=language_id
         )
 
     def play_pcm_array(self, audio: np.ndarray, sample_rate: int) -> None:

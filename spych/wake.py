@@ -1,6 +1,6 @@
 import threading, time
 from faster_whisper import WhisperModel
-from spych.utils import Notify, Recorder, get_clean_audio_buffer
+from spych.utils import Notify, Recorder, get_clean_audio_buffer, resolve_whisper_device
 
 
 class SpychWakeListener(Notify):
@@ -123,7 +123,7 @@ class SpychWake(Notify):
         wake_listener_max_processing_time=0.5,
         device_index=-1,
         whisper_model="tiny.en",
-        whisper_device="cpu",
+        whisper_device="auto",
         whisper_compute_type="int8",
         no_speech_threshold=0.25,
         on_terminate=None,
@@ -192,8 +192,10 @@ class SpychWake(Notify):
         - `whisper_device`:
             - Type: str
             - What: The device to run the whisper model on
-            - Default: "cpu"
-            - Note: Use "cuda" for GPU acceleration if available
+            - Default: "auto"
+            - Options: "auto", "cpu", "cuda"
+            - Note: "auto" selects "cuda" when Python <=3.13 and a CUDA device is
+              available, otherwise falls back to "cpu"
 
         - `whisper_compute_type`:
             - Type: str
@@ -237,7 +239,7 @@ class SpychWake(Notify):
         self.kill = False
         self.wake_model = WhisperModel(
             whisper_model,
-            device=whisper_device,
+            device=resolve_whisper_device(whisper_device),
             compute_type=whisper_compute_type,
         )
         self.wake_listeners = [

@@ -161,6 +161,34 @@ def get_clean_audio_buffer(buffer: list[int]) -> np.ndarray:
     return np.array(buffer, dtype=np.int16).astype(np.float32) / 32768.0
 
 
+def resolve_whisper_device(device: str) -> str:
+    """
+    Usage:
+
+    - Resolves the whisper device string, selecting "cuda" or "cpu" automatically
+      when "auto" is passed.
+    - "cuda" is chosen only when Python <= 3.13 and torch reports a CUDA device
+      is available; otherwise falls back to "cpu".
+
+    Requires:
+
+    - `device`:
+        - Type: str
+        - What: Requested device — "auto", "cpu", or "cuda"
+
+    Returns:
+
+    - `resolved`:
+        - Type: str
+        - What: "cpu" or "cuda"
+    """
+    if device != "auto":
+        return device
+    if sys.version_info <= (3, 13) and torch.cuda.is_available():
+        return "cuda"
+    return "cpu"
+
+
 class Recorder:
     def __init__(
         self,

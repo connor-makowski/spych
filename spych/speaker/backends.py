@@ -1,12 +1,14 @@
+import logging
 import os
 import warnings
 from huggingface_hub import hf_hub_download
 from spych.utils import get_cache_dir
 from spych.voice_manager import get_wave_voice, get_pt_voice
 
-# Suppress Torch warnings that clutter the CLI
+# Suppress Torch and HuggingFace Hub warnings that clutter the CLI
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=FutureWarning)
+logging.getLogger("huggingface_hub").setLevel(logging.ERROR)
 
 import torch
 
@@ -238,8 +240,53 @@ class KokoroBackend(BaseBackend):
             self.speaker.play_pcm_array(audio.numpy(), self.sample_rate)
 
 
+class ChatterboxMultilingualBackend(BaseBackend):
+    """
+    Usage:
+
+    - TTS backend using the Chatterbox multilingual model for speech synthesis
+      in any of the supported languages.
+    - When voice is empty, the model's built-in default voice (conds.pt) is used.
+    - When voice is provided, zero-shot voice cloning is applied using the
+      named wave voice or a path to a .wav file.
+    - Model weights are downloaded from HuggingFace on first use and cached to
+      ~/.cache/spych/models/chatterbox-multilingual/.
+    """
+
+    def __init__(self, speaker: "Speaker", voice: str, language_id: str = "en"):
+        super().__init__(speaker, voice)
+        from spych.speaker.chatterbox_multilingual import SpychChatterboxMultilingualTTS
+
+        self.language_id = language_id
+        self.model = SpychChatterboxMultilingualTTS.from_pretrained(device=device)
+        self.sample_rate = self.model.sr
+
+        if voice:
+            try:
+                audio_prompt_path = get_wave_voice(voice)
+            except FileNotFoundError:
+                local_voices = _get_cached_wave_voices()
+                local_hint = (
+                    f"  Locally cached voices: {', '.join(local_voices)}\n"
+                    if local_voices
+                    else "  No locally cached voices found.\n"
+                )
+                raise ValueError(
+                    f"[spych] ChatterboxMultilingual voice '{voice}' not found.\n"
+                    "  Browse included voices: https://github.com/connor-makowski/spych/tree/main/voices/wave\n"
+                    + local_hint
+                )
+            self.model.prepare_conditionals(audio_prompt_path)
+
+    def speak(self, text: str):
+        audio = self.model.generate(text, language_id=self.language_id)
+        if self.speaker.interrupted.is_set():
+            return
+        self.speaker.play_pcm_array(audio.flatten(), self.sample_rate)
+
+
 def get_backend(
-    speaker: "Speaker", voice: str, backend_name: str = ""
+    speaker: "Speaker", voice: str, backend_name: str = "", language_id: str = ""
 ) -> BaseBackend:
     """
     Usage:
@@ -263,8 +310,15 @@ def get_backend(
 
     - `backend_name`:
         - Type: str
-        - What: Explicit backend to try first ("chatterbox" or "kokoro").
+        - What: Explicit backend to use ("chatterbox", "kokoro", or "chatterbox_multilingual").
+          "chatterbox_multilingual" requires language_id and does not fall back.
         - Default: "" (priority order: Chatterbox → Kokoro)
+
+    - `language_id`:
+        - Type: str
+        - What: BCP-47 language code passed to ChatterboxMultilingualBackend when
+          backend_name is "chatterbox_multilingual" (e.g. "es", "en", "fr").
+        - Default: "" (resolved to "en" for the multilingual backend)
 
     Returns:
 
@@ -272,6 +326,10 @@ def get_backend(
         - Type: BaseBackend
         - What: An initialized backend ready to call `speak(text)`.
     """
+    # Multilingual backend: no fallback — requested explicitly for a specific language
+    if backend_name.lower() == "chatterbox_multilingual":
+        return ChatterboxMultilingualBackend(speaker, voice, language_id=language_id or "en")
+
     backends = [ChatterboxBackend, KokoroBackend]
     if backend_name.lower() == "chatterbox":
         backends = [ChatterboxBackend, KokoroBackend]

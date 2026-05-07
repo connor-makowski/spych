@@ -7,7 +7,7 @@ from typing import Optional, Callable
 
 from faster_whisper import WhisperModel
 
-from spych.utils import Notify, get_clean_audio_buffer, Recorder
+from spych.utils import Notify, get_clean_audio_buffer, Recorder, resolve_whisper_device
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -513,7 +513,7 @@ class SpychLive(Notify):
         on_terminate: Optional[Callable] = None,
         device_index: int = -1,
         whisper_model: str = "base.en",
-        whisper_device: str = "cpu",
+        whisper_device: str = "auto",
         whisper_compute_type: str = "int8",
         no_speech_threshold: float = 0.4,
         speech_threshold: float = 0.5,
@@ -586,8 +586,10 @@ class SpychLive(Notify):
         - `whisper_device`:
             - Type: str
             - What: Device for whisper inference
-            - Default: "cpu"
-            - Options: "cpu", "cuda"
+            - Default: "auto"
+            - Options: "auto", "cpu", "cuda"
+            - Note: "auto" selects "cuda" when Python <=3.13 and a CUDA device is
+              available, otherwise falls back to "cpu"
 
         - `whisper_compute_type`:
             - Type: str
@@ -657,7 +659,7 @@ class SpychLive(Notify):
 
         self.model = WhisperModel(
             whisper_model,
-            device=whisper_device,
+            device=resolve_whisper_device(whisper_device),
             compute_type=whisper_compute_type,
         )
 
