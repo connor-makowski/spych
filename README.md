@@ -285,7 +285,7 @@ spych claude --use-speaker true --speaker-voice /path/to/my_voice.wav --speaker-
 spych live                                                 # writes transcript.srt
 spych live --output-path meeting --output-format both
 spych live --terminate-words "stop recording"
-spych live --no-timestamps --whisper-model small.en
+spych live --no-timestamps --whisper-model medium.en
 ```
 
 Stop by pressing the stop key (default: `q` + Enter), saying a terminate word, or pressing `Ctrl+C`.
@@ -351,9 +351,11 @@ SpychLive(
 
 # Live Translation
 
+**Currently in beta: expect some rough edges.**
+
 `spych live-translation` starts a **bidirectional** live translation session between two languages. Either participant can speak in either language — Whisper transcribes each utterance, Ollama detects which language was spoken and translates it to the other, and each segment is shown as two lines in real time. The translated text is also spoken aloud via TTS by default.
 
-Requires [Ollama](https://ollama.com) running locally with the translation model pulled.
+Requires [Ollama](https://ollama.com) running locally with the translation model pulled. By default, Spych uses the `llama3.2` model, but you can specify any Ollama model with `--ollama-translation-model`.
 
 ## CLI
 
@@ -395,7 +397,7 @@ If Ollama is unreachable, the session continues and the translation line shows `
 | `--stop-key KEY` | `q` | Key (then Enter) to stop the session |
 | `--terminate-words WORD [...]` | — | Spoken words that stop the session |
 | `--device-index N` | `-1` | Microphone device index; -1 uses system default |
-| `--whisper-model MODEL` | `base` | faster-whisper model name; `.en` suffix is stripped automatically |
+| `--whisper-model MODEL` | `small` | faster-whisper model name; `.en` suffix is stripped automatically |
 | `--whisper-device DEVICE` | `auto` | `auto`, `cpu`, or `cuda`; `auto` selects `cuda` when available on Python ≤3.13 |
 | `--whisper-compute-type TYPE` | `int8` | `int8`, `float16`, or `float32` |
 | `--no-speech-threshold FLOAT` | `0.3` | Whisper segments above this `no_speech_prob` are dropped |

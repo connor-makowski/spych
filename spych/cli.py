@@ -550,7 +550,7 @@ def main():
     )
     p_live_translation.add_argument(
         "--whisper-model",
-        default="base",
+        default="small",
         metavar="MODEL",
         help="faster-whisper model name; .en suffix stripped automatically (default: base)",
     )

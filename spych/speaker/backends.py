@@ -255,10 +255,14 @@ class ChatterboxMultilingualBackend(BaseBackend):
 
     def __init__(self, speaker: "Speaker", voice: str, language_id: str = "en"):
         super().__init__(speaker, voice)
-        from spych.speaker.chatterbox_multilingual import SpychChatterboxMultilingualTTS
+        from spych.speaker.chatterbox_multilingual import (
+            SpychChatterboxMultilingualTTS,
+        )
 
         self.language_id = language_id
-        self.model = SpychChatterboxMultilingualTTS.from_pretrained(device=device)
+        self.model = SpychChatterboxMultilingualTTS.from_pretrained(
+            device=device
+        )
         self.sample_rate = self.model.sr
 
         if voice:
@@ -286,7 +290,10 @@ class ChatterboxMultilingualBackend(BaseBackend):
 
 
 def get_backend(
-    speaker: "Speaker", voice: str, backend_name: str = "", language_id: str = ""
+    speaker: "Speaker",
+    voice: str,
+    backend_name: str = "",
+    language_id: str = "",
 ) -> BaseBackend:
     """
     Usage:
@@ -328,7 +335,9 @@ def get_backend(
     """
     # Multilingual backend: no fallback — requested explicitly for a specific language
     if backend_name.lower() == "chatterbox_multilingual":
-        return ChatterboxMultilingualBackend(speaker, voice, language_id=language_id or "en")
+        return ChatterboxMultilingualBackend(
+            speaker, voice, language_id=language_id or "en"
+        )
 
     backends = [ChatterboxBackend, KokoroBackend]
     if backend_name.lower() == "chatterbox":

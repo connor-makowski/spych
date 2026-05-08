@@ -7,7 +7,12 @@ from typing import Optional, Callable
 
 from faster_whisper import WhisperModel
 
-from spych.utils import Notify, get_clean_audio_buffer, Recorder, resolve_whisper_device
+from spych.utils import (
+    Notify,
+    get_clean_audio_buffer,
+    Recorder,
+    resolve_whisper_device,
+)
 
 # ---------------------------------------------------------------------------
 # Helpers

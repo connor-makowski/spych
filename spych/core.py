@@ -1,5 +1,10 @@
 from faster_whisper import WhisperModel
-from spych.utils import Notify, Recorder, get_clean_audio_buffer, resolve_whisper_device
+from spych.utils import (
+    Notify,
+    Recorder,
+    get_clean_audio_buffer,
+    resolve_whisper_device,
+)
 from typing import Union, Optional
 
 

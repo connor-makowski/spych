@@ -10,8 +10,12 @@ from typing import Optional
 from faster_whisper import WhisperModel
 
 from spych.utils import Notify, resolve_whisper_device
-from spych.live import VADRecorder, KeystrokeListener, format_timestamp_srt, format_timestamp_txt
-
+from spych.live import (
+    VADRecorder,
+    KeystrokeListener,
+    format_timestamp_srt,
+    format_timestamp_txt,
+)
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -157,7 +161,7 @@ def _detect_and_translate(
         "type": "object",
         "properties": {
             "input_language": {"type": "string", "enum": [lang_a, lang_b]},
-            'output_language': {"type": "string", "enum": [lang_a, lang_b]},
+            "output_language": {"type": "string", "enum": [lang_a, lang_b]},
             "output_content": {"type": "string"},
         },
         "required": ["input_language", "output_language", "output_content"],
@@ -165,7 +169,12 @@ def _detect_and_translate(
     try:
         resp = requests.post(
             f"{host}/api/generate",
-            json={"model": model, "prompt": prompt, "stream": False, "format": schema},
+            json={
+                "model": model,
+                "prompt": prompt,
+                "stream": False,
+                "format": schema,
+            },
             timeout=10,
         )
         raw = resp.json().get("response", "")
@@ -343,10 +352,14 @@ class TranslatingTranscriber(Notify):
             if self.show_timestamps:
                 ts = format_timestamp_txt(segment.start_time)
                 src_line = f"{ts}({segment.input_language}) {segment.text}"
-                tgt_line = f"{ts}({segment.output_language}) {segment.translated_text}"
+                tgt_line = (
+                    f"{ts}({segment.output_language}) {segment.translated_text}"
+                )
             else:
                 src_line = f"({segment.input_language}) {segment.text}"
-                tgt_line = f"({segment.output_language}) {segment.translated_text}"
+                tgt_line = (
+                    f"({segment.output_language}) {segment.translated_text}"
+                )
             print(src_line, flush=True)
             print(tgt_line, flush=True)
 
@@ -383,7 +396,10 @@ class PauseableVADRecorder(VADRecorder):
                 # Block while TTS is playing so the mic doesn't hear the speaker.
                 # Safety timeout: force-clear speaking_event if TTS hangs > 30 s.
                 wait_start = None
-                while self.speaking_event.is_set() and not self.stop_event.is_set():
+                while (
+                    self.speaking_event.is_set()
+                    and not self.stop_event.is_set()
+                ):
                     if wait_start is None:
                         wait_start = time.time()
                     elif time.time() - wait_start > _TTS_TIMEOUT_S:
@@ -595,6 +611,7 @@ class TranslationWriter(Notify):
                 self.srt_file.close()
             if self.speakers:
                 import pygame
+
                 try:
                     pygame.mixer.quit()
                 except Exception:
@@ -606,10 +623,14 @@ class TranslationWriter(Notify):
             if self.show_timestamps:
                 ts = format_timestamp_txt(segment.start_time)
                 src_line = f"{ts}({segment.input_language}) {segment.text}"
-                tgt_line = f"{ts}({segment.output_language}) {segment.translated_text}"
+                tgt_line = (
+                    f"{ts}({segment.output_language}) {segment.translated_text}"
+                )
             else:
                 src_line = f"({segment.input_language}) {segment.text}"
-                tgt_line = f"({segment.output_language}) {segment.translated_text}"
+                tgt_line = (
+                    f"({segment.output_language}) {segment.translated_text}"
+                )
             self.txt_file.write(src_line + "\n")
             self.txt_file.write(tgt_line + "\n")
             self.txt_file.flush()
@@ -644,7 +665,9 @@ class TranslationWriter(Notify):
             def _on_complete():
                 self.speaking_event.clear()
 
-            speaker.speak_async(segment.translated_text, on_complete=_on_complete)
+            speaker.speak_async(
+                segment.translated_text, on_complete=_on_complete
+            )
 
 
 # ---------------------------------------------------------------------------
@@ -663,7 +686,7 @@ class SpychLiveTranslation(Notify):
         stop_key: str = "q",
         terminate_words: Optional[list[str]] = None,
         device_index: int = -1,
-        whisper_model: str = "base",
+        whisper_model: str = "small",
         whisper_device: str = "auto",
         whisper_compute_type: str = "int8",
         no_speech_threshold: float = 0.4,
@@ -732,7 +755,7 @@ class SpychLiveTranslation(Notify):
             - Type: str
             - What: faster-whisper model name; `.en` suffix is stripped automatically
               when either language is not English
-            - Default: "base"
+            - Default: "small"
 
         - `whisper_device`:
             - Type: str
@@ -953,7 +976,9 @@ class SpychLiveTranslation(Notify):
 
         def checked_put(segment):
             original_put(segment)
-            if not self.terminate_words or not isinstance(segment, TranslationSegment):
+            if not self.terminate_words or not isinstance(
+                segment, TranslationSegment
+            ):
                 return
             text_lower = segment.text.lower()
             for word in self.terminate_words:

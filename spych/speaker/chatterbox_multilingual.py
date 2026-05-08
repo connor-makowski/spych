@@ -17,7 +17,11 @@ from safetensors.torch import load_file
 
 from spych.utils import get_cache_dir
 from chatterbox.models.s3gen import S3GEN_SR, S3Gen
-from chatterbox.models.s3tokenizer import S3_SR, S3_TOKEN_RATE, drop_invalid_tokens
+from chatterbox.models.s3tokenizer import (
+    S3_SR,
+    S3_TOKEN_RATE,
+    drop_invalid_tokens,
+)
 from chatterbox.models.t3 import T3
 from chatterbox.models.t3.modules.cond_enc import T3Cond
 from chatterbox.models.t3.modules.t3_config import T3Config
@@ -221,7 +225,9 @@ class SpychChatterboxMultilingualTTS:
         ve = VoiceEncoder()
         ve.load_state_dict(
             torch.load(
-                cache_dir / "ve.pt", map_location=map_location, weights_only=True
+                cache_dir / "ve.pt",
+                map_location=map_location,
+                weights_only=True,
             )
         )
         ve.to(device).eval()
@@ -236,7 +242,9 @@ class SpychChatterboxMultilingualTTS:
         s3gen = S3Gen()
         s3gen.load_state_dict(
             torch.load(
-                cache_dir / "s3gen.pt", map_location=map_location, weights_only=True
+                cache_dir / "s3gen.pt",
+                map_location=map_location,
+                weights_only=True,
             )
         )
         s3gen.to(device).eval()
@@ -248,9 +256,9 @@ class SpychChatterboxMultilingualTTS:
         conds = None
         builtin_voice = cache_dir / "conds.pt"
         if builtin_voice.exists():
-            conds = Conditionals.load(builtin_voice, map_location=map_location).to(
-                device
-            )
+            conds = Conditionals.load(
+                builtin_voice, map_location=map_location
+            ).to(device)
 
         return cls(t3, s3gen, ve, tokenizer, device, conds=conds)
 
@@ -424,7 +432,9 @@ class SpychChatterboxMultilingualTTS:
             "conds.pt exists in the model cache."
         )
 
-        if float(exaggeration) != float(self.conds.t3.emotion_adv[0, 0, 0].item()):
+        if float(exaggeration) != float(
+            self.conds.t3.emotion_adv[0, 0, 0].item()
+        ):
             _cond = self.conds.t3
             self.conds.t3 = T3Cond(
                 speaker_emb=_cond.speaker_emb,
@@ -435,9 +445,9 @@ class SpychChatterboxMultilingualTTS:
         with _quiet():
             text = punc_norm(text)
             lang = language_id.lower() if language_id else None
-            text_tokens = self.tokenizer.text_to_tokens(text, language_id=lang).to(
-                self.device
-            )
+            text_tokens = self.tokenizer.text_to_tokens(
+                text, language_id=lang
+            ).to(self.device)
             text_tokens = torch.cat([text_tokens, text_tokens], dim=0)
 
             sot = self.t3.hp.start_text_token

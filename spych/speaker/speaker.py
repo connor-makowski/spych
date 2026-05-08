@@ -13,7 +13,9 @@ from spych.speaker.backends import get_backend
 
 
 class Speaker:
-    def __init__(self, voice: str = "", backend: str = "", language_id: str = "") -> None:
+    def __init__(
+        self, voice: str = "", backend: str = "", language_id: str = ""
+    ) -> None:
         """
         Usage:
 
@@ -56,7 +58,10 @@ class Speaker:
         self.on_playback_complete = None
 
         self.backend = get_backend(
-            speaker=self, voice=voice, backend_name=backend, language_id=language_id
+            speaker=self,
+            voice=voice,
+            backend_name=backend,
+            language_id=language_id,
         )
 
     def play_pcm_array(self, audio: np.ndarray, sample_rate: int) -> None:
