@@ -82,7 +82,7 @@ The following utilities are also available as CLI commands. They don't use wake 
 | `spych --version` | Print the version number and exit |
 | `spych --help` | Show detailed usage instructions and exit |
 | `spych live` | Continuous speech-to-text transcription to file |
-| `spych live-translation` | Continuous speech transcription + translation (bilingual input and output) |
+| `spych live-translation` | (Beta Mode) Continuous speech transcription + translation (bilingual input and output) |
 | `spych multi` | Run multiple agents simultaneously |
 | `spych users` | Manage user profiles and global settings |
 | `spych profile_my_voice` | Record a voice sample for TTS cloning |
@@ -354,6 +354,8 @@ SpychLive(
 **Currently in beta: expect some rough edges.**
 
 `spych live-translation` starts a **bidirectional** live translation session between two languages. Either participant can speak in either language — Whisper transcribes each utterance, Ollama detects which language was spoken and translates it to the other, and each segment is shown as two lines in real time. The translated text is also spoken aloud via TTS by default.
+
+Note: This is currently in beta mode and the API may change without a major version bump. Feedback is very welcome!
 
 Requires [Ollama](https://ollama.com) running locally with the translation model pulled. By default, Spych uses the `llama3.2` model, but you can specify any Ollama model with `--ollama-translation-model`.
 
