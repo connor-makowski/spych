@@ -403,10 +403,10 @@ def main():
     )
     p_live.add_argument(
         "--whisper-device",
-        default="cpu",
-        choices=["cpu", "cuda"],
+        default="auto",
+        choices=["auto", "cpu", "cuda"],
         metavar="DEVICE",
-        help="Device for whisper inference: cpu or cuda (default: cpu)",
+        help="Device for whisper inference: auto, cpu, or cuda (default: auto). auto uses cuda when Python <=3.13 and CUDA is available, otherwise cpu. cuda requires nvidia-cublas-cu12 + nvidia-cudnn-cu12.",
     )
     p_live.add_argument(
         "--whisper-compute-type",
@@ -465,6 +465,151 @@ def main():
         help="Trailing words passed as whisper initial_prompt for context (default: 32)",
     )
 
+    # ------------------------------------------------------------------ #
+    p_live_translation = subparsers.add_parser(
+        "live-translation",
+        help="Bidirectional live translation between two languages",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description=(
+            "Start a bidirectional live translation session. Either participant\n"
+            "can speak in either language; Whisper transcribes and Ollama detects\n"
+            "which language was spoken then translates to the other.\n\n"
+            "Each utterance is shown as two lines prefixed with [HH:MM:SS](lang):\n"
+            "  [00:00:05](en) Hello, how are you?\n"
+            "  [00:00:05](es) Hola, ¿cómo estás?\n\n"
+            "Stop by pressing the stop key (default: q + Enter), saying a\n"
+            "terminate word, or pressing Ctrl+C."
+        ),
+    )
+    p_live_translation.add_argument(
+        "--languages",
+        required=True,
+        nargs=2,
+        metavar="LANG",
+        help="Two BCP-47 language codes for the conversation pair (e.g. en es)",
+    )
+    p_live_translation.add_argument(
+        "--ollama-host",
+        default="http://localhost:11434",
+        metavar="URL",
+        help="Ollama HTTP base URL for translation (default: http://localhost:11434)",
+    )
+    p_live_translation.add_argument(
+        "--ollama-translation-model",
+        default="llama3.2",
+        metavar="MODEL",
+        help="Ollama model name used for translation (default: llama3.2)",
+    )
+    p_live_translation.add_argument(
+        "--no-speaker",
+        action="store_true",
+        help="Disable TTS — do not speak translated segments aloud (speaker is on by default)",
+    )
+    p_live_translation.add_argument(
+        "--speaker-voice",
+        default="",
+        metavar="VOICE",
+        help="Wave voice name for zero-shot cloning; omit to use the model's built-in default voice",
+    )
+    p_live_translation.add_argument(
+        "--output-path",
+        default="transcript",
+        metavar="PATH",
+        help="Base output file path without extension (default: transcript)",
+    )
+    p_live_translation.add_argument(
+        "--output-format",
+        default=None,
+        choices=["txt", "srt", "both"],
+        metavar="FORMAT",
+        help="Save transcript to file: txt, srt, or both (default: no file output)",
+    )
+    p_live_translation.add_argument(
+        "--no-timestamps",
+        action="store_true",
+        help="Omit timestamps from terminal and .txt output",
+    )
+    p_live_translation.add_argument(
+        "--stop-key",
+        default="q",
+        metavar="KEY",
+        help="Key to type (then Enter) to stop the session (default: q)",
+    )
+    p_live_translation.add_argument(
+        "--terminate-words",
+        nargs="+",
+        metavar="WORD",
+        help="Spoken words that stop the session (e.g. 'stop recording')",
+    )
+    p_live_translation.add_argument(
+        "--device-index",
+        type=int,
+        default=-1,
+        metavar="N",
+        help="Microphone device index; -1 uses system default (default: -1)",
+    )
+    p_live_translation.add_argument(
+        "--whisper-model",
+        default="small",
+        metavar="MODEL",
+        help="faster-whisper model name; .en suffix stripped automatically (default: base)",
+    )
+    p_live_translation.add_argument(
+        "--whisper-device",
+        default="auto",
+        choices=["auto", "cpu", "cuda"],
+        metavar="DEVICE",
+        help="Device for whisper inference: auto, cpu, or cuda (default: auto). auto uses cuda when Python <=3.13 and CUDA is available, otherwise cpu. cuda requires nvidia-cublas-cu12 + nvidia-cudnn-cu12.",
+    )
+    p_live_translation.add_argument(
+        "--whisper-compute-type",
+        default="int8",
+        choices=["int8", "float16", "float32"],
+        metavar="TYPE",
+        help="Compute type for whisper: int8, float16, float32 (default: int8)",
+    )
+    p_live_translation.add_argument(
+        "--no-speech-threshold",
+        type=float,
+        default=0.3,
+        metavar="FLOAT",
+        help="Whisper no_speech_prob cutoff — segments above this are dropped (default: 0.3)",
+    )
+    p_live_translation.add_argument(
+        "--speech-threshold",
+        type=float,
+        default=0.5,
+        metavar="FLOAT",
+        help="VAD speech onset probability (default: 0.5)",
+    )
+    p_live_translation.add_argument(
+        "--silence-threshold",
+        type=float,
+        default=0.35,
+        metavar="FLOAT",
+        help="VAD silence probability during speech (default: 0.35)",
+    )
+    p_live_translation.add_argument(
+        "--silence-frames",
+        type=int,
+        default=20,
+        metavar="N",
+        help="Consecutive silent frames required to end a segment (~32ms each, default: 20)",
+    )
+    p_live_translation.add_argument(
+        "--speech-pad-frames",
+        type=int,
+        default=5,
+        metavar="N",
+        help="Pre-roll frames and onset confirmation count (default: 5)",
+    )
+    p_live_translation.add_argument(
+        "--max-speech-duration",
+        type=float,
+        default=30.0,
+        metavar="SECONDS",
+        help="Hard cap on a single segment in seconds (default: 30.0)",
+    )
     # ------------------------------------------------------------------ #
     p_multi = subparsers.add_parser(
         "multi",
@@ -822,6 +967,33 @@ def main():
             speech_pad_frames=args.speech_pad_frames,
             max_speech_duration_s=args.max_speech_duration,
             context_words=args.context_words,
+        ).start()
+
+    elif args.agent == "live-translation":
+        from spych.live_translation import SpychLiveTranslation
+
+        SpychLiveTranslation(
+            lang_a=args.languages[0],
+            lang_b=args.languages[1],
+            output_format=args.output_format or "",
+            output_path=args.output_path,
+            show_timestamps=not args.no_timestamps,
+            stop_key=args.stop_key,
+            terminate_words=args.terminate_words,
+            device_index=args.device_index,
+            whisper_model=args.whisper_model,
+            whisper_device=args.whisper_device,
+            whisper_compute_type=args.whisper_compute_type,
+            no_speech_threshold=args.no_speech_threshold,
+            speech_threshold=args.speech_threshold,
+            silence_threshold=args.silence_threshold,
+            silence_frames_threshold=args.silence_frames,
+            speech_pad_frames=args.speech_pad_frames,
+            max_speech_duration_s=args.max_speech_duration,
+            ollama_host=args.ollama_host,
+            ollama_translation_model=args.ollama_translation_model,
+            use_speaker=not args.no_speaker,
+            speaker_voice=args.speaker_voice,
         ).start()
 
     elif args.agent == "profile_my_voice":
