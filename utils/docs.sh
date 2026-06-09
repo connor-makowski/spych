@@ -14,7 +14,7 @@ echo "from .orchestrator import SpychOrchestrator" >> spych/__init__.py
 
 # Specify versions for documentation purposes
 VERSION="4.2.1"
-OLD_DOC_VERSIONS="4.1.1 4.0.1 3.6.0 2.0.2 1.0.0"
+OLD_DOC_VERSIONS="3.6.0 2.0.2 1.0.0"
 export version_options="$VERSION $OLD_DOC_VERSIONS"
 
 # generate the docs for a version function:
