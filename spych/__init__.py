@@ -14,10 +14,10 @@ A lightweight, fully offline Python toolkit for wake word detection, audio trans
 
 # Installation
 
-### Recommended: pipx
+### Recommended: uv
 
 ```bash
-pipx install spych
+uv tool install spych
 ```
 
 ### Alternative: pip
@@ -31,8 +31,8 @@ pip install spych
 By default, Spych automatically installs the right TTS backend for your Python version. You can also install explicitly:
 
 ```bash
-pipx install "spych[kokoro]"       # Fast, lightweight (Python < 3.13 recommended)
-pipx install "spych[chatterbox]"   # High-quality voice cloning (Python >= 3.13 required)
+uv tool install "spych[kokoro]"       # Fast, lightweight (Python < 3.13 recommended)
+uv tool install "spych[chatterbox]"   # High-quality voice cloning (Python >= 3.13 required)
 ```
 
 ---
