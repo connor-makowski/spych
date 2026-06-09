@@ -40,6 +40,27 @@
                                 <a class="variable" href="#Spych.wake_model">wake_model</a>
                         </li>
                         <li>
+                                <a class="variable" href="#Spych.no_speech_threshold">no_speech_threshold</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Spych.vad_speech_threshold">vad_speech_threshold</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Spych.vad_silence_threshold">vad_silence_threshold</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Spych.vad_silence_frames_threshold">vad_silence_frames_threshold</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Spych.vad_speech_pad_frames">vad_speech_pad_frames</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Spych.vad_max_speech_duration_s">vad_max_speech_duration_s</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Spych.recorder">recorder</a>
+                        </li>
+                        <li>
                                 <a class="function" href="#Spych.listen">listen</a>
                         </li>
                 </ul>
@@ -52,8 +73,6 @@
 <select id="version-selector">
     <option value="latest">latest</option>
         <option value="4.2.1">4.2.1</option>
-        <option value="4.1.1">4.1.1</option>
-        <option value="4.0.1">4.0.1</option>
         <option value="3.6.0">3.6.0</option>
         <option value="2.0.2">2.0.2</option>
         <option value="1.0.0">1.0.0</option>
@@ -104,81 +123,180 @@
 
                         <label class="view-source-button" for="mod-core-view-source"><span>View Source</span></label>
 
-                        <div class="pdoc-code codehilite"><pre><span></span><span id="L-1"><a href="#L-1"><span class="linenos"> 1</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">faster_whisper</span><span class="w"> </span><span class="kn">import</span> <span class="n">WhisperModel</span>
-</span><span id="L-2"><a href="#L-2"><span class="linenos"> 2</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">spych.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">Notify</span><span class="p">,</span> <span class="n">record</span><span class="p">,</span> <span class="n">get_clean_audio_buffer</span>
-</span><span id="L-3"><a href="#L-3"><span class="linenos"> 3</span></a>
-</span><span id="L-4"><a href="#L-4"><span class="linenos"> 4</span></a>
-</span><span id="L-5"><a href="#L-5"><span class="linenos"> 5</span></a><span class="k">class</span><span class="w"> </span><span class="nc">Spych</span><span class="p">(</span><span class="n">Notify</span><span class="p">):</span>
-</span><span id="L-6"><a href="#L-6"><span class="linenos"> 6</span></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
-</span><span id="L-7"><a href="#L-7"><span class="linenos"> 7</span></a>        <span class="bp">self</span><span class="p">,</span>
-</span><span id="L-8"><a href="#L-8"><span class="linenos"> 8</span></a>        <span class="n">whisper_model</span><span class="o">=</span><span class="s2">&quot;base&quot;</span><span class="p">,</span>
-</span><span id="L-9"><a href="#L-9"><span class="linenos"> 9</span></a>        <span class="n">whisper_device</span><span class="o">=</span><span class="s2">&quot;cpu&quot;</span><span class="p">,</span>
-</span><span id="L-10"><a href="#L-10"><span class="linenos">10</span></a>        <span class="n">whisper_compute_type</span><span class="o">=</span><span class="s2">&quot;int8&quot;</span><span class="p">,</span>
-</span><span id="L-11"><a href="#L-11"><span class="linenos">11</span></a>    <span class="p">):</span>
-</span><span id="L-12"><a href="#L-12"><span class="linenos">12</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="L-13"><a href="#L-13"><span class="linenos">13</span></a><span class="sd">        Usage:</span>
-</span><span id="L-14"><a href="#L-14"><span class="linenos">14</span></a>
-</span><span id="L-15"><a href="#L-15"><span class="linenos">15</span></a><span class="sd">        - Initializes a transcription object using faster-whisper for fully offline</span>
-</span><span id="L-16"><a href="#L-16"><span class="linenos">16</span></a><span class="sd">          speech-to-text</span>
-</span><span id="L-17"><a href="#L-17"><span class="linenos">17</span></a>
-</span><span id="L-18"><a href="#L-18"><span class="linenos">18</span></a><span class="sd">        Optional:</span>
-</span><span id="L-19"><a href="#L-19"><span class="linenos">19</span></a>
-</span><span id="L-20"><a href="#L-20"><span class="linenos">20</span></a><span class="sd">        - `whisper_model`:</span>
-</span><span id="L-21"><a href="#L-21"><span class="linenos">21</span></a><span class="sd">            - Type: str</span>
-</span><span id="L-22"><a href="#L-22"><span class="linenos">22</span></a><span class="sd">            - What: The faster-whisper model name to use for transcription</span>
-</span><span id="L-23"><a href="#L-23"><span class="linenos">23</span></a><span class="sd">            - Default: &quot;base&quot;</span>
-</span><span id="L-24"><a href="#L-24"><span class="linenos">24</span></a><span class="sd">            - Note: Larger models (small, medium, large) provide better accuracy at</span>
-</span><span id="L-25"><a href="#L-25"><span class="linenos">25</span></a><span class="sd">              the cost of speed; smaller models (tiny, base) are faster but less accurate</span>
-</span><span id="L-26"><a href="#L-26"><span class="linenos">26</span></a>
-</span><span id="L-27"><a href="#L-27"><span class="linenos">27</span></a><span class="sd">        - `whisper_device`:</span>
-</span><span id="L-28"><a href="#L-28"><span class="linenos">28</span></a><span class="sd">            - Type: str</span>
-</span><span id="L-29"><a href="#L-29"><span class="linenos">29</span></a><span class="sd">            - What: The device to run the whisper model on</span>
-</span><span id="L-30"><a href="#L-30"><span class="linenos">30</span></a><span class="sd">            - Default: &quot;cpu&quot;</span>
-</span><span id="L-31"><a href="#L-31"><span class="linenos">31</span></a><span class="sd">            - Note: Use &quot;cuda&quot; for GPU acceleration if available</span>
-</span><span id="L-32"><a href="#L-32"><span class="linenos">32</span></a>
-</span><span id="L-33"><a href="#L-33"><span class="linenos">33</span></a><span class="sd">        - `whisper_compute_type`:</span>
-</span><span id="L-34"><a href="#L-34"><span class="linenos">34</span></a><span class="sd">            - Type: str</span>
-</span><span id="L-35"><a href="#L-35"><span class="linenos">35</span></a><span class="sd">            - What: The compute type to use for the whisper model</span>
-</span><span id="L-36"><a href="#L-36"><span class="linenos">36</span></a><span class="sd">            - Default: &quot;int8&quot;</span>
-</span><span id="L-37"><a href="#L-37"><span class="linenos">37</span></a><span class="sd">            - Note: &quot;int8&quot; offers a good balance of speed and accuracy on both CPU and GPU</span>
-</span><span id="L-38"><a href="#L-38"><span class="linenos">38</span></a><span class="sd">        &quot;&quot;&quot;</span>
-</span><span id="L-39"><a href="#L-39"><span class="linenos">39</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">wake_model</span> <span class="o">=</span> <span class="n">WhisperModel</span><span class="p">(</span>
-</span><span id="L-40"><a href="#L-40"><span class="linenos">40</span></a>            <span class="n">whisper_model</span><span class="p">,</span>
-</span><span id="L-41"><a href="#L-41"><span class="linenos">41</span></a>            <span class="n">device</span><span class="o">=</span><span class="n">whisper_device</span><span class="p">,</span>
-</span><span id="L-42"><a href="#L-42"><span class="linenos">42</span></a>            <span class="n">compute_type</span><span class="o">=</span><span class="n">whisper_compute_type</span><span class="p">,</span>
-</span><span id="L-43"><a href="#L-43"><span class="linenos">43</span></a>        <span class="p">)</span>
-</span><span id="L-44"><a href="#L-44"><span class="linenos">44</span></a>
-</span><span id="L-45"><a href="#L-45"><span class="linenos">45</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">listen</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">duration</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">device_index</span><span class="o">=-</span><span class="mi">1</span><span class="p">):</span>
-</span><span id="L-46"><a href="#L-46"><span class="linenos">46</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="L-47"><a href="#L-47"><span class="linenos">47</span></a><span class="sd">        Usage:</span>
-</span><span id="L-48"><a href="#L-48"><span class="linenos">48</span></a>
-</span><span id="L-49"><a href="#L-49"><span class="linenos">49</span></a><span class="sd">        - Records audio from the microphone for a specified duration and returns</span>
-</span><span id="L-50"><a href="#L-50"><span class="linenos">50</span></a><span class="sd">          the transcription as a string</span>
-</span><span id="L-51"><a href="#L-51"><span class="linenos">51</span></a>
-</span><span id="L-52"><a href="#L-52"><span class="linenos">52</span></a><span class="sd">        Optional:</span>
-</span><span id="L-53"><a href="#L-53"><span class="linenos">53</span></a>
-</span><span id="L-54"><a href="#L-54"><span class="linenos">54</span></a><span class="sd">        - `duration`:</span>
-</span><span id="L-55"><a href="#L-55"><span class="linenos">55</span></a><span class="sd">            - Type: int | float</span>
-</span><span id="L-56"><a href="#L-56"><span class="linenos">56</span></a><span class="sd">            - What: The number of seconds to record</span>
-</span><span id="L-57"><a href="#L-57"><span class="linenos">57</span></a><span class="sd">            - Default: 5</span>
-</span><span id="L-58"><a href="#L-58"><span class="linenos">58</span></a>
-</span><span id="L-59"><a href="#L-59"><span class="linenos">59</span></a><span class="sd">        - `device_index`:</span>
-</span><span id="L-60"><a href="#L-60"><span class="linenos">60</span></a><span class="sd">            - Type: int</span>
-</span><span id="L-61"><a href="#L-61"><span class="linenos">61</span></a><span class="sd">            - What: The microphone device index to record from</span>
-</span><span id="L-62"><a href="#L-62"><span class="linenos">62</span></a><span class="sd">            - Default: -1</span>
-</span><span id="L-63"><a href="#L-63"><span class="linenos">63</span></a><span class="sd">            - Note: Use `-1` to select the system default input device</span>
-</span><span id="L-64"><a href="#L-64"><span class="linenos">64</span></a>
-</span><span id="L-65"><a href="#L-65"><span class="linenos">65</span></a><span class="sd">        Returns:</span>
-</span><span id="L-66"><a href="#L-66"><span class="linenos">66</span></a>
-</span><span id="L-67"><a href="#L-67"><span class="linenos">67</span></a><span class="sd">        - `transcription`:</span>
-</span><span id="L-68"><a href="#L-68"><span class="linenos">68</span></a><span class="sd">            - Type: str</span>
-</span><span id="L-69"><a href="#L-69"><span class="linenos">69</span></a><span class="sd">            - What: The transcribed text from the recorded audio</span>
-</span><span id="L-70"><a href="#L-70"><span class="linenos">70</span></a><span class="sd">            - Note: Multiple segments are joined with a single space</span>
-</span><span id="L-71"><a href="#L-71"><span class="linenos">71</span></a><span class="sd">        &quot;&quot;&quot;</span>
-</span><span id="L-72"><a href="#L-72"><span class="linenos">72</span></a>        <span class="n">buffer</span> <span class="o">=</span> <span class="n">record</span><span class="p">(</span><span class="n">device_index</span><span class="o">=</span><span class="n">device_index</span><span class="p">,</span> <span class="n">duration</span><span class="o">=</span><span class="n">duration</span><span class="p">)</span>
-</span><span id="L-73"><a href="#L-73"><span class="linenos">73</span></a>        <span class="n">audio_buffer</span> <span class="o">=</span> <span class="n">get_clean_audio_buffer</span><span class="p">(</span><span class="n">buffer</span><span class="p">)</span>
-</span><span id="L-74"><a href="#L-74"><span class="linenos">74</span></a>        <span class="n">segments</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">wake_model</span><span class="o">.</span><span class="n">transcribe</span><span class="p">(</span><span class="n">audio_buffer</span><span class="p">,</span> <span class="n">beam_size</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
-</span><span id="L-75"><a href="#L-75"><span class="linenos">75</span></a>        <span class="k">return</span> <span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">segment</span><span class="o">.</span><span class="n">text</span> <span class="k">for</span> <span class="n">segment</span> <span class="ow">in</span> <span class="n">segments</span><span class="p">])</span>
+                        <div class="pdoc-code codehilite"><pre><span></span><span id="L-1"><a href="#L-1"><span class="linenos">  1</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">faster_whisper</span><span class="w"> </span><span class="kn">import</span> <span class="n">WhisperModel</span>
+</span><span id="L-2"><a href="#L-2"><span class="linenos">  2</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">spych.utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+</span><span id="L-3"><a href="#L-3"><span class="linenos">  3</span></a>    <span class="n">Notify</span><span class="p">,</span>
+</span><span id="L-4"><a href="#L-4"><span class="linenos">  4</span></a>    <span class="n">Recorder</span><span class="p">,</span>
+</span><span id="L-5"><a href="#L-5"><span class="linenos">  5</span></a>    <span class="n">get_clean_audio_buffer</span><span class="p">,</span>
+</span><span id="L-6"><a href="#L-6"><span class="linenos">  6</span></a>    <span class="n">resolve_whisper_device</span><span class="p">,</span>
+</span><span id="L-7"><a href="#L-7"><span class="linenos">  7</span></a><span class="p">)</span>
+</span><span id="L-8"><a href="#L-8"><span class="linenos">  8</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Optional</span>
+</span><span id="L-9"><a href="#L-9"><span class="linenos">  9</span></a>
+</span><span id="L-10"><a href="#L-10"><span class="linenos"> 10</span></a>
+</span><span id="L-11"><a href="#L-11"><span class="linenos"> 11</span></a><span class="k">class</span><span class="w"> </span><span class="nc">Spych</span><span class="p">(</span><span class="n">Notify</span><span class="p">):</span>
+</span><span id="L-12"><a href="#L-12"><span class="linenos"> 12</span></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+</span><span id="L-13"><a href="#L-13"><span class="linenos"> 13</span></a>        <span class="bp">self</span><span class="p">,</span>
+</span><span id="L-14"><a href="#L-14"><span class="linenos"> 14</span></a>        <span class="n">whisper_model</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;base.en&quot;</span><span class="p">,</span>
+</span><span id="L-15"><a href="#L-15"><span class="linenos"> 15</span></a>        <span class="n">whisper_device</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;auto&quot;</span><span class="p">,</span>
+</span><span id="L-16"><a href="#L-16"><span class="linenos"> 16</span></a>        <span class="n">whisper_compute_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;int8&quot;</span><span class="p">,</span>
+</span><span id="L-17"><a href="#L-17"><span class="linenos"> 17</span></a>        <span class="n">no_speech_threshold</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.4</span><span class="p">,</span>
+</span><span id="L-18"><a href="#L-18"><span class="linenos"> 18</span></a>        <span class="n">vad_speech_threshold</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.5</span><span class="p">,</span>
+</span><span id="L-19"><a href="#L-19"><span class="linenos"> 19</span></a>        <span class="n">vad_silence_threshold</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.35</span><span class="p">,</span>
+</span><span id="L-20"><a href="#L-20"><span class="linenos"> 20</span></a>        <span class="n">vad_silence_frames_threshold</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">40</span><span class="p">,</span>
+</span><span id="L-21"><a href="#L-21"><span class="linenos"> 21</span></a>        <span class="n">vad_speech_pad_frames</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span>
+</span><span id="L-22"><a href="#L-22"><span class="linenos"> 22</span></a>        <span class="n">vad_max_speech_duration_s</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">30.0</span><span class="p">,</span>
+</span><span id="L-23"><a href="#L-23"><span class="linenos"> 23</span></a>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="L-24"><a href="#L-24"><span class="linenos"> 24</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-25"><a href="#L-25"><span class="linenos"> 25</span></a><span class="sd">        Usage:</span>
+</span><span id="L-26"><a href="#L-26"><span class="linenos"> 26</span></a>
+</span><span id="L-27"><a href="#L-27"><span class="linenos"> 27</span></a><span class="sd">        - Initializes a transcription object using faster-whisper for fully offline</span>
+</span><span id="L-28"><a href="#L-28"><span class="linenos"> 28</span></a><span class="sd">          speech-to-text</span>
+</span><span id="L-29"><a href="#L-29"><span class="linenos"> 29</span></a>
+</span><span id="L-30"><a href="#L-30"><span class="linenos"> 30</span></a><span class="sd">        Optional:</span>
+</span><span id="L-31"><a href="#L-31"><span class="linenos"> 31</span></a>
+</span><span id="L-32"><a href="#L-32"><span class="linenos"> 32</span></a><span class="sd">        - `whisper_model`:</span>
+</span><span id="L-33"><a href="#L-33"><span class="linenos"> 33</span></a><span class="sd">            - Type: str</span>
+</span><span id="L-34"><a href="#L-34"><span class="linenos"> 34</span></a><span class="sd">            - What: The faster-whisper model name to use for transcription</span>
+</span><span id="L-35"><a href="#L-35"><span class="linenos"> 35</span></a><span class="sd">            - Default: &quot;base.en&quot;</span>
+</span><span id="L-36"><a href="#L-36"><span class="linenos"> 36</span></a><span class="sd">            - Note: Larger models (small, medium, large) provide better accuracy at</span>
+</span><span id="L-37"><a href="#L-37"><span class="linenos"> 37</span></a><span class="sd">              the cost of speed; smaller models (tiny, base) are faster but less accurate</span>
+</span><span id="L-38"><a href="#L-38"><span class="linenos"> 38</span></a>
+</span><span id="L-39"><a href="#L-39"><span class="linenos"> 39</span></a><span class="sd">        - `whisper_device`:</span>
+</span><span id="L-40"><a href="#L-40"><span class="linenos"> 40</span></a><span class="sd">            - Type: str</span>
+</span><span id="L-41"><a href="#L-41"><span class="linenos"> 41</span></a><span class="sd">            - What: The device to run the whisper model on</span>
+</span><span id="L-42"><a href="#L-42"><span class="linenos"> 42</span></a><span class="sd">            - Default: &quot;auto&quot;</span>
+</span><span id="L-43"><a href="#L-43"><span class="linenos"> 43</span></a><span class="sd">            - Options: &quot;auto&quot;, &quot;cpu&quot;, &quot;cuda&quot;</span>
+</span><span id="L-44"><a href="#L-44"><span class="linenos"> 44</span></a><span class="sd">            - Note: &quot;auto&quot; selects &quot;cuda&quot; when Python &lt;=3.13 and a CUDA device is</span>
+</span><span id="L-45"><a href="#L-45"><span class="linenos"> 45</span></a><span class="sd">              available, otherwise falls back to &quot;cpu&quot;</span>
+</span><span id="L-46"><a href="#L-46"><span class="linenos"> 46</span></a>
+</span><span id="L-47"><a href="#L-47"><span class="linenos"> 47</span></a><span class="sd">        - `whisper_compute_type`:</span>
+</span><span id="L-48"><a href="#L-48"><span class="linenos"> 48</span></a><span class="sd">            - Type: str</span>
+</span><span id="L-49"><a href="#L-49"><span class="linenos"> 49</span></a><span class="sd">            - What: The compute type to use for the whisper model</span>
+</span><span id="L-50"><a href="#L-50"><span class="linenos"> 50</span></a><span class="sd">            - Default: &quot;int8&quot;</span>
+</span><span id="L-51"><a href="#L-51"><span class="linenos"> 51</span></a><span class="sd">            - Options: &quot;int8&quot;, &quot;float16&quot;, &quot;float32&quot;</span>
+</span><span id="L-52"><a href="#L-52"><span class="linenos"> 52</span></a><span class="sd">            - Note: &quot;int8&quot; offers a good balance of speed and accuracy on both CPU and GPU</span>
+</span><span id="L-53"><a href="#L-53"><span class="linenos"> 53</span></a>
+</span><span id="L-54"><a href="#L-54"><span class="linenos"> 54</span></a><span class="sd">        - `no_speech_threshold`:</span>
+</span><span id="L-55"><a href="#L-55"><span class="linenos"> 55</span></a><span class="sd">            - Type: float</span>
+</span><span id="L-56"><a href="#L-56"><span class="linenos"> 56</span></a><span class="sd">            - What: The threshold for the `no_speech_prob` returned by faster-whisper</span>
+</span><span id="L-57"><a href="#L-57"><span class="linenos"> 57</span></a><span class="sd">            - Default: 0.4</span>
+</span><span id="L-58"><a href="#L-58"><span class="linenos"> 58</span></a><span class="sd">            - Note: Segments with a `no_speech_prob` above this threshold will be</span>
+</span><span id="L-59"><a href="#L-59"><span class="linenos"> 59</span></a><span class="sd">              ignored to reduce false positives from silence or background noise</span>
+</span><span id="L-60"><a href="#L-60"><span class="linenos"> 60</span></a>
+</span><span id="L-61"><a href="#L-61"><span class="linenos"> 61</span></a><span class="sd">        - `vad_speech_threshold`:</span>
+</span><span id="L-62"><a href="#L-62"><span class="linenos"> 62</span></a><span class="sd">            - Type: float (0.0–1.0)</span>
+</span><span id="L-63"><a href="#L-63"><span class="linenos"> 63</span></a><span class="sd">            - What: Silero probability above which a frame is considered speech onset</span>
+</span><span id="L-64"><a href="#L-64"><span class="linenos"> 64</span></a><span class="sd">              when `listen` is called with `duration=&quot;auto&quot;` or `duration=0`</span>
+</span><span id="L-65"><a href="#L-65"><span class="linenos"> 65</span></a><span class="sd">            - Default: 0.5</span>
+</span><span id="L-66"><a href="#L-66"><span class="linenos"> 66</span></a><span class="sd">            - Note: Raise to reduce false positives in noisy environments</span>
+</span><span id="L-67"><a href="#L-67"><span class="linenos"> 67</span></a>
+</span><span id="L-68"><a href="#L-68"><span class="linenos"> 68</span></a><span class="sd">        - `vad_silence_threshold`:</span>
+</span><span id="L-69"><a href="#L-69"><span class="linenos"> 69</span></a><span class="sd">            - Type: float (0.0–1.0)</span>
+</span><span id="L-70"><a href="#L-70"><span class="linenos"> 70</span></a><span class="sd">            - What: Silero probability below which a frame is considered silence</span>
+</span><span id="L-71"><a href="#L-71"><span class="linenos"> 71</span></a><span class="sd">              during an active utterance; must be less than `vad_speech_threshold`</span>
+</span><span id="L-72"><a href="#L-72"><span class="linenos"> 72</span></a><span class="sd">              to create a hysteresis band that prevents rapid toggling</span>
+</span><span id="L-73"><a href="#L-73"><span class="linenos"> 73</span></a><span class="sd">            - Default: 0.35</span>
+</span><span id="L-74"><a href="#L-74"><span class="linenos"> 74</span></a>
+</span><span id="L-75"><a href="#L-75"><span class="linenos"> 75</span></a><span class="sd">        - `vad_silence_frames_threshold`:</span>
+</span><span id="L-76"><a href="#L-76"><span class="linenos"> 76</span></a><span class="sd">            - Type: int</span>
+</span><span id="L-77"><a href="#L-77"><span class="linenos"> 77</span></a><span class="sd">            - What: Consecutive silent frames (~32ms each) required to confirm the</span>
+</span><span id="L-78"><a href="#L-78"><span class="linenos"> 78</span></a><span class="sd">              utterance has ended and return the buffer</span>
+</span><span id="L-79"><a href="#L-79"><span class="linenos"> 79</span></a><span class="sd">            - Default: 40  (~1280ms)</span>
+</span><span id="L-80"><a href="#L-80"><span class="linenos"> 80</span></a>
+</span><span id="L-81"><a href="#L-81"><span class="linenos"> 81</span></a><span class="sd">        - `vad_speech_pad_frames`:</span>
+</span><span id="L-82"><a href="#L-82"><span class="linenos"> 82</span></a><span class="sd">            - Type: int</span>
+</span><span id="L-83"><a href="#L-83"><span class="linenos"> 83</span></a><span class="sd">            - What: Pre-roll frames captured before onset confirmation; also the</span>
+</span><span id="L-84"><a href="#L-84"><span class="linenos"> 84</span></a><span class="sd">              number of consecutive voiced frames required to confirm speech onset</span>
+</span><span id="L-85"><a href="#L-85"><span class="linenos"> 85</span></a><span class="sd">            - Default: 10  (~320ms)</span>
+</span><span id="L-86"><a href="#L-86"><span class="linenos"> 86</span></a>
+</span><span id="L-87"><a href="#L-87"><span class="linenos"> 87</span></a><span class="sd">        - `vad_max_speech_duration_s`:</span>
+</span><span id="L-88"><a href="#L-88"><span class="linenos"> 88</span></a><span class="sd">            - Type: float</span>
+</span><span id="L-89"><a href="#L-89"><span class="linenos"> 89</span></a><span class="sd">            - What: Hard cap on a single VAD-captured utterance in seconds; forces</span>
+</span><span id="L-90"><a href="#L-90"><span class="linenos"> 90</span></a><span class="sd">              a return even if the speaker never pauses</span>
+</span><span id="L-91"><a href="#L-91"><span class="linenos"> 91</span></a><span class="sd">            - Default: 30.0</span>
+</span><span id="L-92"><a href="#L-92"><span class="linenos"> 92</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="L-93"><a href="#L-93"><span class="linenos"> 93</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">wake_model</span> <span class="o">=</span> <span class="n">WhisperModel</span><span class="p">(</span>
+</span><span id="L-94"><a href="#L-94"><span class="linenos"> 94</span></a>            <span class="n">whisper_model</span><span class="p">,</span>
+</span><span id="L-95"><a href="#L-95"><span class="linenos"> 95</span></a>            <span class="n">device</span><span class="o">=</span><span class="n">resolve_whisper_device</span><span class="p">(</span><span class="n">whisper_device</span><span class="p">),</span>
+</span><span id="L-96"><a href="#L-96"><span class="linenos"> 96</span></a>            <span class="n">compute_type</span><span class="o">=</span><span class="n">whisper_compute_type</span><span class="p">,</span>
+</span><span id="L-97"><a href="#L-97"><span class="linenos"> 97</span></a>        <span class="p">)</span>
+</span><span id="L-98"><a href="#L-98"><span class="linenos"> 98</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">no_speech_threshold</span> <span class="o">=</span> <span class="n">no_speech_threshold</span>
+</span><span id="L-99"><a href="#L-99"><span class="linenos"> 99</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">vad_speech_threshold</span> <span class="o">=</span> <span class="n">vad_speech_threshold</span>
+</span><span id="L-100"><a href="#L-100"><span class="linenos">100</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">vad_silence_threshold</span> <span class="o">=</span> <span class="n">vad_silence_threshold</span>
+</span><span id="L-101"><a href="#L-101"><span class="linenos">101</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">vad_silence_frames_threshold</span> <span class="o">=</span> <span class="n">vad_silence_frames_threshold</span>
+</span><span id="L-102"><a href="#L-102"><span class="linenos">102</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">vad_speech_pad_frames</span> <span class="o">=</span> <span class="n">vad_speech_pad_frames</span>
+</span><span id="L-103"><a href="#L-103"><span class="linenos">103</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">vad_max_speech_duration_s</span> <span class="o">=</span> <span class="n">vad_max_speech_duration_s</span>
+</span><span id="L-104"><a href="#L-104"><span class="linenos">104</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">recorder</span> <span class="o">=</span> <span class="n">Recorder</span><span class="p">()</span>
+</span><span id="L-105"><a href="#L-105"><span class="linenos">105</span></a>
+</span><span id="L-106"><a href="#L-106"><span class="linenos">106</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">listen</span><span class="p">(</span>
+</span><span id="L-107"><a href="#L-107"><span class="linenos">107</span></a>        <span class="bp">self</span><span class="p">,</span>
+</span><span id="L-108"><a href="#L-108"><span class="linenos">108</span></a>        <span class="n">duration</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+</span><span id="L-109"><a href="#L-109"><span class="linenos">109</span></a>        <span class="n">device_index</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span>
+</span><span id="L-110"><a href="#L-110"><span class="linenos">110</span></a>        <span class="n">inactivity_timeout</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="mf">4.0</span><span class="p">,</span>
+</span><span id="L-111"><a href="#L-111"><span class="linenos">111</span></a>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+</span><span id="L-112"><a href="#L-112"><span class="linenos">112</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-113"><a href="#L-113"><span class="linenos">113</span></a><span class="sd">        Usage:</span>
+</span><span id="L-114"><a href="#L-114"><span class="linenos">114</span></a>
+</span><span id="L-115"><a href="#L-115"><span class="linenos">115</span></a><span class="sd">        - Records audio from the microphone and returns the transcription as a string.</span>
+</span><span id="L-116"><a href="#L-116"><span class="linenos">116</span></a><span class="sd">          Supports both fixed-duration recording and VAD-gated recording that</span>
+</span><span id="L-117"><a href="#L-117"><span class="linenos">117</span></a><span class="sd">          automatically stops at the end of a natural utterance.</span>
+</span><span id="L-118"><a href="#L-118"><span class="linenos">118</span></a>
+</span><span id="L-119"><a href="#L-119"><span class="linenos">119</span></a><span class="sd">        Optional:</span>
+</span><span id="L-120"><a href="#L-120"><span class="linenos">120</span></a>
+</span><span id="L-121"><a href="#L-121"><span class="linenos">121</span></a><span class="sd">        - `duration`:</span>
+</span><span id="L-122"><a href="#L-122"><span class="linenos">122</span></a><span class="sd">            - Type: int | float | str</span>
+</span><span id="L-123"><a href="#L-123"><span class="linenos">123</span></a><span class="sd">            - What: Controls how long to record</span>
+</span><span id="L-124"><a href="#L-124"><span class="linenos">124</span></a><span class="sd">            - Default: 0</span>
+</span><span id="L-125"><a href="#L-125"><span class="linenos">125</span></a><span class="sd">            - Options:</span>
+</span><span id="L-126"><a href="#L-126"><span class="linenos">126</span></a><span class="sd">                - int | float : Record for exactly this many seconds</span>
+</span><span id="L-127"><a href="#L-127"><span class="linenos">127</span></a><span class="sd">                - &quot;auto&quot; or 0 : Use Silero VAD to detect a complete utterance and</span>
+</span><span id="L-128"><a href="#L-128"><span class="linenos">128</span></a><span class="sd">                                stop automatically when the speaker finishes;</span>
+</span><span id="L-129"><a href="#L-129"><span class="linenos">129</span></a><span class="sd">                                honours the `vad_*` parameters set at init time</span>
+</span><span id="L-130"><a href="#L-130"><span class="linenos">130</span></a><span class="sd">            - Note: &quot;auto&quot; and 0 are equivalent; either signals VAD-gated recording</span>
+</span><span id="L-131"><a href="#L-131"><span class="linenos">131</span></a>
+</span><span id="L-132"><a href="#L-132"><span class="linenos">132</span></a><span class="sd">        - `device_index`:</span>
+</span><span id="L-133"><a href="#L-133"><span class="linenos">133</span></a><span class="sd">            - Type: int</span>
+</span><span id="L-134"><a href="#L-134"><span class="linenos">134</span></a><span class="sd">            - What: The microphone device index to record from</span>
+</span><span id="L-135"><a href="#L-135"><span class="linenos">135</span></a><span class="sd">            - Default: -1</span>
+</span><span id="L-136"><a href="#L-136"><span class="linenos">136</span></a><span class="sd">            - Note: Use `-1` to select the system default input device</span>
+</span><span id="L-137"><a href="#L-137"><span class="linenos">137</span></a>
+</span><span id="L-138"><a href="#L-138"><span class="linenos">138</span></a><span class="sd">        - `inactivity_timeout`:</span>
+</span><span id="L-139"><a href="#L-139"><span class="linenos">139</span></a><span class="sd">            - Type: float | None</span>
+</span><span id="L-140"><a href="#L-140"><span class="linenos">140</span></a><span class="sd">            - What: Seconds to wait for speech onset before returning an empty string</span>
+</span><span id="L-141"><a href="#L-141"><span class="linenos">141</span></a><span class="sd">              when using VAD-gated recording (`duration=&quot;auto&quot;` or `0`)</span>
+</span><span id="L-142"><a href="#L-142"><span class="linenos">142</span></a><span class="sd">            - Default: 4.0 (wait for 4 seconds of inactivity)</span>
+</span><span id="L-143"><a href="#L-143"><span class="linenos">143</span></a>
+</span><span id="L-144"><a href="#L-144"><span class="linenos">144</span></a><span class="sd">        Returns:</span>
+</span><span id="L-145"><a href="#L-145"><span class="linenos">145</span></a>
+</span><span id="L-146"><a href="#L-146"><span class="linenos">146</span></a><span class="sd">        - `transcription`:</span>
+</span><span id="L-147"><a href="#L-147"><span class="linenos">147</span></a><span class="sd">            - Type: str</span>
+</span><span id="L-148"><a href="#L-148"><span class="linenos">148</span></a><span class="sd">            - What: The transcribed text from the recorded audio</span>
+</span><span id="L-149"><a href="#L-149"><span class="linenos">149</span></a><span class="sd">            - Note: Multiple segments are joined with a single space</span>
+</span><span id="L-150"><a href="#L-150"><span class="linenos">150</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="L-151"><a href="#L-151"><span class="linenos">151</span></a>        <span class="k">if</span> <span class="n">duration</span> <span class="o">==</span> <span class="s2">&quot;auto&quot;</span> <span class="ow">or</span> <span class="n">duration</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+</span><span id="L-152"><a href="#L-152"><span class="linenos">152</span></a>            <span class="n">buffer</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">recorder</span><span class="o">.</span><span class="n">record_vad</span><span class="p">(</span>
+</span><span id="L-153"><a href="#L-153"><span class="linenos">153</span></a>                <span class="n">device_index</span><span class="o">=</span><span class="n">device_index</span><span class="p">,</span>
+</span><span id="L-154"><a href="#L-154"><span class="linenos">154</span></a>                <span class="n">speech_threshold</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">vad_speech_threshold</span><span class="p">,</span>
+</span><span id="L-155"><a href="#L-155"><span class="linenos">155</span></a>                <span class="n">silence_threshold</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">vad_silence_threshold</span><span class="p">,</span>
+</span><span id="L-156"><a href="#L-156"><span class="linenos">156</span></a>                <span class="n">silence_frames_threshold</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">vad_silence_frames_threshold</span><span class="p">,</span>
+</span><span id="L-157"><a href="#L-157"><span class="linenos">157</span></a>                <span class="n">speech_pad_frames</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">vad_speech_pad_frames</span><span class="p">,</span>
+</span><span id="L-158"><a href="#L-158"><span class="linenos">158</span></a>                <span class="n">max_speech_duration_s</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">vad_max_speech_duration_s</span><span class="p">,</span>
+</span><span id="L-159"><a href="#L-159"><span class="linenos">159</span></a>                <span class="n">inactivity_timeout</span><span class="o">=</span><span class="n">inactivity_timeout</span><span class="p">,</span>
+</span><span id="L-160"><a href="#L-160"><span class="linenos">160</span></a>            <span class="p">)</span>
+</span><span id="L-161"><a href="#L-161"><span class="linenos">161</span></a>        <span class="k">else</span><span class="p">:</span>
+</span><span id="L-162"><a href="#L-162"><span class="linenos">162</span></a>            <span class="n">buffer</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">recorder</span><span class="o">.</span><span class="n">record</span><span class="p">(</span>
+</span><span id="L-163"><a href="#L-163"><span class="linenos">163</span></a>                <span class="n">device_index</span><span class="o">=</span><span class="n">device_index</span><span class="p">,</span> <span class="n">duration</span><span class="o">=</span><span class="n">duration</span>
+</span><span id="L-164"><a href="#L-164"><span class="linenos">164</span></a>            <span class="p">)</span>
+</span><span id="L-165"><a href="#L-165"><span class="linenos">165</span></a>
+</span><span id="L-166"><a href="#L-166"><span class="linenos">166</span></a>        <span class="n">audio_buffer</span> <span class="o">=</span> <span class="n">get_clean_audio_buffer</span><span class="p">(</span><span class="n">buffer</span><span class="p">)</span>
+</span><span id="L-167"><a href="#L-167"><span class="linenos">167</span></a>        <span class="n">segments</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">wake_model</span><span class="o">.</span><span class="n">transcribe</span><span class="p">(</span><span class="n">audio_buffer</span><span class="p">,</span> <span class="n">beam_size</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+</span><span id="L-168"><a href="#L-168"><span class="linenos">168</span></a>        <span class="k">return</span> <span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+</span><span id="L-169"><a href="#L-169"><span class="linenos">169</span></a>            <span class="p">[</span>
+</span><span id="L-170"><a href="#L-170"><span class="linenos">170</span></a>                <span class="n">segment</span><span class="o">.</span><span class="n">text</span>
+</span><span id="L-171"><a href="#L-171"><span class="linenos">171</span></a>                <span class="k">for</span> <span class="n">segment</span> <span class="ow">in</span> <span class="n">segments</span>
+</span><span id="L-172"><a href="#L-172"><span class="linenos">172</span></a>                <span class="k">if</span> <span class="n">segment</span><span class="o">.</span><span class="n">no_speech_prob</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">no_speech_threshold</span>
+</span><span id="L-173"><a href="#L-173"><span class="linenos">173</span></a>            <span class="p">]</span>
+</span><span id="L-174"><a href="#L-174"><span class="linenos">174</span></a>        <span class="p">)</span>
 </span></pre></div>
 
 
@@ -194,77 +312,170 @@
 
     </div>
     <a class="headerlink" href="#Spych"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="Spych-6"><a href="#Spych-6"><span class="linenos"> 6</span></a><span class="k">class</span><span class="w"> </span><span class="nc">Spych</span><span class="p">(</span><span class="n">Notify</span><span class="p">):</span>
-</span><span id="Spych-7"><a href="#Spych-7"><span class="linenos"> 7</span></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
-</span><span id="Spych-8"><a href="#Spych-8"><span class="linenos"> 8</span></a>        <span class="bp">self</span><span class="p">,</span>
-</span><span id="Spych-9"><a href="#Spych-9"><span class="linenos"> 9</span></a>        <span class="n">whisper_model</span><span class="o">=</span><span class="s2">&quot;base&quot;</span><span class="p">,</span>
-</span><span id="Spych-10"><a href="#Spych-10"><span class="linenos">10</span></a>        <span class="n">whisper_device</span><span class="o">=</span><span class="s2">&quot;cpu&quot;</span><span class="p">,</span>
-</span><span id="Spych-11"><a href="#Spych-11"><span class="linenos">11</span></a>        <span class="n">whisper_compute_type</span><span class="o">=</span><span class="s2">&quot;int8&quot;</span><span class="p">,</span>
-</span><span id="Spych-12"><a href="#Spych-12"><span class="linenos">12</span></a>    <span class="p">):</span>
-</span><span id="Spych-13"><a href="#Spych-13"><span class="linenos">13</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="Spych-14"><a href="#Spych-14"><span class="linenos">14</span></a><span class="sd">        Usage:</span>
-</span><span id="Spych-15"><a href="#Spych-15"><span class="linenos">15</span></a>
-</span><span id="Spych-16"><a href="#Spych-16"><span class="linenos">16</span></a><span class="sd">        - Initializes a transcription object using faster-whisper for fully offline</span>
-</span><span id="Spych-17"><a href="#Spych-17"><span class="linenos">17</span></a><span class="sd">          speech-to-text</span>
-</span><span id="Spych-18"><a href="#Spych-18"><span class="linenos">18</span></a>
-</span><span id="Spych-19"><a href="#Spych-19"><span class="linenos">19</span></a><span class="sd">        Optional:</span>
-</span><span id="Spych-20"><a href="#Spych-20"><span class="linenos">20</span></a>
-</span><span id="Spych-21"><a href="#Spych-21"><span class="linenos">21</span></a><span class="sd">        - `whisper_model`:</span>
-</span><span id="Spych-22"><a href="#Spych-22"><span class="linenos">22</span></a><span class="sd">            - Type: str</span>
-</span><span id="Spych-23"><a href="#Spych-23"><span class="linenos">23</span></a><span class="sd">            - What: The faster-whisper model name to use for transcription</span>
-</span><span id="Spych-24"><a href="#Spych-24"><span class="linenos">24</span></a><span class="sd">            - Default: &quot;base&quot;</span>
-</span><span id="Spych-25"><a href="#Spych-25"><span class="linenos">25</span></a><span class="sd">            - Note: Larger models (small, medium, large) provide better accuracy at</span>
-</span><span id="Spych-26"><a href="#Spych-26"><span class="linenos">26</span></a><span class="sd">              the cost of speed; smaller models (tiny, base) are faster but less accurate</span>
-</span><span id="Spych-27"><a href="#Spych-27"><span class="linenos">27</span></a>
-</span><span id="Spych-28"><a href="#Spych-28"><span class="linenos">28</span></a><span class="sd">        - `whisper_device`:</span>
-</span><span id="Spych-29"><a href="#Spych-29"><span class="linenos">29</span></a><span class="sd">            - Type: str</span>
-</span><span id="Spych-30"><a href="#Spych-30"><span class="linenos">30</span></a><span class="sd">            - What: The device to run the whisper model on</span>
-</span><span id="Spych-31"><a href="#Spych-31"><span class="linenos">31</span></a><span class="sd">            - Default: &quot;cpu&quot;</span>
-</span><span id="Spych-32"><a href="#Spych-32"><span class="linenos">32</span></a><span class="sd">            - Note: Use &quot;cuda&quot; for GPU acceleration if available</span>
-</span><span id="Spych-33"><a href="#Spych-33"><span class="linenos">33</span></a>
-</span><span id="Spych-34"><a href="#Spych-34"><span class="linenos">34</span></a><span class="sd">        - `whisper_compute_type`:</span>
-</span><span id="Spych-35"><a href="#Spych-35"><span class="linenos">35</span></a><span class="sd">            - Type: str</span>
-</span><span id="Spych-36"><a href="#Spych-36"><span class="linenos">36</span></a><span class="sd">            - What: The compute type to use for the whisper model</span>
-</span><span id="Spych-37"><a href="#Spych-37"><span class="linenos">37</span></a><span class="sd">            - Default: &quot;int8&quot;</span>
-</span><span id="Spych-38"><a href="#Spych-38"><span class="linenos">38</span></a><span class="sd">            - Note: &quot;int8&quot; offers a good balance of speed and accuracy on both CPU and GPU</span>
-</span><span id="Spych-39"><a href="#Spych-39"><span class="linenos">39</span></a><span class="sd">        &quot;&quot;&quot;</span>
-</span><span id="Spych-40"><a href="#Spych-40"><span class="linenos">40</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">wake_model</span> <span class="o">=</span> <span class="n">WhisperModel</span><span class="p">(</span>
-</span><span id="Spych-41"><a href="#Spych-41"><span class="linenos">41</span></a>            <span class="n">whisper_model</span><span class="p">,</span>
-</span><span id="Spych-42"><a href="#Spych-42"><span class="linenos">42</span></a>            <span class="n">device</span><span class="o">=</span><span class="n">whisper_device</span><span class="p">,</span>
-</span><span id="Spych-43"><a href="#Spych-43"><span class="linenos">43</span></a>            <span class="n">compute_type</span><span class="o">=</span><span class="n">whisper_compute_type</span><span class="p">,</span>
-</span><span id="Spych-44"><a href="#Spych-44"><span class="linenos">44</span></a>        <span class="p">)</span>
-</span><span id="Spych-45"><a href="#Spych-45"><span class="linenos">45</span></a>
-</span><span id="Spych-46"><a href="#Spych-46"><span class="linenos">46</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">listen</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">duration</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">device_index</span><span class="o">=-</span><span class="mi">1</span><span class="p">):</span>
-</span><span id="Spych-47"><a href="#Spych-47"><span class="linenos">47</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="Spych-48"><a href="#Spych-48"><span class="linenos">48</span></a><span class="sd">        Usage:</span>
-</span><span id="Spych-49"><a href="#Spych-49"><span class="linenos">49</span></a>
-</span><span id="Spych-50"><a href="#Spych-50"><span class="linenos">50</span></a><span class="sd">        - Records audio from the microphone for a specified duration and returns</span>
-</span><span id="Spych-51"><a href="#Spych-51"><span class="linenos">51</span></a><span class="sd">          the transcription as a string</span>
-</span><span id="Spych-52"><a href="#Spych-52"><span class="linenos">52</span></a>
-</span><span id="Spych-53"><a href="#Spych-53"><span class="linenos">53</span></a><span class="sd">        Optional:</span>
-</span><span id="Spych-54"><a href="#Spych-54"><span class="linenos">54</span></a>
-</span><span id="Spych-55"><a href="#Spych-55"><span class="linenos">55</span></a><span class="sd">        - `duration`:</span>
-</span><span id="Spych-56"><a href="#Spych-56"><span class="linenos">56</span></a><span class="sd">            - Type: int | float</span>
-</span><span id="Spych-57"><a href="#Spych-57"><span class="linenos">57</span></a><span class="sd">            - What: The number of seconds to record</span>
-</span><span id="Spych-58"><a href="#Spych-58"><span class="linenos">58</span></a><span class="sd">            - Default: 5</span>
-</span><span id="Spych-59"><a href="#Spych-59"><span class="linenos">59</span></a>
-</span><span id="Spych-60"><a href="#Spych-60"><span class="linenos">60</span></a><span class="sd">        - `device_index`:</span>
-</span><span id="Spych-61"><a href="#Spych-61"><span class="linenos">61</span></a><span class="sd">            - Type: int</span>
-</span><span id="Spych-62"><a href="#Spych-62"><span class="linenos">62</span></a><span class="sd">            - What: The microphone device index to record from</span>
-</span><span id="Spych-63"><a href="#Spych-63"><span class="linenos">63</span></a><span class="sd">            - Default: -1</span>
-</span><span id="Spych-64"><a href="#Spych-64"><span class="linenos">64</span></a><span class="sd">            - Note: Use `-1` to select the system default input device</span>
-</span><span id="Spych-65"><a href="#Spych-65"><span class="linenos">65</span></a>
-</span><span id="Spych-66"><a href="#Spych-66"><span class="linenos">66</span></a><span class="sd">        Returns:</span>
-</span><span id="Spych-67"><a href="#Spych-67"><span class="linenos">67</span></a>
-</span><span id="Spych-68"><a href="#Spych-68"><span class="linenos">68</span></a><span class="sd">        - `transcription`:</span>
-</span><span id="Spych-69"><a href="#Spych-69"><span class="linenos">69</span></a><span class="sd">            - Type: str</span>
-</span><span id="Spych-70"><a href="#Spych-70"><span class="linenos">70</span></a><span class="sd">            - What: The transcribed text from the recorded audio</span>
-</span><span id="Spych-71"><a href="#Spych-71"><span class="linenos">71</span></a><span class="sd">            - Note: Multiple segments are joined with a single space</span>
-</span><span id="Spych-72"><a href="#Spych-72"><span class="linenos">72</span></a><span class="sd">        &quot;&quot;&quot;</span>
-</span><span id="Spych-73"><a href="#Spych-73"><span class="linenos">73</span></a>        <span class="n">buffer</span> <span class="o">=</span> <span class="n">record</span><span class="p">(</span><span class="n">device_index</span><span class="o">=</span><span class="n">device_index</span><span class="p">,</span> <span class="n">duration</span><span class="o">=</span><span class="n">duration</span><span class="p">)</span>
-</span><span id="Spych-74"><a href="#Spych-74"><span class="linenos">74</span></a>        <span class="n">audio_buffer</span> <span class="o">=</span> <span class="n">get_clean_audio_buffer</span><span class="p">(</span><span class="n">buffer</span><span class="p">)</span>
-</span><span id="Spych-75"><a href="#Spych-75"><span class="linenos">75</span></a>        <span class="n">segments</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">wake_model</span><span class="o">.</span><span class="n">transcribe</span><span class="p">(</span><span class="n">audio_buffer</span><span class="p">,</span> <span class="n">beam_size</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
-</span><span id="Spych-76"><a href="#Spych-76"><span class="linenos">76</span></a>        <span class="k">return</span> <span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">segment</span><span class="o">.</span><span class="n">text</span> <span class="k">for</span> <span class="n">segment</span> <span class="ow">in</span> <span class="n">segments</span><span class="p">])</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="Spych-12"><a href="#Spych-12"><span class="linenos"> 12</span></a><span class="k">class</span><span class="w"> </span><span class="nc">Spych</span><span class="p">(</span><span class="n">Notify</span><span class="p">):</span>
+</span><span id="Spych-13"><a href="#Spych-13"><span class="linenos"> 13</span></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+</span><span id="Spych-14"><a href="#Spych-14"><span class="linenos"> 14</span></a>        <span class="bp">self</span><span class="p">,</span>
+</span><span id="Spych-15"><a href="#Spych-15"><span class="linenos"> 15</span></a>        <span class="n">whisper_model</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;base.en&quot;</span><span class="p">,</span>
+</span><span id="Spych-16"><a href="#Spych-16"><span class="linenos"> 16</span></a>        <span class="n">whisper_device</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;auto&quot;</span><span class="p">,</span>
+</span><span id="Spych-17"><a href="#Spych-17"><span class="linenos"> 17</span></a>        <span class="n">whisper_compute_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;int8&quot;</span><span class="p">,</span>
+</span><span id="Spych-18"><a href="#Spych-18"><span class="linenos"> 18</span></a>        <span class="n">no_speech_threshold</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.4</span><span class="p">,</span>
+</span><span id="Spych-19"><a href="#Spych-19"><span class="linenos"> 19</span></a>        <span class="n">vad_speech_threshold</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.5</span><span class="p">,</span>
+</span><span id="Spych-20"><a href="#Spych-20"><span class="linenos"> 20</span></a>        <span class="n">vad_silence_threshold</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.35</span><span class="p">,</span>
+</span><span id="Spych-21"><a href="#Spych-21"><span class="linenos"> 21</span></a>        <span class="n">vad_silence_frames_threshold</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">40</span><span class="p">,</span>
+</span><span id="Spych-22"><a href="#Spych-22"><span class="linenos"> 22</span></a>        <span class="n">vad_speech_pad_frames</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span>
+</span><span id="Spych-23"><a href="#Spych-23"><span class="linenos"> 23</span></a>        <span class="n">vad_max_speech_duration_s</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">30.0</span><span class="p">,</span>
+</span><span id="Spych-24"><a href="#Spych-24"><span class="linenos"> 24</span></a>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="Spych-25"><a href="#Spych-25"><span class="linenos"> 25</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="Spych-26"><a href="#Spych-26"><span class="linenos"> 26</span></a><span class="sd">        Usage:</span>
+</span><span id="Spych-27"><a href="#Spych-27"><span class="linenos"> 27</span></a>
+</span><span id="Spych-28"><a href="#Spych-28"><span class="linenos"> 28</span></a><span class="sd">        - Initializes a transcription object using faster-whisper for fully offline</span>
+</span><span id="Spych-29"><a href="#Spych-29"><span class="linenos"> 29</span></a><span class="sd">          speech-to-text</span>
+</span><span id="Spych-30"><a href="#Spych-30"><span class="linenos"> 30</span></a>
+</span><span id="Spych-31"><a href="#Spych-31"><span class="linenos"> 31</span></a><span class="sd">        Optional:</span>
+</span><span id="Spych-32"><a href="#Spych-32"><span class="linenos"> 32</span></a>
+</span><span id="Spych-33"><a href="#Spych-33"><span class="linenos"> 33</span></a><span class="sd">        - `whisper_model`:</span>
+</span><span id="Spych-34"><a href="#Spych-34"><span class="linenos"> 34</span></a><span class="sd">            - Type: str</span>
+</span><span id="Spych-35"><a href="#Spych-35"><span class="linenos"> 35</span></a><span class="sd">            - What: The faster-whisper model name to use for transcription</span>
+</span><span id="Spych-36"><a href="#Spych-36"><span class="linenos"> 36</span></a><span class="sd">            - Default: &quot;base.en&quot;</span>
+</span><span id="Spych-37"><a href="#Spych-37"><span class="linenos"> 37</span></a><span class="sd">            - Note: Larger models (small, medium, large) provide better accuracy at</span>
+</span><span id="Spych-38"><a href="#Spych-38"><span class="linenos"> 38</span></a><span class="sd">              the cost of speed; smaller models (tiny, base) are faster but less accurate</span>
+</span><span id="Spych-39"><a href="#Spych-39"><span class="linenos"> 39</span></a>
+</span><span id="Spych-40"><a href="#Spych-40"><span class="linenos"> 40</span></a><span class="sd">        - `whisper_device`:</span>
+</span><span id="Spych-41"><a href="#Spych-41"><span class="linenos"> 41</span></a><span class="sd">            - Type: str</span>
+</span><span id="Spych-42"><a href="#Spych-42"><span class="linenos"> 42</span></a><span class="sd">            - What: The device to run the whisper model on</span>
+</span><span id="Spych-43"><a href="#Spych-43"><span class="linenos"> 43</span></a><span class="sd">            - Default: &quot;auto&quot;</span>
+</span><span id="Spych-44"><a href="#Spych-44"><span class="linenos"> 44</span></a><span class="sd">            - Options: &quot;auto&quot;, &quot;cpu&quot;, &quot;cuda&quot;</span>
+</span><span id="Spych-45"><a href="#Spych-45"><span class="linenos"> 45</span></a><span class="sd">            - Note: &quot;auto&quot; selects &quot;cuda&quot; when Python &lt;=3.13 and a CUDA device is</span>
+</span><span id="Spych-46"><a href="#Spych-46"><span class="linenos"> 46</span></a><span class="sd">              available, otherwise falls back to &quot;cpu&quot;</span>
+</span><span id="Spych-47"><a href="#Spych-47"><span class="linenos"> 47</span></a>
+</span><span id="Spych-48"><a href="#Spych-48"><span class="linenos"> 48</span></a><span class="sd">        - `whisper_compute_type`:</span>
+</span><span id="Spych-49"><a href="#Spych-49"><span class="linenos"> 49</span></a><span class="sd">            - Type: str</span>
+</span><span id="Spych-50"><a href="#Spych-50"><span class="linenos"> 50</span></a><span class="sd">            - What: The compute type to use for the whisper model</span>
+</span><span id="Spych-51"><a href="#Spych-51"><span class="linenos"> 51</span></a><span class="sd">            - Default: &quot;int8&quot;</span>
+</span><span id="Spych-52"><a href="#Spych-52"><span class="linenos"> 52</span></a><span class="sd">            - Options: &quot;int8&quot;, &quot;float16&quot;, &quot;float32&quot;</span>
+</span><span id="Spych-53"><a href="#Spych-53"><span class="linenos"> 53</span></a><span class="sd">            - Note: &quot;int8&quot; offers a good balance of speed and accuracy on both CPU and GPU</span>
+</span><span id="Spych-54"><a href="#Spych-54"><span class="linenos"> 54</span></a>
+</span><span id="Spych-55"><a href="#Spych-55"><span class="linenos"> 55</span></a><span class="sd">        - `no_speech_threshold`:</span>
+</span><span id="Spych-56"><a href="#Spych-56"><span class="linenos"> 56</span></a><span class="sd">            - Type: float</span>
+</span><span id="Spych-57"><a href="#Spych-57"><span class="linenos"> 57</span></a><span class="sd">            - What: The threshold for the `no_speech_prob` returned by faster-whisper</span>
+</span><span id="Spych-58"><a href="#Spych-58"><span class="linenos"> 58</span></a><span class="sd">            - Default: 0.4</span>
+</span><span id="Spych-59"><a href="#Spych-59"><span class="linenos"> 59</span></a><span class="sd">            - Note: Segments with a `no_speech_prob` above this threshold will be</span>
+</span><span id="Spych-60"><a href="#Spych-60"><span class="linenos"> 60</span></a><span class="sd">              ignored to reduce false positives from silence or background noise</span>
+</span><span id="Spych-61"><a href="#Spych-61"><span class="linenos"> 61</span></a>
+</span><span id="Spych-62"><a href="#Spych-62"><span class="linenos"> 62</span></a><span class="sd">        - `vad_speech_threshold`:</span>
+</span><span id="Spych-63"><a href="#Spych-63"><span class="linenos"> 63</span></a><span class="sd">            - Type: float (0.0–1.0)</span>
+</span><span id="Spych-64"><a href="#Spych-64"><span class="linenos"> 64</span></a><span class="sd">            - What: Silero probability above which a frame is considered speech onset</span>
+</span><span id="Spych-65"><a href="#Spych-65"><span class="linenos"> 65</span></a><span class="sd">              when `listen` is called with `duration=&quot;auto&quot;` or `duration=0`</span>
+</span><span id="Spych-66"><a href="#Spych-66"><span class="linenos"> 66</span></a><span class="sd">            - Default: 0.5</span>
+</span><span id="Spych-67"><a href="#Spych-67"><span class="linenos"> 67</span></a><span class="sd">            - Note: Raise to reduce false positives in noisy environments</span>
+</span><span id="Spych-68"><a href="#Spych-68"><span class="linenos"> 68</span></a>
+</span><span id="Spych-69"><a href="#Spych-69"><span class="linenos"> 69</span></a><span class="sd">        - `vad_silence_threshold`:</span>
+</span><span id="Spych-70"><a href="#Spych-70"><span class="linenos"> 70</span></a><span class="sd">            - Type: float (0.0–1.0)</span>
+</span><span id="Spych-71"><a href="#Spych-71"><span class="linenos"> 71</span></a><span class="sd">            - What: Silero probability below which a frame is considered silence</span>
+</span><span id="Spych-72"><a href="#Spych-72"><span class="linenos"> 72</span></a><span class="sd">              during an active utterance; must be less than `vad_speech_threshold`</span>
+</span><span id="Spych-73"><a href="#Spych-73"><span class="linenos"> 73</span></a><span class="sd">              to create a hysteresis band that prevents rapid toggling</span>
+</span><span id="Spych-74"><a href="#Spych-74"><span class="linenos"> 74</span></a><span class="sd">            - Default: 0.35</span>
+</span><span id="Spych-75"><a href="#Spych-75"><span class="linenos"> 75</span></a>
+</span><span id="Spych-76"><a href="#Spych-76"><span class="linenos"> 76</span></a><span class="sd">        - `vad_silence_frames_threshold`:</span>
+</span><span id="Spych-77"><a href="#Spych-77"><span class="linenos"> 77</span></a><span class="sd">            - Type: int</span>
+</span><span id="Spych-78"><a href="#Spych-78"><span class="linenos"> 78</span></a><span class="sd">            - What: Consecutive silent frames (~32ms each) required to confirm the</span>
+</span><span id="Spych-79"><a href="#Spych-79"><span class="linenos"> 79</span></a><span class="sd">              utterance has ended and return the buffer</span>
+</span><span id="Spych-80"><a href="#Spych-80"><span class="linenos"> 80</span></a><span class="sd">            - Default: 40  (~1280ms)</span>
+</span><span id="Spych-81"><a href="#Spych-81"><span class="linenos"> 81</span></a>
+</span><span id="Spych-82"><a href="#Spych-82"><span class="linenos"> 82</span></a><span class="sd">        - `vad_speech_pad_frames`:</span>
+</span><span id="Spych-83"><a href="#Spych-83"><span class="linenos"> 83</span></a><span class="sd">            - Type: int</span>
+</span><span id="Spych-84"><a href="#Spych-84"><span class="linenos"> 84</span></a><span class="sd">            - What: Pre-roll frames captured before onset confirmation; also the</span>
+</span><span id="Spych-85"><a href="#Spych-85"><span class="linenos"> 85</span></a><span class="sd">              number of consecutive voiced frames required to confirm speech onset</span>
+</span><span id="Spych-86"><a href="#Spych-86"><span class="linenos"> 86</span></a><span class="sd">            - Default: 10  (~320ms)</span>
+</span><span id="Spych-87"><a href="#Spych-87"><span class="linenos"> 87</span></a>
+</span><span id="Spych-88"><a href="#Spych-88"><span class="linenos"> 88</span></a><span class="sd">        - `vad_max_speech_duration_s`:</span>
+</span><span id="Spych-89"><a href="#Spych-89"><span class="linenos"> 89</span></a><span class="sd">            - Type: float</span>
+</span><span id="Spych-90"><a href="#Spych-90"><span class="linenos"> 90</span></a><span class="sd">            - What: Hard cap on a single VAD-captured utterance in seconds; forces</span>
+</span><span id="Spych-91"><a href="#Spych-91"><span class="linenos"> 91</span></a><span class="sd">              a return even if the speaker never pauses</span>
+</span><span id="Spych-92"><a href="#Spych-92"><span class="linenos"> 92</span></a><span class="sd">            - Default: 30.0</span>
+</span><span id="Spych-93"><a href="#Spych-93"><span class="linenos"> 93</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="Spych-94"><a href="#Spych-94"><span class="linenos"> 94</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">wake_model</span> <span class="o">=</span> <span class="n">WhisperModel</span><span class="p">(</span>
+</span><span id="Spych-95"><a href="#Spych-95"><span class="linenos"> 95</span></a>            <span class="n">whisper_model</span><span class="p">,</span>
+</span><span id="Spych-96"><a href="#Spych-96"><span class="linenos"> 96</span></a>            <span class="n">device</span><span class="o">=</span><span class="n">resolve_whisper_device</span><span class="p">(</span><span class="n">whisper_device</span><span class="p">),</span>
+</span><span id="Spych-97"><a href="#Spych-97"><span class="linenos"> 97</span></a>            <span class="n">compute_type</span><span class="o">=</span><span class="n">whisper_compute_type</span><span class="p">,</span>
+</span><span id="Spych-98"><a href="#Spych-98"><span class="linenos"> 98</span></a>        <span class="p">)</span>
+</span><span id="Spych-99"><a href="#Spych-99"><span class="linenos"> 99</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">no_speech_threshold</span> <span class="o">=</span> <span class="n">no_speech_threshold</span>
+</span><span id="Spych-100"><a href="#Spych-100"><span class="linenos">100</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">vad_speech_threshold</span> <span class="o">=</span> <span class="n">vad_speech_threshold</span>
+</span><span id="Spych-101"><a href="#Spych-101"><span class="linenos">101</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">vad_silence_threshold</span> <span class="o">=</span> <span class="n">vad_silence_threshold</span>
+</span><span id="Spych-102"><a href="#Spych-102"><span class="linenos">102</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">vad_silence_frames_threshold</span> <span class="o">=</span> <span class="n">vad_silence_frames_threshold</span>
+</span><span id="Spych-103"><a href="#Spych-103"><span class="linenos">103</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">vad_speech_pad_frames</span> <span class="o">=</span> <span class="n">vad_speech_pad_frames</span>
+</span><span id="Spych-104"><a href="#Spych-104"><span class="linenos">104</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">vad_max_speech_duration_s</span> <span class="o">=</span> <span class="n">vad_max_speech_duration_s</span>
+</span><span id="Spych-105"><a href="#Spych-105"><span class="linenos">105</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">recorder</span> <span class="o">=</span> <span class="n">Recorder</span><span class="p">()</span>
+</span><span id="Spych-106"><a href="#Spych-106"><span class="linenos">106</span></a>
+</span><span id="Spych-107"><a href="#Spych-107"><span class="linenos">107</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">listen</span><span class="p">(</span>
+</span><span id="Spych-108"><a href="#Spych-108"><span class="linenos">108</span></a>        <span class="bp">self</span><span class="p">,</span>
+</span><span id="Spych-109"><a href="#Spych-109"><span class="linenos">109</span></a>        <span class="n">duration</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+</span><span id="Spych-110"><a href="#Spych-110"><span class="linenos">110</span></a>        <span class="n">device_index</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span>
+</span><span id="Spych-111"><a href="#Spych-111"><span class="linenos">111</span></a>        <span class="n">inactivity_timeout</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="mf">4.0</span><span class="p">,</span>
+</span><span id="Spych-112"><a href="#Spych-112"><span class="linenos">112</span></a>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+</span><span id="Spych-113"><a href="#Spych-113"><span class="linenos">113</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="Spych-114"><a href="#Spych-114"><span class="linenos">114</span></a><span class="sd">        Usage:</span>
+</span><span id="Spych-115"><a href="#Spych-115"><span class="linenos">115</span></a>
+</span><span id="Spych-116"><a href="#Spych-116"><span class="linenos">116</span></a><span class="sd">        - Records audio from the microphone and returns the transcription as a string.</span>
+</span><span id="Spych-117"><a href="#Spych-117"><span class="linenos">117</span></a><span class="sd">          Supports both fixed-duration recording and VAD-gated recording that</span>
+</span><span id="Spych-118"><a href="#Spych-118"><span class="linenos">118</span></a><span class="sd">          automatically stops at the end of a natural utterance.</span>
+</span><span id="Spych-119"><a href="#Spych-119"><span class="linenos">119</span></a>
+</span><span id="Spych-120"><a href="#Spych-120"><span class="linenos">120</span></a><span class="sd">        Optional:</span>
+</span><span id="Spych-121"><a href="#Spych-121"><span class="linenos">121</span></a>
+</span><span id="Spych-122"><a href="#Spych-122"><span class="linenos">122</span></a><span class="sd">        - `duration`:</span>
+</span><span id="Spych-123"><a href="#Spych-123"><span class="linenos">123</span></a><span class="sd">            - Type: int | float | str</span>
+</span><span id="Spych-124"><a href="#Spych-124"><span class="linenos">124</span></a><span class="sd">            - What: Controls how long to record</span>
+</span><span id="Spych-125"><a href="#Spych-125"><span class="linenos">125</span></a><span class="sd">            - Default: 0</span>
+</span><span id="Spych-126"><a href="#Spych-126"><span class="linenos">126</span></a><span class="sd">            - Options:</span>
+</span><span id="Spych-127"><a href="#Spych-127"><span class="linenos">127</span></a><span class="sd">                - int | float : Record for exactly this many seconds</span>
+</span><span id="Spych-128"><a href="#Spych-128"><span class="linenos">128</span></a><span class="sd">                - &quot;auto&quot; or 0 : Use Silero VAD to detect a complete utterance and</span>
+</span><span id="Spych-129"><a href="#Spych-129"><span class="linenos">129</span></a><span class="sd">                                stop automatically when the speaker finishes;</span>
+</span><span id="Spych-130"><a href="#Spych-130"><span class="linenos">130</span></a><span class="sd">                                honours the `vad_*` parameters set at init time</span>
+</span><span id="Spych-131"><a href="#Spych-131"><span class="linenos">131</span></a><span class="sd">            - Note: &quot;auto&quot; and 0 are equivalent; either signals VAD-gated recording</span>
+</span><span id="Spych-132"><a href="#Spych-132"><span class="linenos">132</span></a>
+</span><span id="Spych-133"><a href="#Spych-133"><span class="linenos">133</span></a><span class="sd">        - `device_index`:</span>
+</span><span id="Spych-134"><a href="#Spych-134"><span class="linenos">134</span></a><span class="sd">            - Type: int</span>
+</span><span id="Spych-135"><a href="#Spych-135"><span class="linenos">135</span></a><span class="sd">            - What: The microphone device index to record from</span>
+</span><span id="Spych-136"><a href="#Spych-136"><span class="linenos">136</span></a><span class="sd">            - Default: -1</span>
+</span><span id="Spych-137"><a href="#Spych-137"><span class="linenos">137</span></a><span class="sd">            - Note: Use `-1` to select the system default input device</span>
+</span><span id="Spych-138"><a href="#Spych-138"><span class="linenos">138</span></a>
+</span><span id="Spych-139"><a href="#Spych-139"><span class="linenos">139</span></a><span class="sd">        - `inactivity_timeout`:</span>
+</span><span id="Spych-140"><a href="#Spych-140"><span class="linenos">140</span></a><span class="sd">            - Type: float | None</span>
+</span><span id="Spych-141"><a href="#Spych-141"><span class="linenos">141</span></a><span class="sd">            - What: Seconds to wait for speech onset before returning an empty string</span>
+</span><span id="Spych-142"><a href="#Spych-142"><span class="linenos">142</span></a><span class="sd">              when using VAD-gated recording (`duration=&quot;auto&quot;` or `0`)</span>
+</span><span id="Spych-143"><a href="#Spych-143"><span class="linenos">143</span></a><span class="sd">            - Default: 4.0 (wait for 4 seconds of inactivity)</span>
+</span><span id="Spych-144"><a href="#Spych-144"><span class="linenos">144</span></a>
+</span><span id="Spych-145"><a href="#Spych-145"><span class="linenos">145</span></a><span class="sd">        Returns:</span>
+</span><span id="Spych-146"><a href="#Spych-146"><span class="linenos">146</span></a>
+</span><span id="Spych-147"><a href="#Spych-147"><span class="linenos">147</span></a><span class="sd">        - `transcription`:</span>
+</span><span id="Spych-148"><a href="#Spych-148"><span class="linenos">148</span></a><span class="sd">            - Type: str</span>
+</span><span id="Spych-149"><a href="#Spych-149"><span class="linenos">149</span></a><span class="sd">            - What: The transcribed text from the recorded audio</span>
+</span><span id="Spych-150"><a href="#Spych-150"><span class="linenos">150</span></a><span class="sd">            - Note: Multiple segments are joined with a single space</span>
+</span><span id="Spych-151"><a href="#Spych-151"><span class="linenos">151</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="Spych-152"><a href="#Spych-152"><span class="linenos">152</span></a>        <span class="k">if</span> <span class="n">duration</span> <span class="o">==</span> <span class="s2">&quot;auto&quot;</span> <span class="ow">or</span> <span class="n">duration</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+</span><span id="Spych-153"><a href="#Spych-153"><span class="linenos">153</span></a>            <span class="n">buffer</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">recorder</span><span class="o">.</span><span class="n">record_vad</span><span class="p">(</span>
+</span><span id="Spych-154"><a href="#Spych-154"><span class="linenos">154</span></a>                <span class="n">device_index</span><span class="o">=</span><span class="n">device_index</span><span class="p">,</span>
+</span><span id="Spych-155"><a href="#Spych-155"><span class="linenos">155</span></a>                <span class="n">speech_threshold</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">vad_speech_threshold</span><span class="p">,</span>
+</span><span id="Spych-156"><a href="#Spych-156"><span class="linenos">156</span></a>                <span class="n">silence_threshold</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">vad_silence_threshold</span><span class="p">,</span>
+</span><span id="Spych-157"><a href="#Spych-157"><span class="linenos">157</span></a>                <span class="n">silence_frames_threshold</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">vad_silence_frames_threshold</span><span class="p">,</span>
+</span><span id="Spych-158"><a href="#Spych-158"><span class="linenos">158</span></a>                <span class="n">speech_pad_frames</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">vad_speech_pad_frames</span><span class="p">,</span>
+</span><span id="Spych-159"><a href="#Spych-159"><span class="linenos">159</span></a>                <span class="n">max_speech_duration_s</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">vad_max_speech_duration_s</span><span class="p">,</span>
+</span><span id="Spych-160"><a href="#Spych-160"><span class="linenos">160</span></a>                <span class="n">inactivity_timeout</span><span class="o">=</span><span class="n">inactivity_timeout</span><span class="p">,</span>
+</span><span id="Spych-161"><a href="#Spych-161"><span class="linenos">161</span></a>            <span class="p">)</span>
+</span><span id="Spych-162"><a href="#Spych-162"><span class="linenos">162</span></a>        <span class="k">else</span><span class="p">:</span>
+</span><span id="Spych-163"><a href="#Spych-163"><span class="linenos">163</span></a>            <span class="n">buffer</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">recorder</span><span class="o">.</span><span class="n">record</span><span class="p">(</span>
+</span><span id="Spych-164"><a href="#Spych-164"><span class="linenos">164</span></a>                <span class="n">device_index</span><span class="o">=</span><span class="n">device_index</span><span class="p">,</span> <span class="n">duration</span><span class="o">=</span><span class="n">duration</span>
+</span><span id="Spych-165"><a href="#Spych-165"><span class="linenos">165</span></a>            <span class="p">)</span>
+</span><span id="Spych-166"><a href="#Spych-166"><span class="linenos">166</span></a>
+</span><span id="Spych-167"><a href="#Spych-167"><span class="linenos">167</span></a>        <span class="n">audio_buffer</span> <span class="o">=</span> <span class="n">get_clean_audio_buffer</span><span class="p">(</span><span class="n">buffer</span><span class="p">)</span>
+</span><span id="Spych-168"><a href="#Spych-168"><span class="linenos">168</span></a>        <span class="n">segments</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">wake_model</span><span class="o">.</span><span class="n">transcribe</span><span class="p">(</span><span class="n">audio_buffer</span><span class="p">,</span> <span class="n">beam_size</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+</span><span id="Spych-169"><a href="#Spych-169"><span class="linenos">169</span></a>        <span class="k">return</span> <span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+</span><span id="Spych-170"><a href="#Spych-170"><span class="linenos">170</span></a>            <span class="p">[</span>
+</span><span id="Spych-171"><a href="#Spych-171"><span class="linenos">171</span></a>                <span class="n">segment</span><span class="o">.</span><span class="n">text</span>
+</span><span id="Spych-172"><a href="#Spych-172"><span class="linenos">172</span></a>                <span class="k">for</span> <span class="n">segment</span> <span class="ow">in</span> <span class="n">segments</span>
+</span><span id="Spych-173"><a href="#Spych-173"><span class="linenos">173</span></a>                <span class="k">if</span> <span class="n">segment</span><span class="o">.</span><span class="n">no_speech_prob</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">no_speech_threshold</span>
+</span><span id="Spych-174"><a href="#Spych-174"><span class="linenos">174</span></a>            <span class="p">]</span>
+</span><span id="Spych-175"><a href="#Spych-175"><span class="linenos">175</span></a>        <span class="p">)</span>
 </span></pre></div>
 
 
@@ -274,50 +485,105 @@
                                         <input id="Spych.__init__-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
 <div class="attr function">
             
-        <span class="name">Spych</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="n">whisper_model</span><span class="o">=</span><span class="s1">&#39;base&#39;</span>,</span><span class="param">	<span class="n">whisper_device</span><span class="o">=</span><span class="s1">&#39;cpu&#39;</span>,</span><span class="param">	<span class="n">whisper_compute_type</span><span class="o">=</span><span class="s1">&#39;int8&#39;</span></span>)</span>
+        <span class="name">Spych</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="n">whisper_model</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;base.en&#39;</span>,</span><span class="param">	<span class="n">whisper_device</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;auto&#39;</span>,</span><span class="param">	<span class="n">whisper_compute_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;int8&#39;</span>,</span><span class="param">	<span class="n">no_speech_threshold</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.4</span>,</span><span class="param">	<span class="n">vad_speech_threshold</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.5</span>,</span><span class="param">	<span class="n">vad_silence_threshold</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.35</span>,</span><span class="param">	<span class="n">vad_silence_frames_threshold</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">40</span>,</span><span class="param">	<span class="n">vad_speech_pad_frames</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span>,</span><span class="param">	<span class="n">vad_max_speech_duration_s</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">30.0</span></span>)</span>
 
                 <label class="view-source-button" for="Spych.__init__-view-source"><span>View Source</span></label>
 
     </div>
     <a class="headerlink" href="#Spych.__init__"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="Spych.__init__-7"><a href="#Spych.__init__-7"><span class="linenos"> 7</span></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
-</span><span id="Spych.__init__-8"><a href="#Spych.__init__-8"><span class="linenos"> 8</span></a>        <span class="bp">self</span><span class="p">,</span>
-</span><span id="Spych.__init__-9"><a href="#Spych.__init__-9"><span class="linenos"> 9</span></a>        <span class="n">whisper_model</span><span class="o">=</span><span class="s2">&quot;base&quot;</span><span class="p">,</span>
-</span><span id="Spych.__init__-10"><a href="#Spych.__init__-10"><span class="linenos">10</span></a>        <span class="n">whisper_device</span><span class="o">=</span><span class="s2">&quot;cpu&quot;</span><span class="p">,</span>
-</span><span id="Spych.__init__-11"><a href="#Spych.__init__-11"><span class="linenos">11</span></a>        <span class="n">whisper_compute_type</span><span class="o">=</span><span class="s2">&quot;int8&quot;</span><span class="p">,</span>
-</span><span id="Spych.__init__-12"><a href="#Spych.__init__-12"><span class="linenos">12</span></a>    <span class="p">):</span>
-</span><span id="Spych.__init__-13"><a href="#Spych.__init__-13"><span class="linenos">13</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="Spych.__init__-14"><a href="#Spych.__init__-14"><span class="linenos">14</span></a><span class="sd">        Usage:</span>
-</span><span id="Spych.__init__-15"><a href="#Spych.__init__-15"><span class="linenos">15</span></a>
-</span><span id="Spych.__init__-16"><a href="#Spych.__init__-16"><span class="linenos">16</span></a><span class="sd">        - Initializes a transcription object using faster-whisper for fully offline</span>
-</span><span id="Spych.__init__-17"><a href="#Spych.__init__-17"><span class="linenos">17</span></a><span class="sd">          speech-to-text</span>
-</span><span id="Spych.__init__-18"><a href="#Spych.__init__-18"><span class="linenos">18</span></a>
-</span><span id="Spych.__init__-19"><a href="#Spych.__init__-19"><span class="linenos">19</span></a><span class="sd">        Optional:</span>
-</span><span id="Spych.__init__-20"><a href="#Spych.__init__-20"><span class="linenos">20</span></a>
-</span><span id="Spych.__init__-21"><a href="#Spych.__init__-21"><span class="linenos">21</span></a><span class="sd">        - `whisper_model`:</span>
-</span><span id="Spych.__init__-22"><a href="#Spych.__init__-22"><span class="linenos">22</span></a><span class="sd">            - Type: str</span>
-</span><span id="Spych.__init__-23"><a href="#Spych.__init__-23"><span class="linenos">23</span></a><span class="sd">            - What: The faster-whisper model name to use for transcription</span>
-</span><span id="Spych.__init__-24"><a href="#Spych.__init__-24"><span class="linenos">24</span></a><span class="sd">            - Default: &quot;base&quot;</span>
-</span><span id="Spych.__init__-25"><a href="#Spych.__init__-25"><span class="linenos">25</span></a><span class="sd">            - Note: Larger models (small, medium, large) provide better accuracy at</span>
-</span><span id="Spych.__init__-26"><a href="#Spych.__init__-26"><span class="linenos">26</span></a><span class="sd">              the cost of speed; smaller models (tiny, base) are faster but less accurate</span>
-</span><span id="Spych.__init__-27"><a href="#Spych.__init__-27"><span class="linenos">27</span></a>
-</span><span id="Spych.__init__-28"><a href="#Spych.__init__-28"><span class="linenos">28</span></a><span class="sd">        - `whisper_device`:</span>
-</span><span id="Spych.__init__-29"><a href="#Spych.__init__-29"><span class="linenos">29</span></a><span class="sd">            - Type: str</span>
-</span><span id="Spych.__init__-30"><a href="#Spych.__init__-30"><span class="linenos">30</span></a><span class="sd">            - What: The device to run the whisper model on</span>
-</span><span id="Spych.__init__-31"><a href="#Spych.__init__-31"><span class="linenos">31</span></a><span class="sd">            - Default: &quot;cpu&quot;</span>
-</span><span id="Spych.__init__-32"><a href="#Spych.__init__-32"><span class="linenos">32</span></a><span class="sd">            - Note: Use &quot;cuda&quot; for GPU acceleration if available</span>
-</span><span id="Spych.__init__-33"><a href="#Spych.__init__-33"><span class="linenos">33</span></a>
-</span><span id="Spych.__init__-34"><a href="#Spych.__init__-34"><span class="linenos">34</span></a><span class="sd">        - `whisper_compute_type`:</span>
-</span><span id="Spych.__init__-35"><a href="#Spych.__init__-35"><span class="linenos">35</span></a><span class="sd">            - Type: str</span>
-</span><span id="Spych.__init__-36"><a href="#Spych.__init__-36"><span class="linenos">36</span></a><span class="sd">            - What: The compute type to use for the whisper model</span>
-</span><span id="Spych.__init__-37"><a href="#Spych.__init__-37"><span class="linenos">37</span></a><span class="sd">            - Default: &quot;int8&quot;</span>
-</span><span id="Spych.__init__-38"><a href="#Spych.__init__-38"><span class="linenos">38</span></a><span class="sd">            - Note: &quot;int8&quot; offers a good balance of speed and accuracy on both CPU and GPU</span>
-</span><span id="Spych.__init__-39"><a href="#Spych.__init__-39"><span class="linenos">39</span></a><span class="sd">        &quot;&quot;&quot;</span>
-</span><span id="Spych.__init__-40"><a href="#Spych.__init__-40"><span class="linenos">40</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">wake_model</span> <span class="o">=</span> <span class="n">WhisperModel</span><span class="p">(</span>
-</span><span id="Spych.__init__-41"><a href="#Spych.__init__-41"><span class="linenos">41</span></a>            <span class="n">whisper_model</span><span class="p">,</span>
-</span><span id="Spych.__init__-42"><a href="#Spych.__init__-42"><span class="linenos">42</span></a>            <span class="n">device</span><span class="o">=</span><span class="n">whisper_device</span><span class="p">,</span>
-</span><span id="Spych.__init__-43"><a href="#Spych.__init__-43"><span class="linenos">43</span></a>            <span class="n">compute_type</span><span class="o">=</span><span class="n">whisper_compute_type</span><span class="p">,</span>
-</span><span id="Spych.__init__-44"><a href="#Spych.__init__-44"><span class="linenos">44</span></a>        <span class="p">)</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="Spych.__init__-13"><a href="#Spych.__init__-13"><span class="linenos"> 13</span></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+</span><span id="Spych.__init__-14"><a href="#Spych.__init__-14"><span class="linenos"> 14</span></a>        <span class="bp">self</span><span class="p">,</span>
+</span><span id="Spych.__init__-15"><a href="#Spych.__init__-15"><span class="linenos"> 15</span></a>        <span class="n">whisper_model</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;base.en&quot;</span><span class="p">,</span>
+</span><span id="Spych.__init__-16"><a href="#Spych.__init__-16"><span class="linenos"> 16</span></a>        <span class="n">whisper_device</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;auto&quot;</span><span class="p">,</span>
+</span><span id="Spych.__init__-17"><a href="#Spych.__init__-17"><span class="linenos"> 17</span></a>        <span class="n">whisper_compute_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;int8&quot;</span><span class="p">,</span>
+</span><span id="Spych.__init__-18"><a href="#Spych.__init__-18"><span class="linenos"> 18</span></a>        <span class="n">no_speech_threshold</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.4</span><span class="p">,</span>
+</span><span id="Spych.__init__-19"><a href="#Spych.__init__-19"><span class="linenos"> 19</span></a>        <span class="n">vad_speech_threshold</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.5</span><span class="p">,</span>
+</span><span id="Spych.__init__-20"><a href="#Spych.__init__-20"><span class="linenos"> 20</span></a>        <span class="n">vad_silence_threshold</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.35</span><span class="p">,</span>
+</span><span id="Spych.__init__-21"><a href="#Spych.__init__-21"><span class="linenos"> 21</span></a>        <span class="n">vad_silence_frames_threshold</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">40</span><span class="p">,</span>
+</span><span id="Spych.__init__-22"><a href="#Spych.__init__-22"><span class="linenos"> 22</span></a>        <span class="n">vad_speech_pad_frames</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span>
+</span><span id="Spych.__init__-23"><a href="#Spych.__init__-23"><span class="linenos"> 23</span></a>        <span class="n">vad_max_speech_duration_s</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">30.0</span><span class="p">,</span>
+</span><span id="Spych.__init__-24"><a href="#Spych.__init__-24"><span class="linenos"> 24</span></a>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="Spych.__init__-25"><a href="#Spych.__init__-25"><span class="linenos"> 25</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="Spych.__init__-26"><a href="#Spych.__init__-26"><span class="linenos"> 26</span></a><span class="sd">        Usage:</span>
+</span><span id="Spych.__init__-27"><a href="#Spych.__init__-27"><span class="linenos"> 27</span></a>
+</span><span id="Spych.__init__-28"><a href="#Spych.__init__-28"><span class="linenos"> 28</span></a><span class="sd">        - Initializes a transcription object using faster-whisper for fully offline</span>
+</span><span id="Spych.__init__-29"><a href="#Spych.__init__-29"><span class="linenos"> 29</span></a><span class="sd">          speech-to-text</span>
+</span><span id="Spych.__init__-30"><a href="#Spych.__init__-30"><span class="linenos"> 30</span></a>
+</span><span id="Spych.__init__-31"><a href="#Spych.__init__-31"><span class="linenos"> 31</span></a><span class="sd">        Optional:</span>
+</span><span id="Spych.__init__-32"><a href="#Spych.__init__-32"><span class="linenos"> 32</span></a>
+</span><span id="Spych.__init__-33"><a href="#Spych.__init__-33"><span class="linenos"> 33</span></a><span class="sd">        - `whisper_model`:</span>
+</span><span id="Spych.__init__-34"><a href="#Spych.__init__-34"><span class="linenos"> 34</span></a><span class="sd">            - Type: str</span>
+</span><span id="Spych.__init__-35"><a href="#Spych.__init__-35"><span class="linenos"> 35</span></a><span class="sd">            - What: The faster-whisper model name to use for transcription</span>
+</span><span id="Spych.__init__-36"><a href="#Spych.__init__-36"><span class="linenos"> 36</span></a><span class="sd">            - Default: &quot;base.en&quot;</span>
+</span><span id="Spych.__init__-37"><a href="#Spych.__init__-37"><span class="linenos"> 37</span></a><span class="sd">            - Note: Larger models (small, medium, large) provide better accuracy at</span>
+</span><span id="Spych.__init__-38"><a href="#Spych.__init__-38"><span class="linenos"> 38</span></a><span class="sd">              the cost of speed; smaller models (tiny, base) are faster but less accurate</span>
+</span><span id="Spych.__init__-39"><a href="#Spych.__init__-39"><span class="linenos"> 39</span></a>
+</span><span id="Spych.__init__-40"><a href="#Spych.__init__-40"><span class="linenos"> 40</span></a><span class="sd">        - `whisper_device`:</span>
+</span><span id="Spych.__init__-41"><a href="#Spych.__init__-41"><span class="linenos"> 41</span></a><span class="sd">            - Type: str</span>
+</span><span id="Spych.__init__-42"><a href="#Spych.__init__-42"><span class="linenos"> 42</span></a><span class="sd">            - What: The device to run the whisper model on</span>
+</span><span id="Spych.__init__-43"><a href="#Spych.__init__-43"><span class="linenos"> 43</span></a><span class="sd">            - Default: &quot;auto&quot;</span>
+</span><span id="Spych.__init__-44"><a href="#Spych.__init__-44"><span class="linenos"> 44</span></a><span class="sd">            - Options: &quot;auto&quot;, &quot;cpu&quot;, &quot;cuda&quot;</span>
+</span><span id="Spych.__init__-45"><a href="#Spych.__init__-45"><span class="linenos"> 45</span></a><span class="sd">            - Note: &quot;auto&quot; selects &quot;cuda&quot; when Python &lt;=3.13 and a CUDA device is</span>
+</span><span id="Spych.__init__-46"><a href="#Spych.__init__-46"><span class="linenos"> 46</span></a><span class="sd">              available, otherwise falls back to &quot;cpu&quot;</span>
+</span><span id="Spych.__init__-47"><a href="#Spych.__init__-47"><span class="linenos"> 47</span></a>
+</span><span id="Spych.__init__-48"><a href="#Spych.__init__-48"><span class="linenos"> 48</span></a><span class="sd">        - `whisper_compute_type`:</span>
+</span><span id="Spych.__init__-49"><a href="#Spych.__init__-49"><span class="linenos"> 49</span></a><span class="sd">            - Type: str</span>
+</span><span id="Spych.__init__-50"><a href="#Spych.__init__-50"><span class="linenos"> 50</span></a><span class="sd">            - What: The compute type to use for the whisper model</span>
+</span><span id="Spych.__init__-51"><a href="#Spych.__init__-51"><span class="linenos"> 51</span></a><span class="sd">            - Default: &quot;int8&quot;</span>
+</span><span id="Spych.__init__-52"><a href="#Spych.__init__-52"><span class="linenos"> 52</span></a><span class="sd">            - Options: &quot;int8&quot;, &quot;float16&quot;, &quot;float32&quot;</span>
+</span><span id="Spych.__init__-53"><a href="#Spych.__init__-53"><span class="linenos"> 53</span></a><span class="sd">            - Note: &quot;int8&quot; offers a good balance of speed and accuracy on both CPU and GPU</span>
+</span><span id="Spych.__init__-54"><a href="#Spych.__init__-54"><span class="linenos"> 54</span></a>
+</span><span id="Spych.__init__-55"><a href="#Spych.__init__-55"><span class="linenos"> 55</span></a><span class="sd">        - `no_speech_threshold`:</span>
+</span><span id="Spych.__init__-56"><a href="#Spych.__init__-56"><span class="linenos"> 56</span></a><span class="sd">            - Type: float</span>
+</span><span id="Spych.__init__-57"><a href="#Spych.__init__-57"><span class="linenos"> 57</span></a><span class="sd">            - What: The threshold for the `no_speech_prob` returned by faster-whisper</span>
+</span><span id="Spych.__init__-58"><a href="#Spych.__init__-58"><span class="linenos"> 58</span></a><span class="sd">            - Default: 0.4</span>
+</span><span id="Spych.__init__-59"><a href="#Spych.__init__-59"><span class="linenos"> 59</span></a><span class="sd">            - Note: Segments with a `no_speech_prob` above this threshold will be</span>
+</span><span id="Spych.__init__-60"><a href="#Spych.__init__-60"><span class="linenos"> 60</span></a><span class="sd">              ignored to reduce false positives from silence or background noise</span>
+</span><span id="Spych.__init__-61"><a href="#Spych.__init__-61"><span class="linenos"> 61</span></a>
+</span><span id="Spych.__init__-62"><a href="#Spych.__init__-62"><span class="linenos"> 62</span></a><span class="sd">        - `vad_speech_threshold`:</span>
+</span><span id="Spych.__init__-63"><a href="#Spych.__init__-63"><span class="linenos"> 63</span></a><span class="sd">            - Type: float (0.0–1.0)</span>
+</span><span id="Spych.__init__-64"><a href="#Spych.__init__-64"><span class="linenos"> 64</span></a><span class="sd">            - What: Silero probability above which a frame is considered speech onset</span>
+</span><span id="Spych.__init__-65"><a href="#Spych.__init__-65"><span class="linenos"> 65</span></a><span class="sd">              when `listen` is called with `duration=&quot;auto&quot;` or `duration=0`</span>
+</span><span id="Spych.__init__-66"><a href="#Spych.__init__-66"><span class="linenos"> 66</span></a><span class="sd">            - Default: 0.5</span>
+</span><span id="Spych.__init__-67"><a href="#Spych.__init__-67"><span class="linenos"> 67</span></a><span class="sd">            - Note: Raise to reduce false positives in noisy environments</span>
+</span><span id="Spych.__init__-68"><a href="#Spych.__init__-68"><span class="linenos"> 68</span></a>
+</span><span id="Spych.__init__-69"><a href="#Spych.__init__-69"><span class="linenos"> 69</span></a><span class="sd">        - `vad_silence_threshold`:</span>
+</span><span id="Spych.__init__-70"><a href="#Spych.__init__-70"><span class="linenos"> 70</span></a><span class="sd">            - Type: float (0.0–1.0)</span>
+</span><span id="Spych.__init__-71"><a href="#Spych.__init__-71"><span class="linenos"> 71</span></a><span class="sd">            - What: Silero probability below which a frame is considered silence</span>
+</span><span id="Spych.__init__-72"><a href="#Spych.__init__-72"><span class="linenos"> 72</span></a><span class="sd">              during an active utterance; must be less than `vad_speech_threshold`</span>
+</span><span id="Spych.__init__-73"><a href="#Spych.__init__-73"><span class="linenos"> 73</span></a><span class="sd">              to create a hysteresis band that prevents rapid toggling</span>
+</span><span id="Spych.__init__-74"><a href="#Spych.__init__-74"><span class="linenos"> 74</span></a><span class="sd">            - Default: 0.35</span>
+</span><span id="Spych.__init__-75"><a href="#Spych.__init__-75"><span class="linenos"> 75</span></a>
+</span><span id="Spych.__init__-76"><a href="#Spych.__init__-76"><span class="linenos"> 76</span></a><span class="sd">        - `vad_silence_frames_threshold`:</span>
+</span><span id="Spych.__init__-77"><a href="#Spych.__init__-77"><span class="linenos"> 77</span></a><span class="sd">            - Type: int</span>
+</span><span id="Spych.__init__-78"><a href="#Spych.__init__-78"><span class="linenos"> 78</span></a><span class="sd">            - What: Consecutive silent frames (~32ms each) required to confirm the</span>
+</span><span id="Spych.__init__-79"><a href="#Spych.__init__-79"><span class="linenos"> 79</span></a><span class="sd">              utterance has ended and return the buffer</span>
+</span><span id="Spych.__init__-80"><a href="#Spych.__init__-80"><span class="linenos"> 80</span></a><span class="sd">            - Default: 40  (~1280ms)</span>
+</span><span id="Spych.__init__-81"><a href="#Spych.__init__-81"><span class="linenos"> 81</span></a>
+</span><span id="Spych.__init__-82"><a href="#Spych.__init__-82"><span class="linenos"> 82</span></a><span class="sd">        - `vad_speech_pad_frames`:</span>
+</span><span id="Spych.__init__-83"><a href="#Spych.__init__-83"><span class="linenos"> 83</span></a><span class="sd">            - Type: int</span>
+</span><span id="Spych.__init__-84"><a href="#Spych.__init__-84"><span class="linenos"> 84</span></a><span class="sd">            - What: Pre-roll frames captured before onset confirmation; also the</span>
+</span><span id="Spych.__init__-85"><a href="#Spych.__init__-85"><span class="linenos"> 85</span></a><span class="sd">              number of consecutive voiced frames required to confirm speech onset</span>
+</span><span id="Spych.__init__-86"><a href="#Spych.__init__-86"><span class="linenos"> 86</span></a><span class="sd">            - Default: 10  (~320ms)</span>
+</span><span id="Spych.__init__-87"><a href="#Spych.__init__-87"><span class="linenos"> 87</span></a>
+</span><span id="Spych.__init__-88"><a href="#Spych.__init__-88"><span class="linenos"> 88</span></a><span class="sd">        - `vad_max_speech_duration_s`:</span>
+</span><span id="Spych.__init__-89"><a href="#Spych.__init__-89"><span class="linenos"> 89</span></a><span class="sd">            - Type: float</span>
+</span><span id="Spych.__init__-90"><a href="#Spych.__init__-90"><span class="linenos"> 90</span></a><span class="sd">            - What: Hard cap on a single VAD-captured utterance in seconds; forces</span>
+</span><span id="Spych.__init__-91"><a href="#Spych.__init__-91"><span class="linenos"> 91</span></a><span class="sd">              a return even if the speaker never pauses</span>
+</span><span id="Spych.__init__-92"><a href="#Spych.__init__-92"><span class="linenos"> 92</span></a><span class="sd">            - Default: 30.0</span>
+</span><span id="Spych.__init__-93"><a href="#Spych.__init__-93"><span class="linenos"> 93</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="Spych.__init__-94"><a href="#Spych.__init__-94"><span class="linenos"> 94</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">wake_model</span> <span class="o">=</span> <span class="n">WhisperModel</span><span class="p">(</span>
+</span><span id="Spych.__init__-95"><a href="#Spych.__init__-95"><span class="linenos"> 95</span></a>            <span class="n">whisper_model</span><span class="p">,</span>
+</span><span id="Spych.__init__-96"><a href="#Spych.__init__-96"><span class="linenos"> 96</span></a>            <span class="n">device</span><span class="o">=</span><span class="n">resolve_whisper_device</span><span class="p">(</span><span class="n">whisper_device</span><span class="p">),</span>
+</span><span id="Spych.__init__-97"><a href="#Spych.__init__-97"><span class="linenos"> 97</span></a>            <span class="n">compute_type</span><span class="o">=</span><span class="n">whisper_compute_type</span><span class="p">,</span>
+</span><span id="Spych.__init__-98"><a href="#Spych.__init__-98"><span class="linenos"> 98</span></a>        <span class="p">)</span>
+</span><span id="Spych.__init__-99"><a href="#Spych.__init__-99"><span class="linenos"> 99</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">no_speech_threshold</span> <span class="o">=</span> <span class="n">no_speech_threshold</span>
+</span><span id="Spych.__init__-100"><a href="#Spych.__init__-100"><span class="linenos">100</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">vad_speech_threshold</span> <span class="o">=</span> <span class="n">vad_speech_threshold</span>
+</span><span id="Spych.__init__-101"><a href="#Spych.__init__-101"><span class="linenos">101</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">vad_silence_threshold</span> <span class="o">=</span> <span class="n">vad_silence_threshold</span>
+</span><span id="Spych.__init__-102"><a href="#Spych.__init__-102"><span class="linenos">102</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">vad_silence_frames_threshold</span> <span class="o">=</span> <span class="n">vad_silence_frames_threshold</span>
+</span><span id="Spych.__init__-103"><a href="#Spych.__init__-103"><span class="linenos">103</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">vad_speech_pad_frames</span> <span class="o">=</span> <span class="n">vad_speech_pad_frames</span>
+</span><span id="Spych.__init__-104"><a href="#Spych.__init__-104"><span class="linenos">104</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">vad_max_speech_duration_s</span> <span class="o">=</span> <span class="n">vad_max_speech_duration_s</span>
+</span><span id="Spych.__init__-105"><a href="#Spych.__init__-105"><span class="linenos">105</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">recorder</span> <span class="o">=</span> <span class="n">Recorder</span><span class="p">()</span>
 </span></pre></div>
 
 
@@ -336,7 +602,7 @@ speech-to-text</li>
 <ul>
 <li>Type: str</li>
 <li>What: The faster-whisper model name to use for transcription</li>
-<li>Default: "base"</li>
+<li>Default: "base.en"</li>
 <li>Note: Larger models (small, medium, large) provide better accuracy at
 the cost of speed; smaller models (tiny, base) are faster but less accurate</li>
 </ul></li>
@@ -345,8 +611,10 @@ the cost of speed; smaller models (tiny, base) are faster but less accurate</li>
 <ul>
 <li>Type: str</li>
 <li>What: The device to run the whisper model on</li>
-<li>Default: "cpu"</li>
-<li>Note: Use "cuda" for GPU acceleration if available</li>
+<li>Default: "auto"</li>
+<li>Options: "auto", "cpu", "cuda"</li>
+<li>Note: "auto" selects "cuda" when Python &lt;=3.13 and a CUDA device is
+available, otherwise falls back to "cpu"</li>
 </ul></li>
 <li><p><code>whisper_compute_type</code>:</p>
 
@@ -354,7 +622,59 @@ the cost of speed; smaller models (tiny, base) are faster but less accurate</li>
 <li>Type: str</li>
 <li>What: The compute type to use for the whisper model</li>
 <li>Default: "int8"</li>
+<li>Options: "int8", "float16", "float32"</li>
 <li>Note: "int8" offers a good balance of speed and accuracy on both CPU and GPU</li>
+</ul></li>
+<li><p><code><a href="#Spych.no_speech_threshold">no_speech_threshold</a></code>:</p>
+
+<ul>
+<li>Type: float</li>
+<li>What: The threshold for the <code>no_speech_prob</code> returned by faster-whisper</li>
+<li>Default: 0.4</li>
+<li>Note: Segments with a <code>no_speech_prob</code> above this threshold will be
+ignored to reduce false positives from silence or background noise</li>
+</ul></li>
+<li><p><code><a href="#Spych.vad_speech_threshold">vad_speech_threshold</a></code>:</p>
+
+<ul>
+<li>Type: float (0.0–1.0)</li>
+<li>What: Silero probability above which a frame is considered speech onset
+when <code><a href="#Spych.listen">listen</a></code> is called with <code>duration="auto"</code> or <code>duration=0</code></li>
+<li>Default: 0.5</li>
+<li>Note: Raise to reduce false positives in noisy environments</li>
+</ul></li>
+<li><p><code><a href="#Spych.vad_silence_threshold">vad_silence_threshold</a></code>:</p>
+
+<ul>
+<li>Type: float (0.0–1.0)</li>
+<li>What: Silero probability below which a frame is considered silence
+during an active utterance; must be less than <code><a href="#Spych.vad_speech_threshold">vad_speech_threshold</a></code>
+to create a hysteresis band that prevents rapid toggling</li>
+<li>Default: 0.35</li>
+</ul></li>
+<li><p><code><a href="#Spych.vad_silence_frames_threshold">vad_silence_frames_threshold</a></code>:</p>
+
+<ul>
+<li>Type: int</li>
+<li>What: Consecutive silent frames (~32ms each) required to confirm the
+utterance has ended and return the buffer</li>
+<li>Default: 40  (~1280ms)</li>
+</ul></li>
+<li><p><code><a href="#Spych.vad_speech_pad_frames">vad_speech_pad_frames</a></code>:</p>
+
+<ul>
+<li>Type: int</li>
+<li>What: Pre-roll frames captured before onset confirmation; also the
+number of consecutive voiced frames required to confirm speech onset</li>
+<li>Default: 10  (~320ms)</li>
+</ul></li>
+<li><p><code><a href="#Spych.vad_max_speech_duration_s">vad_max_speech_duration_s</a></code>:</p>
+
+<ul>
+<li>Type: float</li>
+<li>What: Hard cap on a single VAD-captured utterance in seconds; forces
+a return even if the speaker never pauses</li>
+<li>Default: 30.0</li>
 </ul></li>
 </ul>
 </div>
@@ -372,56 +692,172 @@ the cost of speed; smaller models (tiny, base) are faster but less accurate</li>
     
 
                             </div>
+                            <div id="Spych.no_speech_threshold" class="classattr">
+                                <div class="attr variable">
+            <span class="name">no_speech_threshold</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Spych.no_speech_threshold"></a>
+    
+    
+
+                            </div>
+                            <div id="Spych.vad_speech_threshold" class="classattr">
+                                <div class="attr variable">
+            <span class="name">vad_speech_threshold</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Spych.vad_speech_threshold"></a>
+    
+    
+
+                            </div>
+                            <div id="Spych.vad_silence_threshold" class="classattr">
+                                <div class="attr variable">
+            <span class="name">vad_silence_threshold</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Spych.vad_silence_threshold"></a>
+    
+    
+
+                            </div>
+                            <div id="Spych.vad_silence_frames_threshold" class="classattr">
+                                <div class="attr variable">
+            <span class="name">vad_silence_frames_threshold</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Spych.vad_silence_frames_threshold"></a>
+    
+    
+
+                            </div>
+                            <div id="Spych.vad_speech_pad_frames" class="classattr">
+                                <div class="attr variable">
+            <span class="name">vad_speech_pad_frames</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Spych.vad_speech_pad_frames"></a>
+    
+    
+
+                            </div>
+                            <div id="Spych.vad_max_speech_duration_s" class="classattr">
+                                <div class="attr variable">
+            <span class="name">vad_max_speech_duration_s</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Spych.vad_max_speech_duration_s"></a>
+    
+    
+
+                            </div>
+                            <div id="Spych.recorder" class="classattr">
+                                <div class="attr variable">
+            <span class="name">recorder</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Spych.recorder"></a>
+    
+    
+
+                            </div>
                             <div id="Spych.listen" class="classattr">
                                         <input id="Spych.listen-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
 <div class="attr function">
             
         <span class="def">def</span>
-        <span class="name">listen</span><span class="signature pdoc-code condensed">(<span class="param"><span class="bp">self</span>, </span><span class="param"><span class="n">duration</span><span class="o">=</span><span class="mi">5</span>, </span><span class="param"><span class="n">device_index</span><span class="o">=-</span><span class="mi">1</span></span><span class="return-annotation">):</span></span>
+        <span class="name">listen</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="bp">self</span>,</span><span class="param">	<span class="n">duration</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>,</span><span class="param">	<span class="n">device_index</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>,</span><span class="param">	<span class="n">inactivity_timeout</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="mf">4.0</span></span><span class="return-annotation">) -> <span class="nb">str</span>:</span></span>
 
                 <label class="view-source-button" for="Spych.listen-view-source"><span>View Source</span></label>
 
     </div>
     <a class="headerlink" href="#Spych.listen"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="Spych.listen-46"><a href="#Spych.listen-46"><span class="linenos">46</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">listen</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">duration</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">device_index</span><span class="o">=-</span><span class="mi">1</span><span class="p">):</span>
-</span><span id="Spych.listen-47"><a href="#Spych.listen-47"><span class="linenos">47</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="Spych.listen-48"><a href="#Spych.listen-48"><span class="linenos">48</span></a><span class="sd">        Usage:</span>
-</span><span id="Spych.listen-49"><a href="#Spych.listen-49"><span class="linenos">49</span></a>
-</span><span id="Spych.listen-50"><a href="#Spych.listen-50"><span class="linenos">50</span></a><span class="sd">        - Records audio from the microphone for a specified duration and returns</span>
-</span><span id="Spych.listen-51"><a href="#Spych.listen-51"><span class="linenos">51</span></a><span class="sd">          the transcription as a string</span>
-</span><span id="Spych.listen-52"><a href="#Spych.listen-52"><span class="linenos">52</span></a>
-</span><span id="Spych.listen-53"><a href="#Spych.listen-53"><span class="linenos">53</span></a><span class="sd">        Optional:</span>
-</span><span id="Spych.listen-54"><a href="#Spych.listen-54"><span class="linenos">54</span></a>
-</span><span id="Spych.listen-55"><a href="#Spych.listen-55"><span class="linenos">55</span></a><span class="sd">        - `duration`:</span>
-</span><span id="Spych.listen-56"><a href="#Spych.listen-56"><span class="linenos">56</span></a><span class="sd">            - Type: int | float</span>
-</span><span id="Spych.listen-57"><a href="#Spych.listen-57"><span class="linenos">57</span></a><span class="sd">            - What: The number of seconds to record</span>
-</span><span id="Spych.listen-58"><a href="#Spych.listen-58"><span class="linenos">58</span></a><span class="sd">            - Default: 5</span>
-</span><span id="Spych.listen-59"><a href="#Spych.listen-59"><span class="linenos">59</span></a>
-</span><span id="Spych.listen-60"><a href="#Spych.listen-60"><span class="linenos">60</span></a><span class="sd">        - `device_index`:</span>
-</span><span id="Spych.listen-61"><a href="#Spych.listen-61"><span class="linenos">61</span></a><span class="sd">            - Type: int</span>
-</span><span id="Spych.listen-62"><a href="#Spych.listen-62"><span class="linenos">62</span></a><span class="sd">            - What: The microphone device index to record from</span>
-</span><span id="Spych.listen-63"><a href="#Spych.listen-63"><span class="linenos">63</span></a><span class="sd">            - Default: -1</span>
-</span><span id="Spych.listen-64"><a href="#Spych.listen-64"><span class="linenos">64</span></a><span class="sd">            - Note: Use `-1` to select the system default input device</span>
-</span><span id="Spych.listen-65"><a href="#Spych.listen-65"><span class="linenos">65</span></a>
-</span><span id="Spych.listen-66"><a href="#Spych.listen-66"><span class="linenos">66</span></a><span class="sd">        Returns:</span>
-</span><span id="Spych.listen-67"><a href="#Spych.listen-67"><span class="linenos">67</span></a>
-</span><span id="Spych.listen-68"><a href="#Spych.listen-68"><span class="linenos">68</span></a><span class="sd">        - `transcription`:</span>
-</span><span id="Spych.listen-69"><a href="#Spych.listen-69"><span class="linenos">69</span></a><span class="sd">            - Type: str</span>
-</span><span id="Spych.listen-70"><a href="#Spych.listen-70"><span class="linenos">70</span></a><span class="sd">            - What: The transcribed text from the recorded audio</span>
-</span><span id="Spych.listen-71"><a href="#Spych.listen-71"><span class="linenos">71</span></a><span class="sd">            - Note: Multiple segments are joined with a single space</span>
-</span><span id="Spych.listen-72"><a href="#Spych.listen-72"><span class="linenos">72</span></a><span class="sd">        &quot;&quot;&quot;</span>
-</span><span id="Spych.listen-73"><a href="#Spych.listen-73"><span class="linenos">73</span></a>        <span class="n">buffer</span> <span class="o">=</span> <span class="n">record</span><span class="p">(</span><span class="n">device_index</span><span class="o">=</span><span class="n">device_index</span><span class="p">,</span> <span class="n">duration</span><span class="o">=</span><span class="n">duration</span><span class="p">)</span>
-</span><span id="Spych.listen-74"><a href="#Spych.listen-74"><span class="linenos">74</span></a>        <span class="n">audio_buffer</span> <span class="o">=</span> <span class="n">get_clean_audio_buffer</span><span class="p">(</span><span class="n">buffer</span><span class="p">)</span>
-</span><span id="Spych.listen-75"><a href="#Spych.listen-75"><span class="linenos">75</span></a>        <span class="n">segments</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">wake_model</span><span class="o">.</span><span class="n">transcribe</span><span class="p">(</span><span class="n">audio_buffer</span><span class="p">,</span> <span class="n">beam_size</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
-</span><span id="Spych.listen-76"><a href="#Spych.listen-76"><span class="linenos">76</span></a>        <span class="k">return</span> <span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">segment</span><span class="o">.</span><span class="n">text</span> <span class="k">for</span> <span class="n">segment</span> <span class="ow">in</span> <span class="n">segments</span><span class="p">])</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="Spych.listen-107"><a href="#Spych.listen-107"><span class="linenos">107</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">listen</span><span class="p">(</span>
+</span><span id="Spych.listen-108"><a href="#Spych.listen-108"><span class="linenos">108</span></a>        <span class="bp">self</span><span class="p">,</span>
+</span><span id="Spych.listen-109"><a href="#Spych.listen-109"><span class="linenos">109</span></a>        <span class="n">duration</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+</span><span id="Spych.listen-110"><a href="#Spych.listen-110"><span class="linenos">110</span></a>        <span class="n">device_index</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span>
+</span><span id="Spych.listen-111"><a href="#Spych.listen-111"><span class="linenos">111</span></a>        <span class="n">inactivity_timeout</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="mf">4.0</span><span class="p">,</span>
+</span><span id="Spych.listen-112"><a href="#Spych.listen-112"><span class="linenos">112</span></a>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+</span><span id="Spych.listen-113"><a href="#Spych.listen-113"><span class="linenos">113</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="Spych.listen-114"><a href="#Spych.listen-114"><span class="linenos">114</span></a><span class="sd">        Usage:</span>
+</span><span id="Spych.listen-115"><a href="#Spych.listen-115"><span class="linenos">115</span></a>
+</span><span id="Spych.listen-116"><a href="#Spych.listen-116"><span class="linenos">116</span></a><span class="sd">        - Records audio from the microphone and returns the transcription as a string.</span>
+</span><span id="Spych.listen-117"><a href="#Spych.listen-117"><span class="linenos">117</span></a><span class="sd">          Supports both fixed-duration recording and VAD-gated recording that</span>
+</span><span id="Spych.listen-118"><a href="#Spych.listen-118"><span class="linenos">118</span></a><span class="sd">          automatically stops at the end of a natural utterance.</span>
+</span><span id="Spych.listen-119"><a href="#Spych.listen-119"><span class="linenos">119</span></a>
+</span><span id="Spych.listen-120"><a href="#Spych.listen-120"><span class="linenos">120</span></a><span class="sd">        Optional:</span>
+</span><span id="Spych.listen-121"><a href="#Spych.listen-121"><span class="linenos">121</span></a>
+</span><span id="Spych.listen-122"><a href="#Spych.listen-122"><span class="linenos">122</span></a><span class="sd">        - `duration`:</span>
+</span><span id="Spych.listen-123"><a href="#Spych.listen-123"><span class="linenos">123</span></a><span class="sd">            - Type: int | float | str</span>
+</span><span id="Spych.listen-124"><a href="#Spych.listen-124"><span class="linenos">124</span></a><span class="sd">            - What: Controls how long to record</span>
+</span><span id="Spych.listen-125"><a href="#Spych.listen-125"><span class="linenos">125</span></a><span class="sd">            - Default: 0</span>
+</span><span id="Spych.listen-126"><a href="#Spych.listen-126"><span class="linenos">126</span></a><span class="sd">            - Options:</span>
+</span><span id="Spych.listen-127"><a href="#Spych.listen-127"><span class="linenos">127</span></a><span class="sd">                - int | float : Record for exactly this many seconds</span>
+</span><span id="Spych.listen-128"><a href="#Spych.listen-128"><span class="linenos">128</span></a><span class="sd">                - &quot;auto&quot; or 0 : Use Silero VAD to detect a complete utterance and</span>
+</span><span id="Spych.listen-129"><a href="#Spych.listen-129"><span class="linenos">129</span></a><span class="sd">                                stop automatically when the speaker finishes;</span>
+</span><span id="Spych.listen-130"><a href="#Spych.listen-130"><span class="linenos">130</span></a><span class="sd">                                honours the `vad_*` parameters set at init time</span>
+</span><span id="Spych.listen-131"><a href="#Spych.listen-131"><span class="linenos">131</span></a><span class="sd">            - Note: &quot;auto&quot; and 0 are equivalent; either signals VAD-gated recording</span>
+</span><span id="Spych.listen-132"><a href="#Spych.listen-132"><span class="linenos">132</span></a>
+</span><span id="Spych.listen-133"><a href="#Spych.listen-133"><span class="linenos">133</span></a><span class="sd">        - `device_index`:</span>
+</span><span id="Spych.listen-134"><a href="#Spych.listen-134"><span class="linenos">134</span></a><span class="sd">            - Type: int</span>
+</span><span id="Spych.listen-135"><a href="#Spych.listen-135"><span class="linenos">135</span></a><span class="sd">            - What: The microphone device index to record from</span>
+</span><span id="Spych.listen-136"><a href="#Spych.listen-136"><span class="linenos">136</span></a><span class="sd">            - Default: -1</span>
+</span><span id="Spych.listen-137"><a href="#Spych.listen-137"><span class="linenos">137</span></a><span class="sd">            - Note: Use `-1` to select the system default input device</span>
+</span><span id="Spych.listen-138"><a href="#Spych.listen-138"><span class="linenos">138</span></a>
+</span><span id="Spych.listen-139"><a href="#Spych.listen-139"><span class="linenos">139</span></a><span class="sd">        - `inactivity_timeout`:</span>
+</span><span id="Spych.listen-140"><a href="#Spych.listen-140"><span class="linenos">140</span></a><span class="sd">            - Type: float | None</span>
+</span><span id="Spych.listen-141"><a href="#Spych.listen-141"><span class="linenos">141</span></a><span class="sd">            - What: Seconds to wait for speech onset before returning an empty string</span>
+</span><span id="Spych.listen-142"><a href="#Spych.listen-142"><span class="linenos">142</span></a><span class="sd">              when using VAD-gated recording (`duration=&quot;auto&quot;` or `0`)</span>
+</span><span id="Spych.listen-143"><a href="#Spych.listen-143"><span class="linenos">143</span></a><span class="sd">            - Default: 4.0 (wait for 4 seconds of inactivity)</span>
+</span><span id="Spych.listen-144"><a href="#Spych.listen-144"><span class="linenos">144</span></a>
+</span><span id="Spych.listen-145"><a href="#Spych.listen-145"><span class="linenos">145</span></a><span class="sd">        Returns:</span>
+</span><span id="Spych.listen-146"><a href="#Spych.listen-146"><span class="linenos">146</span></a>
+</span><span id="Spych.listen-147"><a href="#Spych.listen-147"><span class="linenos">147</span></a><span class="sd">        - `transcription`:</span>
+</span><span id="Spych.listen-148"><a href="#Spych.listen-148"><span class="linenos">148</span></a><span class="sd">            - Type: str</span>
+</span><span id="Spych.listen-149"><a href="#Spych.listen-149"><span class="linenos">149</span></a><span class="sd">            - What: The transcribed text from the recorded audio</span>
+</span><span id="Spych.listen-150"><a href="#Spych.listen-150"><span class="linenos">150</span></a><span class="sd">            - Note: Multiple segments are joined with a single space</span>
+</span><span id="Spych.listen-151"><a href="#Spych.listen-151"><span class="linenos">151</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="Spych.listen-152"><a href="#Spych.listen-152"><span class="linenos">152</span></a>        <span class="k">if</span> <span class="n">duration</span> <span class="o">==</span> <span class="s2">&quot;auto&quot;</span> <span class="ow">or</span> <span class="n">duration</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+</span><span id="Spych.listen-153"><a href="#Spych.listen-153"><span class="linenos">153</span></a>            <span class="n">buffer</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">recorder</span><span class="o">.</span><span class="n">record_vad</span><span class="p">(</span>
+</span><span id="Spych.listen-154"><a href="#Spych.listen-154"><span class="linenos">154</span></a>                <span class="n">device_index</span><span class="o">=</span><span class="n">device_index</span><span class="p">,</span>
+</span><span id="Spych.listen-155"><a href="#Spych.listen-155"><span class="linenos">155</span></a>                <span class="n">speech_threshold</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">vad_speech_threshold</span><span class="p">,</span>
+</span><span id="Spych.listen-156"><a href="#Spych.listen-156"><span class="linenos">156</span></a>                <span class="n">silence_threshold</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">vad_silence_threshold</span><span class="p">,</span>
+</span><span id="Spych.listen-157"><a href="#Spych.listen-157"><span class="linenos">157</span></a>                <span class="n">silence_frames_threshold</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">vad_silence_frames_threshold</span><span class="p">,</span>
+</span><span id="Spych.listen-158"><a href="#Spych.listen-158"><span class="linenos">158</span></a>                <span class="n">speech_pad_frames</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">vad_speech_pad_frames</span><span class="p">,</span>
+</span><span id="Spych.listen-159"><a href="#Spych.listen-159"><span class="linenos">159</span></a>                <span class="n">max_speech_duration_s</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">vad_max_speech_duration_s</span><span class="p">,</span>
+</span><span id="Spych.listen-160"><a href="#Spych.listen-160"><span class="linenos">160</span></a>                <span class="n">inactivity_timeout</span><span class="o">=</span><span class="n">inactivity_timeout</span><span class="p">,</span>
+</span><span id="Spych.listen-161"><a href="#Spych.listen-161"><span class="linenos">161</span></a>            <span class="p">)</span>
+</span><span id="Spych.listen-162"><a href="#Spych.listen-162"><span class="linenos">162</span></a>        <span class="k">else</span><span class="p">:</span>
+</span><span id="Spych.listen-163"><a href="#Spych.listen-163"><span class="linenos">163</span></a>            <span class="n">buffer</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">recorder</span><span class="o">.</span><span class="n">record</span><span class="p">(</span>
+</span><span id="Spych.listen-164"><a href="#Spych.listen-164"><span class="linenos">164</span></a>                <span class="n">device_index</span><span class="o">=</span><span class="n">device_index</span><span class="p">,</span> <span class="n">duration</span><span class="o">=</span><span class="n">duration</span>
+</span><span id="Spych.listen-165"><a href="#Spych.listen-165"><span class="linenos">165</span></a>            <span class="p">)</span>
+</span><span id="Spych.listen-166"><a href="#Spych.listen-166"><span class="linenos">166</span></a>
+</span><span id="Spych.listen-167"><a href="#Spych.listen-167"><span class="linenos">167</span></a>        <span class="n">audio_buffer</span> <span class="o">=</span> <span class="n">get_clean_audio_buffer</span><span class="p">(</span><span class="n">buffer</span><span class="p">)</span>
+</span><span id="Spych.listen-168"><a href="#Spych.listen-168"><span class="linenos">168</span></a>        <span class="n">segments</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">wake_model</span><span class="o">.</span><span class="n">transcribe</span><span class="p">(</span><span class="n">audio_buffer</span><span class="p">,</span> <span class="n">beam_size</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+</span><span id="Spych.listen-169"><a href="#Spych.listen-169"><span class="linenos">169</span></a>        <span class="k">return</span> <span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+</span><span id="Spych.listen-170"><a href="#Spych.listen-170"><span class="linenos">170</span></a>            <span class="p">[</span>
+</span><span id="Spych.listen-171"><a href="#Spych.listen-171"><span class="linenos">171</span></a>                <span class="n">segment</span><span class="o">.</span><span class="n">text</span>
+</span><span id="Spych.listen-172"><a href="#Spych.listen-172"><span class="linenos">172</span></a>                <span class="k">for</span> <span class="n">segment</span> <span class="ow">in</span> <span class="n">segments</span>
+</span><span id="Spych.listen-173"><a href="#Spych.listen-173"><span class="linenos">173</span></a>                <span class="k">if</span> <span class="n">segment</span><span class="o">.</span><span class="n">no_speech_prob</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">no_speech_threshold</span>
+</span><span id="Spych.listen-174"><a href="#Spych.listen-174"><span class="linenos">174</span></a>            <span class="p">]</span>
+</span><span id="Spych.listen-175"><a href="#Spych.listen-175"><span class="linenos">175</span></a>        <span class="p">)</span>
 </span></pre></div>
 
 
             <div class="docstring"><p>Usage:</p>
 
 <ul>
-<li>Records audio from the microphone for a specified duration and returns
-the transcription as a string</li>
+<li>Records audio from the microphone and returns the transcription as a string.
+Supports both fixed-duration recording and VAD-gated recording that
+automatically stops at the end of a natural utterance.</li>
 </ul>
 
 <p>Optional:</p>
@@ -430,9 +866,17 @@ the transcription as a string</li>
 <li><p><code>duration</code>:</p>
 
 <ul>
-<li>Type: int | float</li>
-<li>What: The number of seconds to record</li>
-<li>Default: 5</li>
+<li>Type: int | float | str</li>
+<li>What: Controls how long to record</li>
+<li>Default: 0</li>
+<li>Options:
+<ul>
+<li>int | float : Record for exactly this many seconds</li>
+<li>"auto" or 0 : Use Silero VAD to detect a complete utterance and
+stop automatically when the speaker finishes;
+honours the <code>vad_*</code> parameters set at init time</li>
+</ul></li>
+<li>Note: "auto" and 0 are equivalent; either signals VAD-gated recording</li>
 </ul></li>
 <li><p><code>device_index</code>:</p>
 
@@ -441,6 +885,14 @@ the transcription as a string</li>
 <li>What: The microphone device index to record from</li>
 <li>Default: -1</li>
 <li>Note: Use <code>-1</code> to select the system default input device</li>
+</ul></li>
+<li><p><code>inactivity_timeout</code>:</p>
+
+<ul>
+<li>Type: float | None</li>
+<li>What: Seconds to wait for speech onset before returning an empty string
+when using VAD-gated recording (<code>duration="auto"</code> or <code>0</code>)</li>
+<li>Default: 4.0 (wait for 4 seconds of inactivity)</li>
 </ul></li>
 </ul>
 
