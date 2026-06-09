@@ -1,5 +1,10 @@
 from faster_whisper import WhisperModel
-from spych.utils import Notify, Recorder, get_clean_audio_buffer
+from spych.utils import (
+    Notify,
+    Recorder,
+    get_clean_audio_buffer,
+    resolve_whisper_device,
+)
 from typing import Union, Optional
 
 
@@ -7,7 +12,7 @@ class Spych(Notify):
     def __init__(
         self,
         whisper_model: str = "base.en",
-        whisper_device: str = "cpu",
+        whisper_device: str = "auto",
         whisper_compute_type: str = "int8",
         no_speech_threshold: float = 0.4,
         vad_speech_threshold: float = 0.5,
@@ -34,9 +39,10 @@ class Spych(Notify):
         - `whisper_device`:
             - Type: str
             - What: The device to run the whisper model on
-            - Default: "cpu"
-            - Options: "cpu", "cuda"
-            - Note: Use "cuda" for GPU acceleration if available
+            - Default: "auto"
+            - Options: "auto", "cpu", "cuda"
+            - Note: "auto" selects "cuda" when Python <=3.13 and a CUDA device is
+              available, otherwise falls back to "cpu"
 
         - `whisper_compute_type`:
             - Type: str
@@ -86,7 +92,7 @@ class Spych(Notify):
         """
         self.wake_model = WhisperModel(
             whisper_model,
-            device=whisper_device,
+            device=resolve_whisper_device(whisper_device),
             compute_type=whisper_compute_type,
         )
         self.no_speech_threshold = no_speech_threshold

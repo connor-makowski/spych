@@ -83,6 +83,7 @@ The following utilities are also available as CLI commands. They don't use wake 
 | `spych --version` | Print the version number and exit |
 | `spych --help` | Show detailed usage instructions and exit |
 | `spych live` | Continuous speech-to-text transcription to file |
+| `spych live-translation` | (Beta Mode) Continuous speech transcription + translation (bilingual input and output) |
 | `spych multi` | Run multiple agents simultaneously |
 | `spych users` | Manage user profiles and global settings |
 | `spych profile_my_voice` | Record a voice sample for TTS cloning |
@@ -285,7 +286,7 @@ spych claude --use-speaker true --speaker-voice /path/to/my_voice.wav --speaker-
 spych live                                                 # writes transcript.srt
 spych live --output-path meeting --output-format both
 spych live --terminate-words "stop recording"
-spych live --no-timestamps --whisper-model small.en
+spych live --no-timestamps --whisper-model medium.en
 ```
 
 Stop by pressing the stop key (default: `q` + Enter), saying a terminate word, or pressing `Ctrl+C`.
@@ -346,6 +347,114 @@ SpychLive(
 | `speech_pad_frames` | `5` | Pre-roll frame count and onset confirmation threshold |
 | `max_speech_duration_s` | `30.0` | Hard cap on a single segment in seconds |
 | `context_words` | `32` | Trailing transcript words passed as `initial_prompt` |
+
+---
+
+# Live Translation
+
+**Currently in beta: expect some rough edges.**
+
+`spych live-translation` starts a **bidirectional** live translation session between two languages. Either participant can speak in either language — Whisper transcribes each utterance, Ollama detects which language was spoken and translates it to the other, and each segment is shown as two lines in real time. The translated text is also spoken aloud via TTS by default.
+
+Note: This is currently in beta mode and the API may change without a major version bump. Feedback is very welcome!
+
+Requires [Ollama](https://ollama.com) running locally with the translation model pulled. By default, Spych uses the `llama3.2` model, but you can specify any Ollama model with `--ollama-translation-model`.
+
+## CLI
+
+```bash
+# English ↔ Spanish conversation
+spych live-translation --languages en es
+
+# English ↔ French, disable TTS
+spych live-translation --languages en fr --no-speaker
+
+# Use a larger Ollama model and save a bilingual transcript
+spych live-translation --languages en de \
+    --ollama-translation-model mistral --output-format both
+```
+
+Stop by pressing the stop key (default: `q` + Enter), saying a terminate word, or pressing `Ctrl+C`.
+
+Each utterance is shown as two lines — the original and the translation:
+
+```
+[00:00:05](es) Hola, ¿cómo estás?
+[00:00:05](en) Hello, how are you?
+```
+
+If Ollama is unreachable, the session continues and the translation line shows `[translation unavailable]` for that segment.
+
+### Parameters
+
+| Flag | Default | Description |
+|---|---|---|
+| `--languages LANG LANG` | *(required)* | Two BCP-47 language codes for the conversation pair (e.g. `en es`) |
+| `--ollama-host URL` | `http://localhost:11434` | Ollama HTTP base URL |
+| `--ollama-translation-model MODEL` | `llama3.2` | Ollama model used for translation |
+| `--no-speaker` | false | Disable TTS — speaker is on by default |
+| `--speaker-voice VOICE` | *(model default)* | Wave voice name for zero-shot cloning; omit to use the model's built-in default voice |
+| `--output-path PATH` | `transcript` | Base output file path without extension |
+| `--output-format FORMAT` | *(none)* | Save transcript to file: `txt`, `srt`, or `both`; omit for terminal-only output |
+| `--no-timestamps` | false | Omit timestamps from terminal and `.txt` output |
+| `--stop-key KEY` | `q` | Key (then Enter) to stop the session |
+| `--terminate-words WORD [...]` | — | Spoken words that stop the session |
+| `--device-index N` | `-1` | Microphone device index; -1 uses system default |
+| `--whisper-model MODEL` | `small` | faster-whisper model name; `.en` suffix is stripped automatically |
+| `--whisper-device DEVICE` | `auto` | `auto`, `cpu`, or `cuda`; `auto` selects `cuda` when available on Python ≤3.13 |
+| `--whisper-compute-type TYPE` | `int8` | `int8`, `float16`, or `float32` |
+| `--no-speech-threshold FLOAT` | `0.3` | Whisper segments above this `no_speech_prob` are dropped |
+| `--speech-threshold FLOAT` | `0.5` | VAD speech onset probability |
+| `--silence-threshold FLOAT` | `0.35` | VAD silence probability during speech |
+| `--silence-frames N` | `20` | Consecutive silent frames to end a segment (~32ms each) |
+| `--speech-pad-frames N` | `5` | Pre-roll frames and onset confirmation count |
+| `--max-speech-duration SECONDS` | `30.0` | Hard cap on a single segment |
+
+## Python
+
+```python
+from spych.live_translation import SpychLiveTranslation
+
+SpychLiveTranslation(
+    lang_a="en",
+    lang_b="es",
+    output_format="both",          # "txt", "srt", or "both"; "" for terminal only
+    output_path="my_translation",  # written to my_translation.txt + .srt
+    show_timestamps=True,
+    stop_key="q",
+    terminate_words=["terminate"],
+    ollama_host="http://localhost:11434",
+    ollama_translation_model="llama3.2",
+    use_speaker=True,
+    speaker_voice="",              # "" uses the model's built-in default voice
+).start()
+```
+
+### `SpychLiveTranslation` Parameters
+
+| Parameter | Default | Description |
+|---|---|---|
+| `lang_a` | *(required)* | BCP-47 code of the first language (e.g. `"en"`) |
+| `lang_b` | *(required)* | BCP-47 code of the second language (e.g. `"es"`) |
+| `output_format` | `""` | Output format(s): `"txt"`, `"srt"`, or `"both"`; `""` disables file output |
+| `output_path` | `"transcript"` | Base path without extension |
+| `show_timestamps` | `True` | Prepend `[HH:MM:SS]` timestamps to terminal and `.txt` output |
+| `stop_key` | `"q"` | Key (then Enter) to stop the session |
+| `terminate_words` | `None` | Spoken words that stop the session |
+| `device_index` | `-1` | Microphone device index; `-1` uses system default |
+| `whisper_model` | `"base"` | faster-whisper model name; `.en` suffix stripped automatically |
+| `whisper_device` | `"auto"` | Device for inference: `"auto"`, `"cpu"`, or `"cuda"` |
+| `whisper_compute_type` | `"int8"` | Compute precision: `"int8"`, `"float16"`, or `"float32"` |
+| `no_speech_threshold` | `0.4` | Whisper segments above this are discarded |
+| `speech_threshold` | `0.5` | Silero VAD onset probability |
+| `silence_threshold` | `0.35` | Silero VAD silence probability during speech |
+| `silence_frames_threshold` | `20` | Consecutive silent frames to close a segment |
+| `speech_pad_frames` | `5` | Pre-roll frame count and onset confirmation threshold |
+| `max_speech_duration_s` | `30.0` | Hard cap on a single segment in seconds |
+| `ollama_host` | `"http://localhost:11434"` | Ollama HTTP base URL for translation |
+| `ollama_translation_model` | `"llama3.2"` | Ollama model used for translation |
+| `use_speaker` | `True` | Speak each translated segment aloud via TTS |
+| `speaker_voice` | `""` | Wave voice name for zero-shot cloning; `""` uses the model's built-in default voice |
 
 ---
 

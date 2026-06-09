@@ -9,6 +9,7 @@
 - **AI agent responders** — built-in support for Ollama, Claude Code (CLI and SDK), Gemini, Codex, and OpenCode
 - **Multi-agent orchestration** — bind multiple responders to different wake words under a single listener session
 - **Live transcription** — continuous VAD-gated transcription to `.txt` and/or `.srt` files
+- **Live translation** — continuous VAD-gated transcription + Ollama-powered translation with bilingual output
 - **Extensible** — subclass `BaseResponder`, implement one method, and plug into the orchestration system
 
 All core processing (VAD, transcription, wake word detection) runs fully offline on the local machine.
@@ -26,11 +27,13 @@ spych/
   responders.py            # BaseResponder, AgentResponse — abstract base + structured response dataclass
   orchestrator.py          # SpychOrchestrator — multi-agent coordinator with shared spinner
   live.py                  # SpychLive — continuous VAD-gated transcription to disk
+  live_translation.py      # SpychLiveTranslation — VAD-gated transcription + Ollama translation with bilingual output
   speaker/
     __init__.py            # Re-exports Speaker
     speaker.py             # Speaker — Chatterbox Turbo (primary) or Kokoro (fallback) TTS
-    backends.py            # ChatterboxBackend, KokoroBackend, get_backend — backend selection
+    backends.py            # ChatterboxBackend, KokoroBackend, ChatterboxMultilingualBackend, get_backend
     chatterbox.py          # SpychChatterboxTTS — standalone Chatterbox Turbo implementation
+    chatterbox_multilingual.py  # SpychChatterboxMultilingualTTS — multilingual Chatterbox implementation
   cli.py                   # CLI entry point (spych subcommands)
   cli_tools.py             # Theme, CliSpinner, CliPrinter — terminal UI utilities
   dashboard.py             # AgentDashboard — rich TUI for live agent interaction
@@ -46,7 +49,7 @@ spych/
     sdk_workers/
       claude_sdk_worker.py # Subprocess worker for Claude Agent SDK communication
 test/
-  NN_*.py                  # 11 numbered test scripts (01–11); run sequentially
+  NN_*.py                  # 12 numbered test scripts (01–12); run sequentially
 utils/
   test.sh                  # Run all test/*.py files with python
   prettify.sh              # autoflake (unused imports) + black (line-length=88)
@@ -120,6 +123,13 @@ All commands use Docker via `./run.sh`:
 - Producer-consumer architecture with three threads: `VADRecorder` → `Transcriber` → `Writer`
 - Writes to `.txt`, `.srt`, or both; maintains a context buffer (~128 words) for whisper `initial_prompt`
 - Stoppable via keystroke, spoken terminate word, or `KeyboardInterrupt`
+
+**`SpychLiveTranslation`** (`live_translation.py`) — live transcription + translation pipeline:
+- Extends the live transcription pattern: `VADRecorder` → `TranslatingTranscriber` → `TranslationWriter`
+- `TranslatingTranscriber` transcribes in the source language then calls Ollama (via `requests`) to translate
+- `TranslationWriter` writes bilingual output — `[time](src_lang) original` + `[time](tgt_lang) translated` — and optionally speaks the translation via `Speaker`
+- Whisper model `.en` suffix is stripped automatically when `input_language != "en"`
+- If Ollama is unreachable, translation falls back to `[translation unavailable]` without interrupting the session
 
 **`AgentDashboard`** (`dashboard.py`) — TUI:
 - Renders a live, interactive terminal dashboard in the alternate screen buffer.
