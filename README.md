@@ -1,7 +1,7 @@
 # Spych
 [![PyPI version](https://badge.fury.io/py/spych.svg)](https://badge.fury.io/py/spych)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![PyPI Downloads](https://img.shields.io/pypi/dm/spych.svg?label=PyPI%20downloads)](https://pypi.org/project/spych/)
+[![PyPI Downloads](https://static.pepy.tech/badge/spych/month)](https://pepy.tech/project/spych)
 
 **Spych** (pronounced "speech"): Talk with your computer like it's your personal assistant without sending your voice to the cloud.
 
