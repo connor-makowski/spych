@@ -22,10 +22,10 @@ function generate_docs() {
     INPUT_VERSION=$1
     if [ $INPUT_VERSION != "./" ]; then
         if [ $INPUT_VERSION != $VERSION ]; then
-            pip install "./dist/spych-$INPUT_VERSION.tar.gz"
+            uv pip install "./dist/spych-$INPUT_VERSION.tar.gz"
         fi
     fi
-    pdoc -o ./docs/$INPUT_VERSION -t ./doc_template spych !spych.agents.sdk_workers
+    uv run pdoc -o ./docs/$INPUT_VERSION -t ./doc_template spych !spych.agents.sdk_workers
 }
 
 # Generate the docs for the current version
@@ -38,4 +38,4 @@ for version in $OLD_DOC_VERSIONS; do
 done;
 
 # Reinstall the current package as an egg
-pip install -e .
+uv pip install -e .

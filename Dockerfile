@@ -4,23 +4,29 @@
 # FROM python:3.11-bookworm
 FROM python:3.12-bookworm
 # FROM python:3.13-bookworm
-
-## Can not test fully or build docs on 3.15 since kokoro does not support it yet
 # FROM python:3.14-bookworm
 
+# Grab the prebuilt uv binary instead of pip-installing it
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
-# Set the working directory to /app
+# Compile .pyc at install time (faster startup), copy instead of hardlink
+# (the cache mount is a different filesystem, so hardlinks would fail)
+ENV UV_COMPILE_BYTECODE=1 \
+    UV_LINK_MODE=copy
+
 WORKDIR /app/
 
-# Copy and install the requirements
-COPY requirements.txt /app/requirements.txt
-COPY pyproject.toml /app/pyproject.toml
-RUN mkdir -p /app/spych
-RUN touch /app/spych/__init__.py
+# Install dependencies ONLY first — this layer caches until your deps change
+COPY pyproject.toml uv.lock /app/
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --no-install-project --extra kokoro --extra chatterbox
 
-RUN pip install -r requirements.txt
-# Install chatterbox-tts for testing and documentation purposes
-RUN pip install chatterbox-tts
+# Now copy the actual project and install it (cheap, deps already done)
+COPY spych/ /app/spych/
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --extra kokoro --extra chatterbox --extra dev
 
-# Drop into a shell by default
+# Put the venv on PATH so you don't need `uv run` everywhere
+ENV PATH="/app/.venv/bin:$PATH"
+
 CMD ["/bin/bash"]
