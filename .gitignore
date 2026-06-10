@@ -7,3 +7,5 @@ build
 /venv312/
 
 misc
+
+.venv
