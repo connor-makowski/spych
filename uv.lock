@@ -1038,6 +1038,14 @@ wheels = [
 ]
 
 [[package]]
+name = "en-core-web-sm"
+version = "3.8.0"
+source = { url = "https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl" }
+wheels = [
+    { url = "https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl", hash = "sha256:1932429db727d4bff3deed6b34cfc05df17794f4a52eeb26cf8928f7c1a0fb85" },
+]
+
+[[package]]
 name = "espeakng-loader"
 version = "0.2.4"
 source = { registry = "https://pypi.org/simple" }
@@ -4153,6 +4161,7 @@ source = { editable = "." }
 dependencies = [
     { name = "chatterbox-tts", marker = "python_full_version >= '3.13'" },
     { name = "claude-agent-sdk" },
+    { name = "en-core-web-sm", marker = "python_full_version < '3.13'" },
     { name = "faster-whisper" },
     { name = "kokoro", marker = "python_full_version < '3.13'" },
     { name = "numba", marker = "python_full_version >= '3.13'" },
@@ -4181,6 +4190,7 @@ requires-dist = [
     { name = "build", marker = "extra == 'dev'", specifier = ">=1.4.0" },
     { name = "chatterbox-tts", marker = "python_full_version >= '3.13'", specifier = ">=0.1.7,<1.0.0" },
     { name = "claude-agent-sdk", specifier = ">=0.1.45,<1.0.0" },
+    { name = "en-core-web-sm", marker = "python_full_version < '3.13'", url = "https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl" },
     { name = "faster-whisper", specifier = ">=1.2.1,<2.0.0" },
     { name = "kokoro", marker = "python_full_version < '3.13'", specifier = ">=0.9.4,<1.0.0" },
     { name = "nox", marker = "extra == 'dev'", specifier = ">=2024.3.2" },
