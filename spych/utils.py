@@ -167,8 +167,9 @@ def resolve_whisper_device(device: str) -> str:
 
     - Resolves the whisper device string, selecting "cuda" or "cpu" automatically
       when "auto" is passed.
-    - "cuda" is chosen only when Python <= 3.13 and torch reports a CUDA device
-      is available; otherwise falls back to "cpu".
+    - "cuda" is chosen when torch reports a CUDA device is available; if the
+      CUDA libraries cannot actually be loaded at runtime, `load_whisper_model`
+      will catch the resulting `RuntimeError` and transparently fall back to CPU.
 
     Requires:
 
@@ -184,9 +185,80 @@ def resolve_whisper_device(device: str) -> str:
     """
     if device != "auto":
         return device
-    if sys.version_info <= (3, 13) and torch.cuda.is_available():
+    if torch.cuda.is_available():
         return "cuda"
     return "cpu"
+
+
+def load_whisper_model(
+    whisper_model: str,
+    device: str,
+    compute_type: str,
+) -> "WhisperModel":
+    """
+    Usage:
+
+    - Constructs a `faster_whisper.WhisperModel` and transparently falls back
+      to CPU when CUDA is requested but unavailable at runtime (e.g. when
+      `torch.cuda.is_available()` returns True but the CUDA libraries such as
+      `libcublas.so.12` are missing or incompatible).
+    - When `device` is \"cuda\", a silent dummy transcription is run immediately
+      after construction to force eager CUDA initialisation. ctranslate2
+      initialises CUDA lazily, so the constructor itself never raises even when
+      the libraries are broken — the error only surfaces at the first encode
+      call. The probe catches that error here and falls back to CPU before the
+      model is handed to any caller.
+
+    Requires:
+
+    - `whisper_model`:
+        - Type: str
+        - What: The faster-whisper model name (e.g. \"base.en\", \"small\")
+
+    - `device`:
+        - Type: str
+        - What: The device to attempt first — \"cpu\" or \"cuda\"
+
+    - `compute_type`:
+        - Type: str
+        - What: The compute type (e.g. \"int8\", \"float16\", \"float32\")
+
+    Returns:
+
+    - `model`:
+        - Type: WhisperModel
+        - What: A loaded faster-whisper model instance, guaranteed to run on
+          either the requested device or CPU if the requested device failed.
+
+    Notes:
+
+    - The dummy probe is a zero-valued 0.1 s float32 buffer, which is the
+      smallest input ctranslate2 will encode without complaining. Its output
+      is discarded; only the side-effect of triggering CUDA initialisation matters.
+    - If the CPU fallback also raises, the exception propagates normally.
+    """
+    from faster_whisper import WhisperModel
+
+    def _build(dev: str, ct: str) -> WhisperModel:
+        return WhisperModel(whisper_model, device=dev, compute_type=ct)
+
+    def _probe(model: WhisperModel) -> None:
+        dummy = np.zeros(int(16000 * 0.1), dtype=np.float32)
+        list(model.transcribe(dummy, beam_size=1)[0])
+
+    try:
+        model = _build(device, compute_type)
+        if device != "cpu":
+            _probe(model)
+        return model
+    except RuntimeError as e:
+        if device != "cpu":
+            print(
+                f"WARNING: Could not use WhisperModel on '{device}' "
+                f"({e}). Falling back to CPU."
+            )
+            return _build("cpu", "int8")
+        raise
 
 
 class Recorder:

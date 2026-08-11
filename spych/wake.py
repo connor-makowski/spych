@@ -6,6 +6,7 @@ from spych.utils import (
     Notify,
     Recorder,
     get_clean_audio_buffer,
+    load_whisper_model,
     resolve_whisper_device,
 )
 
@@ -299,7 +300,7 @@ class SpychWake(Notify):
         if wake_model_instance is not None:
             self.wake_model = wake_model_instance
         else:
-            self.wake_model = WhisperModel(
+            self.wake_model = load_whisper_model(
                 whisper_model,
                 device=self.whisper_device,
                 compute_type=whisper_compute_type,

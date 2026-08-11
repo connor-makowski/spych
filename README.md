@@ -29,6 +29,16 @@ pip install spych
 
 By default, Spych automatically installs the right TTS backend for your Python version: `kokoro` on Python < 3.13, and `chatterbox-tts` on Python >= 3.13.
 
+#### For Kokoro (use a python version < 3.13):
+```bash
+uv tool install spych --python 3.12
+```
+
+#### For Chatterbox (use a python version >= 3.13):
+```bash
+uv tool install spych --python 3.13
+```
+
 ---
 
 # Quick Start

@@ -9,7 +9,7 @@ from typing import Optional
 
 from faster_whisper import WhisperModel
 
-from spych.utils import Notify, resolve_whisper_device
+from spych.utils import Notify, load_whisper_model, resolve_whisper_device
 from spych.live import (
     VADRecorder,
     KeystrokeListener,
@@ -847,7 +847,7 @@ class SpychLiveTranslation(Notify):
         self.speaker_voice = speaker_voice
 
         resolved_model = _select_whisper_model(whisper_model, lang_a, lang_b)
-        self.model = WhisperModel(
+        self.model = load_whisper_model(
             resolved_model,
             device=resolve_whisper_device(whisper_device),
             compute_type=whisper_compute_type,

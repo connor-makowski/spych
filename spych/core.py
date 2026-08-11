@@ -1,8 +1,8 @@
-from faster_whisper import WhisperModel
 from spych.utils import (
     Notify,
     Recorder,
     get_clean_audio_buffer,
+    load_whisper_model,
     resolve_whisper_device,
 )
 from typing import Union, Optional
@@ -93,7 +93,7 @@ class Spych(Notify):
         self.whisper_model = whisper_model
         self.whisper_device = resolve_whisper_device(whisper_device)
         self.whisper_compute_type = whisper_compute_type
-        self.wake_model = WhisperModel(
+        self.wake_model = load_whisper_model(
             whisper_model,
             device=self.whisper_device,
             compute_type=whisper_compute_type,
