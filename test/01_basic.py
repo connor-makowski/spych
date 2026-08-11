@@ -1,24 +1,30 @@
-from spych import SpychWake, Spych
-
-spych_object = Spych(whisper_model="base.en")
+from spych import Spych, SpychWake
 
 
-def on_wake():
-    print("Wake word heard! Listening for 5 seconds and transcribing...")
-    output = spych_object.listen(duration=5)
-    print(f"Transcription: {output}")
-    print("")
+def test_basic_wake_and_spych_init():
+    spych_object = Spych(whisper_model="tiny.en")
+    assert spych_object.wake_model is not None
 
+    heard = []
 
-wake_object = SpychWake(
-    wake_word_map={"speech": on_wake},
-    whisper_model="tiny.en",
-    terminate_words=["terminate"],
-)
+    def on_wake():
+        heard.append("triggered")
 
-wake_object.verbose = True  # Enable verbose notifications for testing
+    wake_object = SpychWake(
+        wake_word_map={"speech": on_wake, "hey computer": on_wake},
+        whisper_model="tiny.en",
+        terminate_words=["terminate"],
+        wake_listener_count=2,
+    )
+    wake_object.verbose = True
 
-print(
-    "Starting wake listener. Say 'Spych' (pronounced Speech) to trigger the on_wake function."
-)
-wake_object.start()
+    keys = wake_object.wake_word_map.keys()
+    assert "speech" in keys
+    assert "hey computer" in keys
+    assert "terminate" in keys
+    assert wake_object.kill is False
+
+    # Test waking callback execution directly
+    wake_object.wake("speech")
+    assert len(heard) == 1
+    assert heard[0] == "triggered"

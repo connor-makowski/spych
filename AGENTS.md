@@ -6,7 +6,7 @@
 
 - **Wake word detection** — multi-threaded overlapping listener windows for continuous, low-latency detection
 - **Voice transcription** — faster-whisper with optional Silero VAD gating for hands-free, auto-terminated recording
-- **AI agent responders** — built-in support for Ollama, Claude Code (CLI and SDK), Gemini, Codex, and OpenCode
+- **AI agent responders** — built-in support for Ollama, Claude Code (CLI and SDK), Antigravity (agy), Codex, and OpenCode
 - **Multi-agent orchestration** — bind multiple responders to different wake words under a single listener session
 - **Live transcription** — continuous VAD-gated transcription to `.txt` and/or `.srt` files
 - **Live translation** — continuous VAD-gated transcription + Ollama-powered translation with bilingual output
@@ -16,9 +16,8 @@ All core processing (VAD, transcription, wake word detection) runs fully offline
 
 ---
 
-## Directory Layout (relevant files only)
-
-```
+## Directory Layout (relevant```
+.agents/skills/            # Agent skill definitions (add-responder, add-test, test, prettify, debug, etc.)
 spych/
   __init__.py              # Public exports: Spych, SpychWake, SpychOrchestrator, BaseResponder,
                            #   AgentResponse, Speaker, PERSONALITIES, get_personality, get_response_style
@@ -43,43 +42,55 @@ spych/
     __init__.py            # Exports all agent factories and responder classes
     claude.py              # LocalClaudeCodeCLIResponder + LocalClaudeCodeSDKResponder + factories
     ollama.py              # OllamaResponder + ollama() factory
-    gemini.py              # LocalGeminiCLIResponder + gemini_cli() factory
+    agy.py                 # LocalAntigravityCLIResponder + antigravity_cli() factory
     codex.py               # LocalCodexCLIResponder + codex_cli() factory
     opencode.py            # LocalOpenCodeCLIResponder + opencode_cli() factory
     sdk_workers/
       claude_sdk_worker.py # Subprocess worker for Claude Agent SDK communication
 test/
-  NN_*.py                  # 12 numbered test scripts (01–12); run sequentially
+  NN_*.py                  # 14 test scripts; run via pytest or nox
 utils/
-  test.sh                  # Run all test/*.py files with python
-  prettify.sh              # autoflake (unused imports) + black (line-length=88)
-  docs.sh                  # Generate pdoc HTML docs — do NOT run unless releasing
-docs/                      # Auto-generated pdoc HTML docs (do not edit manually)
-pyproject.toml             # Package metadata and runtime dependencies
-requirements.txt           # Dev dependencies (black, autoflake, pdoc, twine, build)
-run.sh                     # Docker wrapper for all dev commands
-Dockerfile                 # Multi-Python support (3.11–3.14); default is latest
+  prettify.py              # autoflake (unused imports) + black
+  docs.py                  # Generate pdoc HTML docs — do NOT run unless releasing
+noxfile.py                 # nox sessions: pytest across Python versions, chatterbox & kokoro testing
+pyproject.toml             # Package metadata, pytest + black config, dependencies
+skills/                    # Reference skills (preserved for structure comparison)
 ```
 
 ---
 
 ## Development Commands
 
-All commands use Docker via `./run.sh`:
+All development tasks use `uv`, `pytest`, and `nox`:
 
 | Command | What it does |
 |---|---|
-| `./run.sh test` | Run all tests inside Docker |
-| `./run.sh test test/01_basic.py` | Run a specific test file in Docker |
-| `./run.sh prettify` | Format with autoflake + black |
-| `./run.sh docs` | Regenerate pdoc documentation |
-| `./run.sh` | Drop into a Docker shell |
+| `nox` | Run standard `pytest` suite across Python 3.11–3.13 (Kokoro on <3.13, Chatterbox on 3.13+) |
+| `nox -s prettify` | Format with autoflake + black via `utils/prettify.py` |
+| `pytest` or `uv run pytest` | Run test suite in current virtual environment |
+| `uv run python utils/prettify.py` | Format code locally using `uv` |
+| `nox -s docs` | Regenerate pdoc documentation |
 
-> **Note:** `./run.sh` requires a TTY. In non-interactive contexts (CI, background tasks) it will fail with "the input device is not a TTY". Ask the user to run it themselves.
-
-**Test runner** (`utils/test.sh`): Runs every `*.py` file in `test/` with `python` sequentially. Each file is responsible for its own output.
+**Test runner** (`pytest` / `nox`): Discovers and runs all `test/NN_*.py` test scripts.
 
 **Docs**: **DO NOT generate docs**. Docs are regenerated and versioned at release time by the maintainer only.
+
+---
+
+## Agent Skills (`.agents/skills/`)
+
+The repository includes standard agent skills under `.agents/skills/` to guide development workflows:
+
+| Skill | Purpose |
+|---|---|
+| `add-responder` | Guide for implementing new AI agent responders subclassing `BaseResponder`. |
+| `add-test` | Blueprint for creating standalone numbered test scripts (`test/NN_description.py`). |
+| `test` | Workflows and commands for executing test suites (`nox` across Python versions, `pytest`). |
+| `prettify` | Guidelines and commands for code formatting (`nox -s prettify` or `python utils/prettify.py`). |
+| `debug` | Diagnostic checklists for audio recording, VAD, wake words, LLM parsing, and TTS. |
+| `add-personality` | Steps for adding character/voice personality presets to `PERSONALITIES`. |
+| `live-pipeline` | Architecture and modification steps for continuous transcription and translation. |
+| `dashboard` | Architecture and testing procedures for `AgentDashboard` rich TUI. |
 
 ---
 
@@ -144,7 +155,7 @@ All commands use Docker via `./run.sh`:
 | `OllamaResponder` | `ollama()` | Local Ollama REST API |
 | `LocalClaudeCodeCLIResponder` | `claude_code_cli()` | `claude` CLI subprocess |
 | `LocalClaudeCodeSDKResponder` | `claude_code_sdk()` | Claude Agent SDK subprocess worker |
-| `LocalGeminiCLIResponder` | `gemini_cli()` | `gemini` CLI subprocess |
+| `LocalAntigravityCLIResponder` | `antigravity_cli()` / `agy_cli()` | `agy` CLI subprocess |
 | `LocalCodexCLIResponder` | `codex_cli()` | `codex` CLI subprocess |
 | `LocalOpenCodeCLIResponder` | `opencode_cli()` | `opencode` CLI subprocess |
 
@@ -161,7 +172,7 @@ Notify (utils.py — base logging/notification)
 │   ├── OllamaResponder
 │   ├── LocalClaudeCodeCLIResponder
 │   ├── LocalClaudeCodeSDKResponder
-│   ├── LocalGeminiCLIResponder
+│   ├── LocalAntigravityCLIResponder
 │   ├── LocalCodexCLIResponder
 │   └── LocalOpenCodeCLIResponder
 └── SpychLive (live.py)
@@ -209,9 +220,9 @@ def respond(self, user_input: str) -> AgentResponse:
 
 ## Test Structure
 
-Tests are in `test/`. Each file is a standalone Python script: imports what it needs, runs a scenario, and prints its own output.
+Tests are in `test/`. Each file is a standalone Python script run via `pytest` or `nox`.
 
-**Naming convention:** `NN_description.py` (zero-padded number ensures ordered execution)
+**Naming convention:** `NN_description.py` or `test_*.py`
 
 **Rough groupings:**
 - `01`: Wake word detection + listener setup
@@ -219,10 +230,12 @@ Tests are in `test/`. Each file is a standalone Python script: imports what it n
 - `04`: Custom `BaseResponder` subclass example
 - `05`: CUDA / GPU acceleration
 - `06`: Pure transcription (`Spych.listen()`)
-- `07–10`: Gemini, Codex, OpenCode, Claude SDK agents
+- `07–10`: Antigravity (agy), Codex, OpenCode, Claude SDK agents
 - `11`: Multi-agent orchestration (Spanish/German translator via Ollama)
+- `12`: Speaker TTS engine (Kokoro and Chatterbox)
+- `13–14`: Bugfixes & parser unit tests
 
-**Test pattern** (most tests are interactive/manual; they demonstrate usage and run the agent loop):
+**Test pattern**:
 
 ```python
 from spych import Spych, SpychWake
@@ -240,7 +253,7 @@ wake = SpychWake(
 wake.start()
 ```
 
-When adding a new feature, add a corresponding `NN_*.py` test file. Tests are picked up automatically by `utils/test.sh`.
+When adding a new feature, add a corresponding test file in `test/`. Run tests via `pytest` or `nox`.
 
 ---
 
@@ -248,9 +261,9 @@ When adding a new feature, add a corresponding `NN_*.py` test file. Tests are pi
 
 ### Formatting
 
-Always run `./run.sh prettify` before committing. This runs:
+Always run `nox -s prettify` or `uv run python utils/prettify.py` before committing. This runs:
 1. `autoflake` — removes unused imports
-2. `black` — reformats to line-length=88
+2. `black` — reformats code (configured in `pyproject.toml`)
 
 ### Type Hints
 

@@ -51,6 +51,7 @@ class BaseResponder(Notify):
         user: Optional[str] = None,
         allow_intermediate_responses: bool = True,
         display_name: Optional[str] = None,
+        **kwargs,
     ) -> None:
         """
         Usage:

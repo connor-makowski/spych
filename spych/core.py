@@ -101,6 +101,7 @@ class Spych(Notify):
         self.vad_silence_frames_threshold = vad_silence_frames_threshold
         self.vad_speech_pad_frames = vad_speech_pad_frames
         self.vad_max_speech_duration_s = vad_max_speech_duration_s
+        self.whisper_device = resolve_whisper_device(whisper_device)
         self.recorder = Recorder()
 
     def listen(

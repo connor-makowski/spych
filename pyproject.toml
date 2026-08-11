@@ -3,6 +3,9 @@ line-length = 80
 target-version = ['py39']
 exclude = '/.*(__pycache__).*/'
 
+[tool.setuptools]
+packages = ["spych"]
+
 [build-system]
 requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
@@ -25,6 +28,8 @@ dependencies = [
     "claude_agent_sdk>=0.1.45,<1.0.0",
     "kokoro>=0.9.4,<1.0.0; python_version < '3.13'",
     "chatterbox-tts>=0.1.7,<1.0.0; python_version >= '3.13'",
+    # Numba is necessary to build chatterbox
+    "numba>=0.61; python_version >= '3.13'",
     "faster-whisper>=1.2.1,<2.0.0",
     "pvrecorder>=1.2.7,<2.0.0",
     "requests>=2.32.5,<3.0.0",
@@ -33,14 +38,24 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-chatterbox = ["chatterbox-tts>=0.1.7,<1.0.0"]
-kokoro = ["kokoro>=0.9.4,<1.0.0"]
 dev = [
     "autoflake>=2.3.1",
     "black>=25.1.0",
     "build>=1.4.0",
     "twine>=6.2.0",
     "pdoc>=16.0.0",
+    "pytest>=8.0.0",
+    "pytest-timeout>=2.3.1",
+    "nox>=2024.3.2",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["test"]
+python_files = ["*.py"]
+timeout = 30
+markers = [
+    "kokoro: tests for kokoro TTS backend",
+    "chatterbox: tests for chatterbox TTS backend",
 ]
 
 [project.scripts]

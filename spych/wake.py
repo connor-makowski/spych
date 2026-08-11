@@ -242,9 +242,10 @@ class SpychWake(Notify):
         self.device_index = device_index
         self.locked = False
         self.kill = False
+        self.whisper_device = resolve_whisper_device(whisper_device)
         self.wake_model = WhisperModel(
             whisper_model,
-            device=resolve_whisper_device(whisper_device),
+            device=self.whisper_device,
             compute_type=whisper_compute_type,
         )
         self.wake_listeners = [

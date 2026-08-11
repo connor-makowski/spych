@@ -272,8 +272,9 @@ def opencode_cli(
     response_style: Optional[str] = None,
     spych_kwargs: Optional[dict[str, Any]] = None,
     spych_wake_kwargs: Optional[dict[str, Any]] = None,
+    start: bool = True,
     **kwargs,
-) -> None:
+) -> Optional[SpychOrchestrator]:
     """
     Usage:
 
@@ -359,7 +360,7 @@ def opencode_cli(
         **kwargs,
     )
 
-    SpychOrchestrator(
+    orchestrator = SpychOrchestrator(
         entries=[
             {
                 "responder": responder,
@@ -368,4 +369,7 @@ def opencode_cli(
             }
         ],
         spych_wake_kwargs=spych_wake_kwargs,
-    ).start()
+    )
+    if start:
+        orchestrator.start()
+    return orchestrator

@@ -266,8 +266,9 @@ def claude_code_sdk(
     response_style: Optional[str] = None,
     spych_kwargs: dict[str, any] | None = None,
     spych_wake_kwargs: dict[str, any] | None = None,
+    start: bool = True,
     **kwargs,
-) -> None:
+) -> Optional[SpychOrchestrator]:
     """
     Usage:
 
@@ -356,7 +357,7 @@ def claude_code_sdk(
         **kwargs,
     )
 
-    SpychOrchestrator(
+    orchestrator = SpychOrchestrator(
         entries=[
             {
                 "responder": responder,
@@ -365,7 +366,10 @@ def claude_code_sdk(
             }
         ],
         spych_wake_kwargs=spych_wake_kwargs,
-    ).start()
+    )
+    if start:
+        orchestrator.start()
+    return orchestrator
 
 
 class LocalClaudeCodeCLIResponder(BaseResponder):
@@ -640,8 +644,9 @@ def claude_code_cli(
     response_style: Optional[str] = None,
     spych_kwargs: Optional[dict[str, Any]] = None,
     spych_wake_kwargs: Optional[dict[str, Any]] = None,
+    start: bool = True,
     **kwargs,
-) -> None:
+) -> Optional[SpychOrchestrator]:
     """
     Usage:
 
@@ -712,7 +717,7 @@ def claude_code_cli(
         **kwargs,
     )
 
-    SpychOrchestrator(
+    orchestrator = SpychOrchestrator(
         entries=[
             {
                 "responder": responder,
@@ -721,4 +726,7 @@ def claude_code_cli(
             }
         ],
         spych_wake_kwargs=spych_wake_kwargs,
-    ).start()
+    )
+    if start:
+        orchestrator.start()
+    return orchestrator
