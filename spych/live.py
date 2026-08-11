@@ -585,7 +585,7 @@ class SpychLive(Notify):
             - Type: str
             - What: The faster-whisper model name
             - Default: "base.en"
-            - Note: Use "small.en" or larger for improved accuracy; "tiny.en"
+            - Note: Use "small.en" on larger setups or for improved accuracy; "tiny.en"
               for low-latency CPU setups
 
         - `whisper_device`:

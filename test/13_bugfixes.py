@@ -1,4 +1,4 @@
-from spych import Spych
+from spych import Spych, SpychOrchestrator
 from spych.responders import BaseResponder, AgentResponse
 from spych.dashboard import AgentDashboard
 
@@ -50,3 +50,39 @@ def test_bugfixes():
     assert (
         dashboard._scroll_offset == 0
     ), f"Expected 0, got {dashboard._scroll_offset}"
+
+    # 4. Verify SpychOrchestrator reuses the responder's WhisperModel for
+    # wake-word spotting when its config matches, instead of loading a
+    # second, redundant copy.
+    matching_orchestrator = SpychOrchestrator(
+        entries=[
+            {
+                "responder": responder,
+                "wake_words": ["hello"],
+                "terminate_words": ["terminate"],
+            }
+        ],
+        spych_wake_kwargs={"whisper_model": "tiny.en"},
+    )
+    assert (
+        matching_orchestrator.spych_wake.wake_model is spych_object.wake_model
+    )
+
+    other_spych_object = Spych(whisper_model="base.en")
+    other_responder = DummyResponder(
+        spych_object=other_spych_object, use_speaker=False
+    )
+    mismatched_orchestrator = SpychOrchestrator(
+        entries=[
+            {
+                "responder": other_responder,
+                "wake_words": ["hello"],
+                "terminate_words": ["terminate"],
+            }
+        ],
+        spych_wake_kwargs={"whisper_model": "tiny.en"},
+    )
+    assert (
+        mismatched_orchestrator.spych_wake.wake_model
+        is not other_spych_object.wake_model
+    )

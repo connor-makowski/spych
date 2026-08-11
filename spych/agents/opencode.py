@@ -185,60 +185,67 @@ class LocalOpenCodeCLIResponder(BaseResponder):
         # Keyed by tool name since inline XML has no unique call ID.
         active_tools: dict[str, float] = {}
 
-        for event in stream:
-            etype = event.get("type")
+        try:
+            for event in stream:
+                etype = event.get("type")
 
-            # Capture session ID from any event for conversation continuity
-            session_id = event.get("sessionID")
-            if session_id:
-                self._last_session_id = session_id
+                # Capture session ID from any event for conversation continuity
+                session_id = event.get("sessionID")
+                if session_id:
+                    self._last_session_id = session_id
 
-            if etype == "step_start":
-                # New model turn beginning — reset accumulator for this step
-                accumulated_text = ""
-
-            elif etype == "text":
-                delta = event.get("part", {}).get("text", "")
-                if not delta:
-                    continue
-
-                # Check for new tool calls appearing in this delta
-                if self.show_tool_events:
-                    for match in self.TOOL_CALL_RE.finditer(delta):
-                        tool_name = match.group(1)
-                        if tool_name not in active_tools:
-                            # Extract any prose before the tool call as explanation
-                            preceding = delta[: match.start()]
-                            explanation = self.__strip_tool_calls__(
-                                preceding
-                            ).strip()
-                            active_tools[tool_name] = time.time()
-                            self.tool_event(
-                                tool_name,
-                                "running",
-                                is_running=True,
-                                detail=explanation or None,
-                            )
-
-                accumulated_text = delta  # opencode sends full text each delta, not incremental
-
-            elif etype == "step_finish":
-                reason = event.get("part", {}).get("reason", "")
-
-                # Close all open tool events for this step
-                if self.show_tool_events:
-                    for tool_name, start in list(active_tools.items()):
-                        elapsed = time.time() - start
-                        self.tool_event(
-                            tool_name, "done", is_running=False, elapsed=elapsed
-                        )
-                active_tools.clear()
-
-                if reason != "stop":
-                    # Intermediate turn (tool execution step) — reset and continue
+                if etype == "step_start":
+                    # New model turn beginning — reset accumulator for this step
                     accumulated_text = ""
 
-                # On reason == "stop", keep accumulated_text as the final answer
+                elif etype == "text":
+                    delta = event.get("part", {}).get("text", "")
+                    if not delta:
+                        continue
+
+                    # Check for new tool calls appearing in this delta
+                    if self.show_tool_events:
+                        for match in self.TOOL_CALL_RE.finditer(delta):
+                            tool_name = match.group(1)
+                            if tool_name not in active_tools:
+                                # Extract any prose before the tool call as explanation
+                                preceding = delta[: match.start()]
+                                explanation = self.__strip_tool_calls__(
+                                    preceding
+                                ).strip()
+                                active_tools[tool_name] = time.time()
+                                self.tool_event(
+                                    tool_name,
+                                    "running",
+                                    is_running=True,
+                                    detail=explanation or None,
+                                )
+
+                    accumulated_text = delta  # opencode sends full text each delta, not incremental
+
+                elif etype == "step_finish":
+                    reason = event.get("part", {}).get("reason", "")
+
+                    # Close all open tool events for this step
+                    if self.show_tool_events:
+                        for tool_name, start in list(active_tools.items()):
+                            elapsed = time.time() - start
+                            self.tool_event(
+                                tool_name,
+                                "done",
+                                is_running=False,
+                                elapsed=elapsed,
+                            )
+                    active_tools.clear()
+
+                    if reason != "stop":
+                        # Intermediate turn (tool execution step) — reset and continue
+                        accumulated_text = ""
+
+                    # On reason == "stop", keep accumulated_text as the final answer
+        except Exception:
+            stream.kill()
+            raise
 
         stream.wait()
 

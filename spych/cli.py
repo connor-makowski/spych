@@ -32,6 +32,7 @@ Examples:
 """
 
 import argparse
+import os
 import sys
 from importlib.metadata import version
 
@@ -106,13 +107,13 @@ def _add_shared_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--use-speaker",
         type=_parse_bool,
-        default=True,
+        default=None,
         metavar="BOOL",
         help="Speak responses aloud via TTS (default: true)",
     )
     parser.add_argument(
         "--speaker-voice",
-        default="af_heart",
+        default=None,
         metavar="VOICE",
         help=(
             "Voice name for spoken responses (default: af_heart). "
@@ -190,7 +191,7 @@ def _build_shared_kwargs(args: argparse.Namespace) -> dict:
         kwargs["inactivity_timeout"] = args.inactivity_timeout
     if args.use_speaker is not None:
         kwargs["use_speaker"] = args.use_speaker
-    if args.speaker_voice != "af_heart":
+    if args.speaker_voice is not None:
         kwargs["speaker_voice"] = args.speaker_voice
     if getattr(args, "speaker_backend", ""):
         kwargs["speaker_backend"] = args.speaker_backend
@@ -369,7 +370,7 @@ def main():
     )
     p_live.add_argument(
         "--output-format",
-        default="srt",
+        default="both",
         choices=["txt", "srt", "both"],
         metavar="FORMAT",
         help="Output format: txt, srt, or both (default: both)",
@@ -555,7 +556,7 @@ def main():
         "--whisper-model",
         default="small",
         metavar="MODEL",
-        help="faster-whisper model name; .en suffix stripped automatically (default: base)",
+        help="faster-whisper model name; .en suffix stripped automatically (default: small)",
     )
     p_live_translation.add_argument(
         "--whisper-device",
@@ -708,6 +709,21 @@ def main():
         default=True,
         metavar="BOOL",
         help="Speak responses aloud via TTS (default: true)",
+    )
+    p_multi.add_argument(
+        "--verbose",
+        action="store_true",
+        default=False,
+        help=(
+            "Use verbose scroll output (spinner + full log) instead of the "
+            "TUI dashboard (default: false)"
+        ),
+    )
+    p_multi.add_argument(
+        "--user",
+        default=None,
+        metavar="NAME",
+        help="The user name to use for tailored responses (default: default user from settings)",
     )
     # ollama-specific flags (only used when 'ollama' is in --agents)
     p_multi.add_argument(
@@ -1021,6 +1037,7 @@ def main():
             get_default_user,
             set_setting,
             get_setting,
+            get_cache_dir,
         )
         from spych.cli_tools import set_theme
 

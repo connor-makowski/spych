@@ -124,7 +124,7 @@ class SpychWake(Notify):
         wake_listener_time=4,
         wake_listener_max_processing_time=0.5,
         device_index=-1,
-        whisper_model="tiny.en",
+        whisper_model="small.en",
         whisper_device="auto",
         whisper_compute_type="int8",
         no_speech_threshold=0.25,
@@ -133,6 +133,7 @@ class SpychWake(Notify):
         vad_silence_frames_threshold=15,
         vad_speech_pad_frames=5,
         on_terminate=None,
+        wake_model_instance: Optional[WhisperModel] = None,
     ):
         """
         Usage:
@@ -199,7 +200,7 @@ class SpychWake(Notify):
         - `whisper_model`:
             - Type: str
             - What: The faster-whisper model name to use for wake word transcription
-            - Default: "tiny.en"
+            - Default: "small.en"
             - Note: Smaller models (tiny, base) are recommended here for low latency
 
         - `whisper_device`:
@@ -253,6 +254,18 @@ class SpychWake(Notify):
             - What: A no-argument callback function to execute when a terminate word is detected
             - Default: None (disabled)
             - Note: If provided, this callback will be executed before the system is stopped when a terminate word is detected
+
+        - `wake_model_instance`:
+            - Type: faster_whisper.WhisperModel | None
+            - What: An already-loaded WhisperModel to reuse for wake-word spotting
+              instead of constructing a new one
+            - Default: None (constructs a new WhisperModel from `whisper_model`,
+              `whisper_device`, and `whisper_compute_type`)
+            - Note: When provided, `whisper_model`, `whisper_device`, and
+              `whisper_compute_type` are ignored for model construction purposes.
+              Intended for callers (e.g. SpychOrchestrator) that already loaded an
+              identically-configured model for command transcription and want to
+              avoid loading a second copy into memory.
         """
         self.recorder = Recorder()
         self.wake_word_map = {k.lower(): v for k, v in wake_word_map.items()}
@@ -283,11 +296,14 @@ class SpychWake(Notify):
         self.stop_event = threading.Event()
         self.audio_queue: Queue = Queue()
         self.whisper_device = resolve_whisper_device(whisper_device)
-        self.wake_model = WhisperModel(
-            whisper_model,
-            device=self.whisper_device,
-            compute_type=whisper_compute_type,
-        )
+        if wake_model_instance is not None:
+            self.wake_model = wake_model_instance
+        else:
+            self.wake_model = WhisperModel(
+                whisper_model,
+                device=self.whisper_device,
+                compute_type=whisper_compute_type,
+            )
         self._capture_thread: Optional[threading.Thread] = None
         self._transcriber_threads: list[threading.Thread] = []
 

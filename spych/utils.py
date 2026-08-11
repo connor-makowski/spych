@@ -456,6 +456,10 @@ class Notify:
             "verbose": "",
             "exception": "EXCEPTION",
         }
+        if notification_type not in notification_types:
+            raise Exception(
+                f"Invalid notification type. Must be one of: {list(notification_types.keys())}"
+            )
         message = f"{self.__class__.__name__}.{sys._getframe(depth).f_back.f_code.co_name} {notification_types.get(notification_type, '')}: {message}"
         if notification_type == "exception":
             raise Exception(message)
@@ -464,13 +468,9 @@ class Notify:
                 if self.__dict__.get("warning_stack", False):
                     traceback.print_stack(limit=10)
                 print(message)
-        elif notification_type == "verbose" or force:
-            if self.__dict__.get("verbose", False):
+        elif notification_type == "verbose":
+            if self.__dict__.get("verbose", False) or force:
                 print(message)
-        else:
-            raise Exception(
-                f"Invalid notification type. Must be one of: {list(notification_types.keys())}"
-            )
 
 
 def get_response_style(style: Optional[str]) -> str:
@@ -826,55 +826,3 @@ class StreamJsonCommand:
     def kill(self) -> None:
         """Kill the underlying subprocess and wait for reader threads to finish."""
         self._stream.kill()
-
-
-def stream_json_command(
-    cmd: list[str], input_text: Optional[str] = None
-) -> StreamSubprocess:
-    """
-    Usage:
-
-    - Runs a command and returns a StreamSubprocess object that can be
-      iterated over to receive parsed JSON objects from stdout.
-
-    Requires:
-
-    - `cmd`:
-        - Type: list[str]
-        - What: The command and arguments to execute.
-
-    Optional:
-
-    - `input_text`:
-        - Type: str | None
-        - What: Text to write to the process's stdin before closing it.
-    """
-    if os.name == "nt":
-        # Always use cmd.exe /c for wrappers on Windows for stability
-        cmd = ["cmd.exe", "/c"] + cmd
-
-    proc = subprocess.Popen(
-        cmd,
-        stdin=subprocess.PIPE,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True,
-        encoding="utf-8",
-        errors="replace",
-        shell=False,
-    )
-
-    if input_text:
-        try:
-            proc.stdin.write(input_text + "\n")
-            proc.stdin.flush()
-        except BrokenPipeError:
-            pass
-
-    # Always close stdin so the process knows no more input is coming
-    try:
-        proc.stdin.close()
-    except Exception:
-        pass
-
-    return StreamSubprocess(proc)

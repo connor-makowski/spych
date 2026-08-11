@@ -46,7 +46,7 @@ pytest test/12_speaker.py
 
 | File | Subsystem / Purpose | Notes |
 |---|---|---|
-| `01_basic.py` | Wake word detection & listener setup | Tests staggered `SpychWakeListener` threads |
+| `01_basic.py` | Wake word detection & listener setup | Tests `SpychWake` construction and `wake()` dispatch |
 | `02_ollama.py` | Ollama agent responder | Calls local Ollama API |
 | `03_claude.py` | Claude CLI responder | Subprocess integration with `claude` |
 | `05_cuda.py` | CUDA / GPU acceleration | Verifies Whisper GPU execution |
@@ -59,6 +59,7 @@ pytest test/12_speaker.py
 | `12_speaker.py` | Speaker TTS engine | Tests Kokoro and Chatterbox backends |
 | `13_bugfixes.py` | Regression fixes | Bugfix regression assertions |
 | `14_parser_unit.py` | LLM JSON output parser | Unit test coverage for `parse_output` |
+| `15_cli_dispatch.py` | CLI dispatch (`spych/cli.py`) | Runs `main()` for every subcommand with blocking loops stubbed out; catches missing-import / undefined-`args.*` bugs |
 
 ---
 

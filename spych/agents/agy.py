@@ -243,59 +243,67 @@ class LocalAntigravityCLIResponder(BaseResponder):
         final_result = ""
         active_tools: dict[str, tuple[str, float]] = {}
 
-        for event in stream:
-            etype = event.get("event") or event.get("type")
+        try:
+            for event in stream:
+                etype = event.get("event") or event.get("type")
 
-            if etype == "init":
-                self._last_session_id = event.get("conversation_id") or (
-                    event.get("init", {}).get("conversation_id")
-                    if isinstance(event.get("init"), dict)
-                    else None
-                )
+                if etype == "init":
+                    conversation_id = event.get("conversation_id") or (
+                        event.get("init", {}).get("conversation_id")
+                        if isinstance(event.get("init"), dict)
+                        else None
+                    )
+                    if conversation_id:
+                        self._last_session_id = conversation_id
 
-            elif etype == "step_update":
-                step = event.get("step_update") or {}
-                if isinstance(step, dict):
-                    delta = step.get("text_delta")
-                    if delta:
-                        self._prev_message += delta
+                elif etype == "step_update":
+                    step = event.get("step_update") or {}
+                    if isinstance(step, dict):
+                        delta = step.get("text_delta")
+                        if delta:
+                            self._prev_message += delta
 
-                    stype = step.get("step_type")
-                    if stype == "tool_use":
-                        tool_id = step.get("tool_id", step.get("tool_name"))
-                        tool_name = step.get("tool_name", "tool")
-                        params = step.get("parameters", {})
-                        active_tools[tool_id] = (tool_name, time.time())
-                        if self.show_tool_events:
-                            detail = str(params) if params else None
-                            self.tool_event(
-                                tool_name,
-                                "running",
-                                is_running=True,
-                                detail=detail,
-                            )
-                    elif stype == "tool_result":
-                        tool_id = step.get("tool_id", step.get("tool_name"))
-                        if tool_id in active_tools:
-                            tool_name, start = active_tools.pop(tool_id)
-                            elapsed = time.time() - start
+                        stype = step.get("step_type")
+                        if stype == "tool_use":
+                            tool_id = step.get("tool_id", step.get("tool_name"))
+                            tool_name = step.get("tool_name", "tool")
+                            params = step.get("parameters", {})
+                            active_tools[tool_id] = (tool_name, time.time())
                             if self.show_tool_events:
+                                detail = str(params) if params else None
                                 self.tool_event(
                                     tool_name,
-                                    "done",
-                                    is_running=False,
-                                    elapsed=elapsed,
+                                    "running",
+                                    is_running=True,
+                                    detail=detail,
                                 )
+                        elif stype == "tool_result":
+                            tool_id = step.get("tool_id", step.get("tool_name"))
+                            if tool_id in active_tools:
+                                tool_name, start = active_tools.pop(tool_id)
+                                elapsed = time.time() - start
+                                if self.show_tool_events:
+                                    self.tool_event(
+                                        tool_name,
+                                        "done",
+                                        is_running=False,
+                                        elapsed=elapsed,
+                                    )
 
-            elif etype == "result":
-                res = event.get("result") or {}
-                if isinstance(res, dict):
-                    final_result = res.get("response") or self._prev_message
-                else:
-                    final_result = self._prev_message
+                elif etype == "result":
+                    res = event.get("result") or {}
+                    if isinstance(res, dict):
+                        final_result = res.get("response") or self._prev_message
+                    else:
+                        final_result = self._prev_message
 
-            elif etype == "error":
-                final_result = f"Error: {event.get('message', 'unknown error')}"
+                elif etype == "error":
+                    final_result = (
+                        f"Error: {event.get('message', 'unknown error')}"
+                    )
+        except Exception:
+            stream.kill()
+            raise
 
         stream.wait()
 

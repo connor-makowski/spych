@@ -90,9 +90,12 @@ class Spych(Notify):
               a return even if the speaker never pauses
             - Default: 30.0
         """
+        self.whisper_model = whisper_model
+        self.whisper_device = resolve_whisper_device(whisper_device)
+        self.whisper_compute_type = whisper_compute_type
         self.wake_model = WhisperModel(
             whisper_model,
-            device=resolve_whisper_device(whisper_device),
+            device=self.whisper_device,
             compute_type=whisper_compute_type,
         )
         self.no_speech_threshold = no_speech_threshold
@@ -101,7 +104,6 @@ class Spych(Notify):
         self.vad_silence_frames_threshold = vad_silence_frames_threshold
         self.vad_speech_pad_frames = vad_speech_pad_frames
         self.vad_max_speech_duration_s = vad_max_speech_duration_s
-        self.whisper_device = resolve_whisper_device(whisper_device)
         self.recorder = Recorder()
 
     def listen(

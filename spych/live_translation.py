@@ -50,8 +50,10 @@ _LANGUAGE_NAMES: dict[str, str] = {
 
 
 def _select_whisper_model(model: str, lang_a: str, lang_b: str) -> str:
-    """Strip `.en` suffix if provided"""
-    if model.endswith(".en"):
+    """Strip a `.en` suffix when either language isn't English, since a single
+    shared model transcribes both sides of the pair and `.en` models can't
+    transcribe non-English speech."""
+    if model.endswith(".en") and (lang_a != "en" or lang_b != "en"):
         return model[:-3]
     return model
 

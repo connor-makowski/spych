@@ -596,7 +596,7 @@ class _DashboardRenderer:
                 header_parts.pop()
             title = sep.join(header_parts)
             if self._visible_len(title) > cols - 1:
-                title = title[: cols - 5] + "..." + _RESET
+                title = self._truncate(title, cols - 1)
 
         lines.append(title)
         lines.append(f"  {_BOLD}{h_bar * bar_width}{_RESET}")
@@ -1366,8 +1366,9 @@ class AgentDashboard:
 
     def toggle_show_all(self) -> None:
         """Toggle between minimal and all-logs mode."""
-        self._show_all = not self._show_all
-        self._scroll_offset = 0
+        with self._lock:
+            self._show_all = not self._show_all
+            self._scroll_offset = 0
 
     def scroll_up(self, amount: int = 1) -> None:
         """Scroll up."""

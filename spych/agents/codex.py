@@ -151,54 +151,64 @@ class LocalCodexCLIResponder(BaseResponder):
         stream = StreamJsonCommand(cmd, input_text=user_input)
         final_text = ""
 
-        for event in stream:
-            etype = event.get("type")
+        try:
+            for event in stream:
+                etype = event.get("type")
 
-            if etype == "thread.started":
-                self._last_session_id = event.get("thread_id")
+                if etype == "thread.started":
+                    self._last_session_id = event.get("thread_id")
 
-            elif etype == "item.started":
-                item = event.get("item", {})
-                item_id = item.get("id", "")
+                elif etype == "item.started":
+                    item = event.get("item", {})
+                    item_id = item.get("id", "")
 
-                if item.get("type") == "command_execution":
-                    tool_name = "command_execution"
-                    explanation = item.get("command", "")
-                    active_tools[item_id] = (tool_name, time.time())
-                    if self.show_tool_events:
-                        self.tool_event(
-                            tool_name,
-                            "running",
-                            is_running=True,
-                            detail=explanation or None,
-                        )
-
-            elif etype == "item.completed":
-                item = event.get("item", {})
-                itype = item.get("type")
-                item_id = item.get("id", "")
-
-                if itype == "command_execution":
-                    if item_id in active_tools:
-                        tool_name, start = active_tools.pop(item_id)
-                        elapsed = time.time() - start
+                    if item.get("type") == "command_execution":
+                        tool_name = "command_execution"
+                        explanation = item.get("command", "")
+                        active_tools[item_id] = (tool_name, time.time())
                         if self.show_tool_events:
                             self.tool_event(
                                 tool_name,
-                                "done",
-                                is_running=False,
-                                elapsed=elapsed,
+                                "running",
+                                is_running=True,
+                                detail=explanation or None,
                             )
 
-                elif itype == "agent_message":
-                    final_text = item.get("text", "")
+                elif etype == "item.completed":
+                    item = event.get("item", {})
+                    itype = item.get("type")
+                    item_id = item.get("id", "")
 
-                elif itype == "error":
-                    msg = item.get("message", "unknown error")
-                    # Non-fatal model metadata warnings — skip silently
-                    if "not found" in msg.lower() and "metadata" in msg.lower():
-                        continue
-                    final_text = f"Error: {msg}"
+                    if itype == "command_execution":
+                        if item_id in active_tools:
+                            tool_name, start = active_tools.pop(item_id)
+                            elapsed = time.time() - start
+                            if self.show_tool_events:
+                                self.tool_event(
+                                    tool_name,
+                                    "done",
+                                    is_running=False,
+                                    elapsed=elapsed,
+                                )
+
+                    elif itype == "agent_message":
+                        final_text = item.get("text", "")
+
+                    elif itype == "error":
+                        msg = item.get("message", "unknown error")
+                        # Non-fatal model metadata warnings — skip silently
+                        if (
+                            "not found" in msg.lower()
+                            and "metadata" in msg.lower()
+                        ):
+                            continue
+                        # Don't let a trailing non-fatal error clobber an
+                        # answer already received via agent_message.
+                        if not final_text:
+                            final_text = f"Error: {msg}"
+        except Exception:
+            stream.kill()
+            raise
 
         stream.wait()
 

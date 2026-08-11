@@ -750,7 +750,7 @@ def on_wake():
 
 SpychWake(
     wake_word_map={"speech": on_wake},
-    whisper_model="tiny.en",
+    whisper_model="small.en",
     whisper_device="cpu",
 ).start()
 ```
