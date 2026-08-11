@@ -32,7 +32,7 @@ dependencies = [
     # for that subprocess to target, so the download fails. Pinning it as a direct
     # dependency here makes spacy.util.is_package() see it as already installed,
     # which skips the runtime download entirely.
-    "en_core_web_sm @ https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl ; python_version < '3.13'",
+    "spacy>=3.8.15,<4.0.0; python_version < '3.13'",
     "chatterbox-tts>=0.1.7,<1.0.0; python_version >= '3.13'",
     # Numba is necessary to build chatterbox
     "numba>=0.61; python_version >= '3.13'",
