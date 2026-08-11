@@ -5,7 +5,7 @@ from pathlib import Path
 
 root = Path(__file__).parent.parent
 
-VERSION = "4.4.0"
+VERSION = "4.4.1"
 OLD_DOC_VERSIONS = ["3.6.0", "2.0.2", "1.0.0"]
 
 env = {
