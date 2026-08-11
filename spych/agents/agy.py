@@ -4,6 +4,7 @@ from spych.responders import BaseResponder, AgentResponse
 from spych.cli_tools import CliPrinter, theme
 from spych.utils import resolve_cmd, StreamJsonCommand
 from typing import Optional, Any
+import os
 import time
 import shutil
 
@@ -86,6 +87,7 @@ class LocalAntigravityCLIResponder(BaseResponder):
         self.first_call = True
         self._last_session_id: Optional[str] = None
         self._prev_message: str = ""
+        self._workspace_dir: str = os.getcwd()
 
     def _get_binary(self) -> str:
         if shutil.which("agy"):
@@ -123,6 +125,8 @@ class LocalAntigravityCLIResponder(BaseResponder):
                 "return only 'true' then stop immediately.",
                 "--output-format",
                 "stream-json",
+                "--add-dir",
+                self._workspace_dir,
             ]
             stream = StreamJsonCommand(cmd)
 
@@ -231,6 +235,8 @@ class LocalAntigravityCLIResponder(BaseResponder):
             self.format_prompt(prompt),
             "--output-format",
             "stream-json",
+            "--add-dir",
+            self._workspace_dir,
         ]
         if self.continue_conversation:
             if self._last_session_id:
