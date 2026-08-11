@@ -22,14 +22,16 @@ Check points:
 
 ---
 
-## 2. Multi-Threaded Wake Word Listener (`wake.py`)
+## 2. Wake Word Listener (`wake.py`)
 
 **Symptoms**: Missed wake words, delayed triggers, or thread deadlocks.
 
 Check points:
-- **Thread Count & Window**: `SpychWake` spawns `wake_listener_count` overlapping `SpychWakeListener` threads (default: 3 threads, 2.5s window).
-- **Staggered Start**: Listener threads stagger start times to achieve continuous coverage.
-- **Wake Word Matching**: `wake_word_map` keys are stripped and lowercased before fuzzy/substring matching against transcribed audio.
+- **Single Capture Thread**: `SpychWake` runs one persistent `_WakeCapture` thread that owns the mic and calls `Recorder.record_vad()` in a loop — Silero VAD (same hysteresis pattern as `core.py` and `live.py`) blocks it until real speech starts and ends, then the isolated utterance is pushed onto a shared queue. No fixed-duration blind window and no per-cycle device open/close.
+- **Transcriber Worker Pool**: `wake_listener_count` (default 2) `_WakeTranscriber` threads pull utterances off that queue and run the wake-spotting Whisper model (`beam_size=1`, greedy) only on isolated speech — never on silence.
+- **Model Size**: Wake spotting should always use a small model (`whisper_model`, default `"tiny.en"`). `SpychOrchestrator.build_spych_wake` no longer overrides this to `"base.en"` — if wake detection feels slow, check whether `spych_wake_kwargs` is forcing a heavier model.
+- **Locking**: `SpychWake.locked` pauses both the capture thread and transcriber workers while a wake callback is running, so detection doesn't compete with an in-flight response. `stop_event` (a `threading.Event`) is the full-shutdown signal, distinct from `locked`.
+- **Wake Word Matching**: `wake_word_map` keys are stripped and lowercased before substring matching against transcribed audio.
 - **Terminate Words**: Verify text isn't inadvertently matching entries in `terminate_words`.
 
 ---

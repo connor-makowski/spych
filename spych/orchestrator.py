@@ -223,8 +223,8 @@ class SpychOrchestrator:
 
         - `spych_wake_kwargs`:
             - Type: dict | None
-            - What: Extra kwargs forwarded to SpychWake. whisper_model defaults
-              to "base.en" if not provided.
+            - What: Extra kwargs forwarded to SpychWake. whisper_model uses
+              SpychWake's own fast "tiny.en" default if not provided.
 
         Returns:
 
@@ -233,7 +233,6 @@ class SpychOrchestrator:
             - What: The configured SpychWake instance ready to be started
         """
         kwargs = spych_wake_kwargs or {}
-        kwargs.setdefault("whisper_model", "base.en")
         return SpychWake(
             wake_word_map=self.wake_word_map,
             terminate_words=self.terminate_words,
