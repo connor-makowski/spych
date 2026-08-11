@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+import inspect
 from typing import Optional, TypedDict
 
 from spych.cli_tools import theme, CliPrinter, CliSpinner, NullSpinner
 from spych.wake import SpychWake
 from spych.spinners import Spinner
+from spych.utils import resolve_whisper_device
 
 from spych.dashboard import AgentDashboard
 
@@ -212,19 +214,87 @@ class SpychOrchestrator:
         self.last_responder: "BaseResponder" = self.entries[0]["responder"]
         return tracked_wake_map, terminate_words
 
+    def find_shareable_wake_model(self, kwargs: dict) -> Optional[object]:
+        """
+        Usage:
+
+        - Checks whether the first entry's responder already has a loaded
+          command-transcription WhisperModel (via its `spych_object`) that is
+          configured identically to what SpychWake would otherwise construct
+          for wake-word spotting. If so, that model can be reused instead of
+          loading a second, redundant copy into memory.
+
+        Requires:
+
+        - `kwargs`:
+            - Type: dict
+            - What: The (possibly empty) kwargs about to be forwarded to
+              SpychWake, used to determine the effective whisper_model/
+              whisper_device/whisper_compute_type it would otherwise use.
+
+        Returns:
+
+        - `wake_model`:
+            - Type: faster_whisper.WhisperModel | None
+            - What: The shareable model instance, or None if no match was found
+              (e.g. different model name/device/compute_type, or the caller
+              already passed an explicit `wake_model_instance`).
+
+        Notes:
+
+        - Only the first entry is considered, mirroring how the dashboard is
+          also inherited from the first responder — in the common case (a
+          single agent, or `spych multi` where every responder shares one
+          Spych instance) that's representative of the whole orchestrator.
+        """
+        if "wake_model_instance" in kwargs:
+            return None
+
+        spych_object = getattr(
+            self.entries[0]["responder"], "spych_object", None
+        )
+        if spych_object is None:
+            return None
+
+        defaults = {
+            name: param.default
+            for name, param in inspect.signature(
+                SpychWake.__init__
+            ).parameters.items()
+        }
+        whisper_model = kwargs.get("whisper_model", defaults["whisper_model"])
+        whisper_device = resolve_whisper_device(
+            kwargs.get("whisper_device", defaults["whisper_device"])
+        )
+        whisper_compute_type = kwargs.get(
+            "whisper_compute_type", defaults["whisper_compute_type"]
+        )
+
+        if (
+            spych_object.whisper_model == whisper_model
+            and spych_object.whisper_device == whisper_device
+            and spych_object.whisper_compute_type == whisper_compute_type
+        ):
+            return spych_object.wake_model
+        return None
+
     def build_spych_wake(self, spych_wake_kwargs: Optional[dict]) -> SpychWake:
         """
         Usage:
 
         - Constructs the SpychWake instance using the merged wake word map and
           terminate word list built by build_wake_word_map().
+        - Reuses the first responder's command-transcription WhisperModel for
+          wake-word spotting when its model/device/compute_type already match
+          what SpychWake would otherwise load, avoiding a redundant second
+          model in memory.
 
         Requires:
 
         - `spych_wake_kwargs`:
             - Type: dict | None
-            - What: Extra kwargs forwarded to SpychWake. whisper_model defaults
-              to "base.en" if not provided.
+            - What: Extra kwargs forwarded to SpychWake. whisper_model uses
+              SpychWake's own fast "small.en" default if not provided.
 
         Returns:
 
@@ -233,7 +303,9 @@ class SpychOrchestrator:
             - What: The configured SpychWake instance ready to be started
         """
         kwargs = spych_wake_kwargs or {}
-        kwargs.setdefault("whisper_model", "base.en")
+        shared_model = self.find_shareable_wake_model(kwargs)
+        if shared_model is not None:
+            kwargs = {**kwargs, "wake_model_instance": shared_model}
         return SpychWake(
             wake_word_map=self.wake_word_map,
             terminate_words=self.terminate_words,
@@ -269,6 +341,12 @@ class SpychOrchestrator:
         - Prints the ready header for every registered responder, then starts
           the SpychWake voice listener. Blocks until a terminate word is spoken
           or ctrl+c is pressed.
+
+        Notes:
+
+        - If a dashboard is active, it is always stopped (restoring the
+          terminal) before this method returns or raises, regardless of how
+          `spych_wake.start()` exits.
         """
         for entry in self.entries:
             if not entry["responder"].healthcheck():
@@ -294,3 +372,6 @@ class SpychOrchestrator:
             self.spych_wake.start()
         except KeyboardInterrupt:
             self.on_terminate()
+        finally:
+            if self._dashboard is not None:
+                self._dashboard.stop()

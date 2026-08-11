@@ -1,30 +1,23 @@
-from spych import SpychWake, Spych
-
-spych_object = Spych(
-    whisper_model="base.en",
-    whisper_device="cuda",
-    whisper_compute_type="int8",
-)
+import pytest
+import torch
+from spych import Spych, SpychWake
 
 
-def on_wake():
-    print("Wake word heard! Listening for 5 seconds and transcribing...")
-    output = spych_object.listen(duration=5)
-    print(f"Transcription: {output}")
-    print("")
+def test_cuda_init_and_config():
+    if not torch.cuda.is_available():
+        pytest.skip("CUDA device not available in this environment")
 
+    spych_object = Spych(
+        whisper_model="tiny.en",
+        whisper_device="cuda",
+        whisper_compute_type="float16",
+    )
+    assert spych_object.whisper_device == "cuda"
 
-wake_object = SpychWake(
-    wake_word_map={"speech": on_wake},
-    whisper_model="tiny.en",
-    whisper_device="cuda",
-    whisper_compute_type="int8",
-    terminate_words=["terminate"],
-)
-
-wake_object.verbose = True  # Enable verbose notifications for testing
-
-print(
-    "Starting wake listener. Say 'Spych' (pronounced Speech) to trigger the on_wake function."
-)
-wake_object.start()
+    wake_object = SpychWake(
+        wake_word_map={"speech": lambda: None},
+        whisper_model="tiny.en",
+        whisper_device="cuda",
+        terminate_words=["terminate"],
+    )
+    assert wake_object.whisper_device == "cuda"

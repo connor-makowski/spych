@@ -9,7 +9,7 @@ from typing import Optional
 
 from faster_whisper import WhisperModel
 
-from spych.utils import Notify, resolve_whisper_device
+from spych.utils import Notify, load_whisper_model, resolve_whisper_device
 from spych.live import (
     VADRecorder,
     KeystrokeListener,
@@ -50,8 +50,10 @@ _LANGUAGE_NAMES: dict[str, str] = {
 
 
 def _select_whisper_model(model: str, lang_a: str, lang_b: str) -> str:
-    """Strip `.en` suffix if provided"""
-    if model.endswith(".en"):
+    """Strip a `.en` suffix when either language isn't English, since a single
+    shared model transcribes both sides of the pair and `.en` models can't
+    transcribe non-English speech."""
+    if model.endswith(".en") and (lang_a != "en" or lang_b != "en"):
         return model[:-3]
     return model
 
@@ -845,7 +847,7 @@ class SpychLiveTranslation(Notify):
         self.speaker_voice = speaker_voice
 
         resolved_model = _select_whisper_model(whisper_model, lang_a, lang_b)
-        self.model = WhisperModel(
+        self.model = load_whisper_model(
             resolved_model,
             device=resolve_whisper_device(whisper_device),
             compute_type=whisper_compute_type,

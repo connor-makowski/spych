@@ -25,13 +25,18 @@ uv tool install spych
 pip install spych
 ```
 
-### TTS Extras
+### TTS Backends
 
-By default, Spych automatically installs the right TTS backend for your Python version. You can also install explicitly:
+By default, Spych automatically installs the right TTS backend for your Python version: `kokoro` on Python < 3.13, and `chatterbox-tts` on Python >= 3.13.
 
+#### For Kokoro (use a python version < 3.13):
 ```bash
-uv tool install "spych[kokoro]"       # Fast, lightweight (Python < 3.13 recommended)
-uv tool install "spych[chatterbox]"   # High-quality voice cloning (Python >= 3.13 required)
+uv tool install spych --python 3.12
+```
+
+#### For Chatterbox (use a python version >= 3.13):
+```bash
+uv tool install spych --python 3.13
 ```
 
 ---
@@ -47,6 +52,9 @@ spych claude
 
 # Use a personality preset — say "hey jarvis" to trigger
 spych claude --personality jarvis
+
+# Use antigravity (agy) — say "hey agy" to trigger
+spych agy
 
 # Voice-control a local Ollama model — say "hey llama" to trigger
 spych ollama --model llama3.2:latest
@@ -69,7 +77,7 @@ All agents require their respective CLI tool to be installed and authenticated b
 | `spych claude_code_cli` | — | Voice-control Claude Code via the CLI | `claude`, `clod`, `cloud`, `clawed` |
 | `spych claude_code_sdk` | `spych claude` | Voice-control Claude Code via the Agent SDK | `claude`, `clod`, `cloud`, `clawed` |
 | `spych codex_cli` | `spych codex` | Voice-control the OpenAI Codex agent | `codex` |
-| `spych gemini_cli` | `spych gemini` | Voice-control the Google Gemini agent | `gemini`, `google` |
+| `spych antigravity_cli` | `spych agy` | Voice-control the Antigravity agent (agy) | `antigravity`, `gravity`, `google`, `gemini` |
 | `spych opencode_cli` | `spych opencode` | Voice-control the OpenCode agent | `opencode`, `open code` |
 | `spych ollama` | — | Talk to a local Ollama model | `llama`, `ollama`, `lama` |
 
@@ -122,7 +130,7 @@ All agent subcommands accept these flags:
 | `--response-style STYLE` | — | Style preset or custom instruction for spoken output |
 | `--intermediate-responses BOOL` | `true` | Enable intermediate response chaining for long-running tasks |
 
-Coding agents (`claude`, `codex`, `gemini`, `opencode`) also accept:
+Coding agents (`claude`, `codex`, `antigravity`, `opencode`) also accept:
 
 | Flag | Default | Description |
 |---|---|---|
@@ -465,7 +473,7 @@ Run several agents simultaneously under a single listener, each bound to its own
 
 ```bash
 # Two agents, default wake words
-spych multi --agents claude gemini
+spych multi --agents claude agy
 
 # Include Ollama with a specific model
 spych multi --agents claude ollama --ollama-model llama3.2:latest
@@ -478,7 +486,7 @@ spych multi --agents claude codex --listen-duration 8
 
 | Flag | Default | Description |
 |---|---|---|
-| `--agents AGENT [...]` | *(required)* | Agents to run: `claude` (`claude_code_cli`), `claude_sdk` (`claude_code_sdk`), `codex` (`codex_cli`), `gemini` (`gemini_cli`), `opencode` (`opencode_cli`), `ollama` |
+| `--agents AGENT [...]` | *(required)* | Agents to run: `claude` (`claude_code_cli`), `claude_sdk` (`claude_code_sdk`), `codex` (`codex_cli`), `antigravity` (`antigravity_cli`), `opencode` (`opencode_cli`), `ollama` |
 | `--terminate-words WORD [...]` | `terminate` | Words that stop all agents |
 | `--listen-duration SECONDS` | `5` | Seconds to listen after a wake word |
 | `--follow-up-listen-duration SECONDS` | `0` | Seconds to listen for follow-up answers |
@@ -567,13 +575,13 @@ from spych.agents import codex_cli
 codex_cli()
 ```
 
-## Gemini CLI
+## Antigravity CLI (agy)
 
 ```python
-from spych.agents import gemini_cli
+from spych.agents import antigravity_cli
 
-# Say "hey gemini" to trigger
-gemini_cli()
+# Say "hey antigravity" or "hey agy" to trigger
+antigravity_cli()
 ```
 
 ## OpenCode CLI
@@ -597,10 +605,10 @@ ollama(model="llama3.2:latest")
 
 ### Coding Agent Parameters
 
-| Parameter | `claude_code_cli` | `claude_code_sdk` | `codex_cli` | `gemini_cli` | `opencode_cli` | Description |
+| Parameter | `claude_code_cli` | `claude_code_sdk` | `codex_cli` | `antigravity_cli` | `opencode_cli` | Description |
 |---|---|---|---|---|---|---|
-| `name` | `Claude` | `Claude` | `Codex` | `Gemini` | `OpenCode` | Custom display name |
-| `wake_words` | `["claude", "clod", "cloud", "clawed"]` | `["claude", "clod", "cloud", "clawed"]` | `["codex"]` | `["gemini", "google"]` | `["opencode", "open code"]` | Words that trigger the agent |
+| `name` | `Claude` | `Claude` | `Codex` | `Antigravity` | `OpenCode` | Custom display name |
+| `wake_words` | `["claude", "clod", "cloud", "clawed"]` | `["claude", "clod", "cloud", "clawed"]` | `["codex"]` | `["antigravity", "gravity", "google", "gemini"]` | `["opencode", "open code"]` | Words that trigger the agent |
 | `terminate_words` | `["terminate"]` | `["terminate"]` | `["terminate"]` | `["terminate"]` | `["terminate"]` | Words that stop the listener |
 | `model` | — | — | — | — | `None` | Model in `provider/model` format |
 | `listen_duration` | `0` | `0` | `0` | `0` | `0` | Seconds to listen (0 = VAD auto) |
@@ -780,10 +788,17 @@ Contributions are welcome!
 4. Commit atomically with clear messages.
 5. Submit a pull request.
 
-**Virtual environment setup:**
+**Development setup & testing:**
 ```bash
-python3.11 -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-./utils/test.sh
+uv venv
+source .venv/bin/activate
+uv pip install -e ".[dev]"
+
+# Run tests
+pytest
+# Or run multi-version tests via nox
+nox
+
+# Format code
+nox -s prettify
 ```

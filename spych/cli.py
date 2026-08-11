@@ -9,7 +9,7 @@ Examples:
     spych --theme light claude_code_cli
     spych claude_code_sdk --setting-sources user project local
     spych codex_cli --listen-duration 8
-    spych gemini_cli
+    spych antigravity_cli
     spych opencode_cli --model anthropic/claude-sonnet-4-5
 
     # Live transcription
@@ -32,6 +32,7 @@ Examples:
 """
 
 import argparse
+import os
 import sys
 from importlib.metadata import version
 
@@ -99,21 +100,20 @@ def _add_shared_args(parser: argparse.ArgumentParser) -> None:
         metavar="STYLE",
         help=(
             "Style for reformatting output. "
-            "Choices: military, five_year_old, fast, pirate, news_anchor, haiku, shakespearean, robot",
-            "caveman",
-            "yoda",
+            "Choices: military, five_year_old, fast, pirate, news_anchor, haiku, shakespearean, robot, "
+            "caveman, yoda"
         ),
     )
     parser.add_argument(
         "--use-speaker",
         type=_parse_bool,
-        default=True,
+        default=None,
         metavar="BOOL",
         help="Speak responses aloud via TTS (default: true)",
     )
     parser.add_argument(
         "--speaker-voice",
-        default="af_heart",
+        default=None,
         metavar="VOICE",
         help=(
             "Voice name for spoken responses (default: af_heart). "
@@ -191,7 +191,7 @@ def _build_shared_kwargs(args: argparse.Namespace) -> dict:
         kwargs["inactivity_timeout"] = args.inactivity_timeout
     if args.use_speaker is not None:
         kwargs["use_speaker"] = args.use_speaker
-    if args.speaker_voice != "af_heart":
+    if args.speaker_voice is not None:
         kwargs["speaker_voice"] = args.speaker_voice
     if getattr(args, "speaker_backend", ""):
         kwargs["speaker_backend"] = args.speaker_backend
@@ -246,7 +246,11 @@ def main():
     _AGENT_ALIASES: dict[str, str] = {
         "claude": "claude_code_sdk",
         "codex": "codex_cli",
-        "gemini": "gemini_cli",
+        "gemini": "antigravity_cli",
+        "google": "antigravity_cli",
+        "agy": "antigravity_cli",
+        "agy_cli": "antigravity_cli",
+        "antigravity": "antigravity_cli",
         "opencode": "opencode_cli",
     }
 
@@ -317,15 +321,15 @@ def main():
     _add_agent_args(p_codex)
 
     # ------------------------------------------------------------------ #
-    # gemini_cli                                                           #
+    # antigravity_cli                                                      #
     # ------------------------------------------------------------------ #
-    p_gemini = subparsers.add_parser(
-        "gemini_cli",
-        aliases=["gemini"],
-        help="Voice-control the Google Gemini agent",
+    p_antigravity = subparsers.add_parser(
+        "antigravity_cli",
+        aliases=["antigravity", "agy", "agy_cli", "google", "gemini"],
+        help="Voice-control the Antigravity agent (agy)",
     )
-    _add_shared_args(p_gemini)
-    _add_agent_args(p_gemini)
+    _add_shared_args(p_antigravity)
+    _add_agent_args(p_antigravity)
 
     # ------------------------------------------------------------------ #
     # opencode_cli                                                         #
@@ -366,7 +370,7 @@ def main():
     )
     p_live.add_argument(
         "--output-format",
-        default="srt",
+        default="both",
         choices=["txt", "srt", "both"],
         metavar="FORMAT",
         help="Output format: txt, srt, or both (default: both)",
@@ -552,7 +556,7 @@ def main():
         "--whisper-model",
         default="small",
         metavar="MODEL",
-        help="faster-whisper model name; .en suffix stripped automatically (default: base)",
+        help="faster-whisper model name; .en suffix stripped automatically (default: small)",
     )
     p_live_translation.add_argument(
         "--whisper-device",
@@ -619,7 +623,7 @@ def main():
             "Run several agents at once. Each agent uses its own default wake "
             "words unless overridden.\n\n"
             "Example:\n"
-            "  spych multi --agents claude_code_cli gemini_cli\n"
+            "  spych multi --agents claude_code_cli antigravity_cli\n"
             "  spych multi --agents claude_code_cli ollama --ollama-model llama3.2:latest\n"
             "  spych multi --agents claude_code_sdk codex_cli --listen-duration 8"
         ),
@@ -636,8 +640,10 @@ def main():
             "claude_sdk",
             "codex_cli",
             "codex",
-            "gemini_cli",
-            "gemini",
+            "antigravity_cli",
+            "antigravity",
+            "agy_cli",
+            "agy",
             "opencode_cli",
             "opencode",
             "ollama",
@@ -645,7 +651,7 @@ def main():
         help=(
             "Agents to run. Choices: claude (claude_code_cli), "
             "claude_sdk (claude_code_sdk), codex (codex_cli), "
-            "gemini (gemini_cli), opencode (opencode_cli), ollama"
+            "antigravity (antigravity_cli), opencode (opencode_cli), ollama"
         ),
     )
     p_multi.add_argument(
@@ -703,6 +709,21 @@ def main():
         default=True,
         metavar="BOOL",
         help="Speak responses aloud via TTS (default: true)",
+    )
+    p_multi.add_argument(
+        "--verbose",
+        action="store_true",
+        default=False,
+        help=(
+            "Use verbose scroll output (spinner + full log) instead of the "
+            "TUI dashboard (default: false)"
+        ),
+    )
+    p_multi.add_argument(
+        "--user",
+        default=None,
+        metavar="NAME",
+        help="The user name to use for tailored responses (default: default user from settings)",
     )
     # ollama-specific flags (only used when 'ollama' is in --agents)
     p_multi.add_argument(
@@ -806,7 +827,7 @@ def main():
         "claude_code_cli": ["claude", "clod", "cloud", "clawed"],
         "claude_code_sdk": ["claude", "clod", "cloud", "clawed"],
         "codex_cli": ["codex"],
-        "gemini_cli": ["gemini"],
+        "antigravity_cli": ["antigravity", "gravity", "google", "gemini"],
         "opencode_cli": ["opencode", "open code"],
     }
 
@@ -815,7 +836,7 @@ def main():
         "claude_code_cli": "Claude Code CLI",
         "claude_code_sdk": "Claude Code SDK",
         "codex_cli": "Codex CLI",
-        "gemini_cli": "Gemini CLI",
+        "antigravity_cli": "Antigravity CLI",
         "opencode_cli": "OpenCode CLI",
     }
 
@@ -915,17 +936,19 @@ def main():
             if dashboard is not None:
                 dashboard.stop()
 
-    elif args.agent == "gemini_cli":
-        from spych.agents import gemini_cli
+    elif args.agent in ("antigravity_cli", "agy_cli", "antigravity", "agy"):
+        from spych.agents import antigravity_cli
 
         kwargs = _build_agent_kwargs(args)
         dashboard = (
-            _start_dashboard("Gemini", "LocalGeminiCLIResponder", kwargs)
+            _start_dashboard(
+                "Antigravity", "LocalAntigravityCLIResponder", kwargs
+            )
             if not args.verbose
             else None
         )
         try:
-            gemini_cli(**kwargs)
+            antigravity_cli(**kwargs)
         finally:
             if dashboard is not None:
                 dashboard.stop()
@@ -1014,6 +1037,7 @@ def main():
             get_default_user,
             set_setting,
             get_setting,
+            get_cache_dir,
         )
         from spych.cli_tools import set_theme
 
@@ -1149,7 +1173,7 @@ def main():
                 "claude_code_cli": "Claude",
                 "claude_code_sdk": "Claude",
                 "codex_cli": "Codex",
-                "gemini_cli": "Gemini",
+                "antigravity_cli": "Antigravity",
                 "opencode_cli": "OpenCode",
                 "ollama": "Ollama",
             }
@@ -1239,12 +1263,17 @@ def main():
                     }
                 )
 
-            elif agent_name == "gemini_cli":
-                from spych.agents.gemini import LocalGeminiCLIResponder
+            elif agent_name in (
+                "antigravity_cli",
+                "agy_cli",
+                "antigravity",
+                "agy",
+            ):
+                from spych.agents.agy import LocalAntigravityCLIResponder
 
                 entries.append(
                     {
-                        "responder": LocalGeminiCLIResponder(
+                        "responder": LocalAntigravityCLIResponder(
                             spych_object=spych_object,
                             continue_conversation=args.continue_conversation,
                             listen_duration=args.listen_duration,
@@ -1255,9 +1284,16 @@ def main():
                             show_tool_events=args.show_tool_events,
                             dashboard=multi_dashboard,
                             user=args.user,
-                            display_name=_AGENT_RESPONDERS.get("gemini_cli"),
+                            display_name=_AGENT_RESPONDERS.get(
+                                "antigravity_cli"
+                            ),
                         ),
-                        "wake_words": ["gemini"],
+                        "wake_words": [
+                            "antigravity",
+                            "gravity",
+                            "google",
+                            "gemini",
+                        ],
                         "terminate_words": args.terminate_words,
                     }
                 )

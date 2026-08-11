@@ -213,8 +213,9 @@ def ollama(
     response_style: Optional[str] = None,
     spych_kwargs: dict[str, any] | None = None,
     spych_wake_kwargs: dict[str, any] | None = None,
+    start: bool = True,
     **kwargs,
-) -> None:
+) -> Optional[SpychOrchestrator]:
     """
     Usage:
 
@@ -308,7 +309,7 @@ def ollama(
         **kwargs,
     )
 
-    SpychOrchestrator(
+    orchestrator = SpychOrchestrator(
         entries=[
             {
                 "responder": responder,
@@ -317,4 +318,7 @@ def ollama(
             }
         ],
         spych_wake_kwargs=spych_wake_kwargs,
-    ).start()
+    )
+    if start:
+        orchestrator.start()
+    return orchestrator

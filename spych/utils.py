@@ -167,8 +167,9 @@ def resolve_whisper_device(device: str) -> str:
 
     - Resolves the whisper device string, selecting "cuda" or "cpu" automatically
       when "auto" is passed.
-    - "cuda" is chosen only when Python <= 3.13 and torch reports a CUDA device
-      is available; otherwise falls back to "cpu".
+    - "cuda" is chosen when torch reports a CUDA device is available; if the
+      CUDA libraries cannot actually be loaded at runtime, `load_whisper_model`
+      will catch the resulting `RuntimeError` and transparently fall back to CPU.
 
     Requires:
 
@@ -184,9 +185,80 @@ def resolve_whisper_device(device: str) -> str:
     """
     if device != "auto":
         return device
-    if sys.version_info <= (3, 13) and torch.cuda.is_available():
+    if torch.cuda.is_available():
         return "cuda"
     return "cpu"
+
+
+def load_whisper_model(
+    whisper_model: str,
+    device: str,
+    compute_type: str,
+) -> "WhisperModel":
+    """
+    Usage:
+
+    - Constructs a `faster_whisper.WhisperModel` and transparently falls back
+      to CPU when CUDA is requested but unavailable at runtime (e.g. when
+      `torch.cuda.is_available()` returns True but the CUDA libraries such as
+      `libcublas.so.12` are missing or incompatible).
+    - When `device` is \"cuda\", a silent dummy transcription is run immediately
+      after construction to force eager CUDA initialisation. ctranslate2
+      initialises CUDA lazily, so the constructor itself never raises even when
+      the libraries are broken — the error only surfaces at the first encode
+      call. The probe catches that error here and falls back to CPU before the
+      model is handed to any caller.
+
+    Requires:
+
+    - `whisper_model`:
+        - Type: str
+        - What: The faster-whisper model name (e.g. \"base.en\", \"small\")
+
+    - `device`:
+        - Type: str
+        - What: The device to attempt first — \"cpu\" or \"cuda\"
+
+    - `compute_type`:
+        - Type: str
+        - What: The compute type (e.g. \"int8\", \"float16\", \"float32\")
+
+    Returns:
+
+    - `model`:
+        - Type: WhisperModel
+        - What: A loaded faster-whisper model instance, guaranteed to run on
+          either the requested device or CPU if the requested device failed.
+
+    Notes:
+
+    - The dummy probe is a zero-valued 0.1 s float32 buffer, which is the
+      smallest input ctranslate2 will encode without complaining. Its output
+      is discarded; only the side-effect of triggering CUDA initialisation matters.
+    - If the CPU fallback also raises, the exception propagates normally.
+    """
+    from faster_whisper import WhisperModel
+
+    def _build(dev: str, ct: str) -> WhisperModel:
+        return WhisperModel(whisper_model, device=dev, compute_type=ct)
+
+    def _probe(model: WhisperModel) -> None:
+        dummy = np.zeros(int(16000 * 0.1), dtype=np.float32)
+        list(model.transcribe(dummy, beam_size=1)[0])
+
+    try:
+        model = _build(device, compute_type)
+        if device != "cpu":
+            _probe(model)
+        return model
+    except RuntimeError as e:
+        if device != "cpu":
+            print(
+                f"WARNING: Could not use WhisperModel on '{device}' "
+                f"({e}). Falling back to CPU."
+            )
+            return _build("cpu", "int8")
+        raise
 
 
 class Recorder:
@@ -456,6 +528,10 @@ class Notify:
             "verbose": "",
             "exception": "EXCEPTION",
         }
+        if notification_type not in notification_types:
+            raise Exception(
+                f"Invalid notification type. Must be one of: {list(notification_types.keys())}"
+            )
         message = f"{self.__class__.__name__}.{sys._getframe(depth).f_back.f_code.co_name} {notification_types.get(notification_type, '')}: {message}"
         if notification_type == "exception":
             raise Exception(message)
@@ -464,13 +540,9 @@ class Notify:
                 if self.__dict__.get("warning_stack", False):
                     traceback.print_stack(limit=10)
                 print(message)
-        elif notification_type == "verbose" or force:
-            if self.__dict__.get("verbose", False):
+        elif notification_type == "verbose":
+            if self.__dict__.get("verbose", False) or force:
                 print(message)
-        else:
-            raise Exception(
-                f"Invalid notification type. Must be one of: {list(notification_types.keys())}"
-            )
 
 
 def get_response_style(style: Optional[str]) -> str:
@@ -826,55 +898,3 @@ class StreamJsonCommand:
     def kill(self) -> None:
         """Kill the underlying subprocess and wait for reader threads to finish."""
         self._stream.kill()
-
-
-def stream_json_command(
-    cmd: list[str], input_text: Optional[str] = None
-) -> StreamSubprocess:
-    """
-    Usage:
-
-    - Runs a command and returns a StreamSubprocess object that can be
-      iterated over to receive parsed JSON objects from stdout.
-
-    Requires:
-
-    - `cmd`:
-        - Type: list[str]
-        - What: The command and arguments to execute.
-
-    Optional:
-
-    - `input_text`:
-        - Type: str | None
-        - What: Text to write to the process's stdin before closing it.
-    """
-    if os.name == "nt":
-        # Always use cmd.exe /c for wrappers on Windows for stability
-        cmd = ["cmd.exe", "/c"] + cmd
-
-    proc = subprocess.Popen(
-        cmd,
-        stdin=subprocess.PIPE,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True,
-        encoding="utf-8",
-        errors="replace",
-        shell=False,
-    )
-
-    if input_text:
-        try:
-            proc.stdin.write(input_text + "\n")
-            proc.stdin.flush()
-        except BrokenPipeError:
-            pass
-
-    # Always close stdin so the process knows no more input is coming
-    try:
-        proc.stdin.close()
-    except Exception:
-        pass
-
-    return StreamSubprocess(proc)

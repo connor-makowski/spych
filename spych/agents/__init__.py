@@ -8,7 +8,7 @@ various language models and AI services.
 Agents are organized by the underlying AI service they interface with:
 - Claude agents (claude.py)
 - Ollama agents (ollama.py)
-- Gemini agents (gemini.py)
+- Antigravity/agy agents (agy.py)
 - Codex agents (codex.py)
 - OpenCode agents (opencode.py)
 
@@ -22,6 +22,10 @@ from spych.agents.claude import (
     LocalClaudeCodeSDKResponder,
 )
 from spych.agents.ollama import ollama, OllamaResponder
-from spych.agents.gemini import gemini_cli, LocalGeminiCLIResponder
+from spych.agents.agy import (
+    antigravity_cli,
+    agy_cli,
+    LocalAntigravityCLIResponder,
+)
 from spych.agents.codex import codex_cli, LocalCodexCLIResponder
 from spych.agents.opencode import opencode_cli, LocalOpenCodeCLIResponder

@@ -10,6 +10,7 @@ from faster_whisper import WhisperModel
 from spych.utils import (
     Notify,
     get_clean_audio_buffer,
+    load_whisper_model,
     Recorder,
     resolve_whisper_device,
 )
@@ -585,7 +586,7 @@ class SpychLive(Notify):
             - Type: str
             - What: The faster-whisper model name
             - Default: "base.en"
-            - Note: Use "small.en" or larger for improved accuracy; "tiny.en"
+            - Note: Use "small.en" on larger setups or for improved accuracy; "tiny.en"
               for low-latency CPU setups
 
         - `whisper_device`:
@@ -662,7 +663,7 @@ class SpychLive(Notify):
         self.max_speech_duration_s = max_speech_duration_s
         self.context_words = context_words
 
-        self.model = WhisperModel(
+        self.model = load_whisper_model(
             whisper_model,
             device=resolve_whisper_device(whisper_device),
             compute_type=whisper_compute_type,

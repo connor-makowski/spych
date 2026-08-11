@@ -202,48 +202,56 @@ class LocalClaudeCodeSDKResponder(BaseResponder):
         final_result = ""
         active_tools: dict[str, tuple[str, float]] = {}
 
-        for event in stream:
-            etype = event.get("type")
+        try:
+            for event in stream:
+                etype = event.get("type")
 
-            if etype == "session":
-                self._last_session_id = event.get("id")
+                if etype == "session":
+                    self._last_session_id = event.get("id")
 
-            elif etype == "system":
-                # print(raw_line)
-                pass
+                elif etype == "system":
+                    # print(raw_line)
+                    pass
 
-            elif etype == "tool_start":
-                tool_id = event["id"]
-                tool_name = event["name"]
-                raw_input = event.get("input", {})
-                # print(f"Tool '{tool_name}' started with input: {json.dumps(raw_input)}")
-                active_tools[tool_id] = (tool_name, time.time())
-                if self.show_tool_events:
-                    detail = _extract_tool_detail(tool_name, raw_input)
-                    self.tool_event(
-                        tool_name,
-                        "running",
-                        is_running=True,
-                        detail=detail or None,
-                    )
-
-            elif etype == "tool_end":
-                tool_id = event["id"]
-                if tool_id in active_tools:
-                    tool_name, start = active_tools.pop(tool_id)
-                    elapsed = time.time() - start
+                elif etype == "tool_start":
+                    tool_id = event.get("id")
+                    tool_name = event.get("name")
+                    if tool_id is None or tool_name is None:
+                        continue
+                    raw_input = event.get("input", {})
+                    # print(f"Tool '{tool_name}' started with input: {json.dumps(raw_input)}")
+                    active_tools[tool_id] = (tool_name, time.time())
                     if self.show_tool_events:
+                        detail = _extract_tool_detail(tool_name, raw_input)
                         self.tool_event(
-                            tool_name, "done", is_running=False, elapsed=elapsed
+                            tool_name,
+                            "running",
+                            is_running=True,
+                            detail=detail or None,
                         )
 
-            elif etype == "result":
-                final_result = event.get("text", "")
+                elif etype == "tool_end":
+                    tool_id = event.get("id")
+                    if tool_id in active_tools:
+                        tool_name, start = active_tools.pop(tool_id)
+                        elapsed = time.time() - start
+                        if self.show_tool_events:
+                            self.tool_event(
+                                tool_name,
+                                "done",
+                                is_running=False,
+                                elapsed=elapsed,
+                            )
 
-            elif etype == "error":
-                final_result = f"Error: {event.get('text', 'unknown error')}"
+                elif etype == "result":
+                    final_result = event.get("text", "")
 
-        stream.kill()
+                elif etype == "error":
+                    final_result = (
+                        f"Error: {event.get('text', 'unknown error')}"
+                    )
+        finally:
+            stream.kill()
 
         if not final_result:
             stderr_text = "".join(stream.stderr_lines).strip()
@@ -266,8 +274,9 @@ def claude_code_sdk(
     response_style: Optional[str] = None,
     spych_kwargs: dict[str, any] | None = None,
     spych_wake_kwargs: dict[str, any] | None = None,
+    start: bool = True,
     **kwargs,
-) -> None:
+) -> Optional[SpychOrchestrator]:
     """
     Usage:
 
@@ -356,7 +365,7 @@ def claude_code_sdk(
         **kwargs,
     )
 
-    SpychOrchestrator(
+    orchestrator = SpychOrchestrator(
         entries=[
             {
                 "responder": responder,
@@ -365,7 +374,10 @@ def claude_code_sdk(
             }
         ],
         spych_wake_kwargs=spych_wake_kwargs,
-    ).start()
+    )
+    if start:
+        orchestrator.start()
+    return orchestrator
 
 
 class LocalClaudeCodeCLIResponder(BaseResponder):
@@ -516,59 +528,63 @@ class LocalClaudeCodeCLIResponder(BaseResponder):
         stream = StreamJsonCommand(cmd, input_text=user_input)
         result_text = ""
 
-        for event in stream:
-            etype = event.get("type")
+        try:
+            for event in stream:
+                etype = event.get("type")
 
-            if etype == "system" and event.get("subtype") == "init":
-                self._last_session_id = event.get("session_id")
+                if etype == "system" and event.get("subtype") == "init":
+                    self._last_session_id = event.get("session_id")
 
-            elif etype == "assistant":
-                content_blocks = event.get("message", {}).get("content", [])
-                for block in content_blocks:
-                    if block.get("type") != "text":
-                        continue
+                elif etype == "assistant":
+                    content_blocks = event.get("message", {}).get("content", [])
+                    for block in content_blocks:
+                        if block.get("type") != "text":
+                            continue
 
-                    raw_text = block.get("text", "")
+                        raw_text = block.get("text", "")
 
-                    # Fire a tool_start event for each new tool call seen
-                    if self.show_tool_events:
-                        for m in re.finditer(r"<function=(\w+)>", raw_text):
-                            tool_name = m.group(1)
-                            if tool_name not in active_tools:
-                                active_tools[tool_name] = time.time()
-                                preceding = raw_text[: m.start()]
-                                explanation = self.__strip_tool_calls__(
-                                    preceding
-                                ).strip()
+                        # Fire a tool_start event for each new tool call seen
+                        if self.show_tool_events:
+                            for m in re.finditer(r"<function=(\w+)>", raw_text):
+                                tool_name = m.group(1)
+                                if tool_name not in active_tools:
+                                    active_tools[tool_name] = time.time()
+                                    preceding = raw_text[: m.start()]
+                                    explanation = self.__strip_tool_calls__(
+                                        preceding
+                                    ).strip()
+                                    self.tool_event(
+                                        tool_name,
+                                        "running",
+                                        is_running=True,
+                                        detail=explanation or None,
+                                    )
+
+                        # Only print live on intermediate (tool-call) turns.
+                        # On the final turn the base class prints the return value.
+                        if print_assistant:
+                            clean = self.__strip_tool_calls__(raw_text)
+                            if clean:
+                                self.print_response(self.name, clean)
+
+                elif etype == "result":
+                    result_text = event.get("result", "")
+
+                    if event.get("is_error") or event.get("subtype") == "error":
+                        for tool_name, start in list(active_tools.items()):
+                            if self.show_tool_events:
                                 self.tool_event(
                                     tool_name,
-                                    "running",
-                                    is_running=True,
-                                    detail=explanation or None,
+                                    "done",
+                                    is_running=False,
+                                    elapsed=time.time() - start,
                                 )
-
-                    # Only print live on intermediate (tool-call) turns.
-                    # On the final turn the base class prints the return value.
-                    if print_assistant:
-                        clean = self.__strip_tool_calls__(raw_text)
-                        if clean:
-                            self.print_response(self.name, clean)
-
-            elif etype == "result":
-                result_text = event.get("result", "")
-
-                if event.get("is_error") or event.get("subtype") == "error":
-                    for tool_name, start in list(active_tools.items()):
-                        if self.show_tool_events:
-                            self.tool_event(
-                                tool_name,
-                                "done",
-                                is_running=False,
-                                elapsed=time.time() - start,
-                            )
-                    active_tools.clear()
-                    stream.wait()
-                    return False, f"Error: {result_text}"
+                        active_tools.clear()
+                        stream.wait()
+                        return False, f"Error: {result_text}"
+        except Exception:
+            stream.kill()
+            raise
 
         stream.wait()
 
@@ -611,6 +627,11 @@ class LocalClaudeCodeCLIResponder(BaseResponder):
 
         current_input = self.format_prompt(prompt)
 
+        # Hard cap on <tool_call> re-query turns. If the CLI keeps emitting a
+        # tool call it can't execute (malformed/unsupported), this stops the
+        # voice pipeline from hanging forever on that turn.
+        max_retries = 5
+        retries = 0
         while True:
             needs_continuation, result_text = self.__run_turn__(
                 current_input,
@@ -624,6 +645,13 @@ class LocalClaudeCodeCLIResponder(BaseResponder):
 
             if not needs_continuation:
                 return self.parse_output(result_text)
+
+            retries += 1
+            if retries > max_retries:
+                return self.parse_output(
+                    "Error: Exceeded max tool-call re-query attempts "
+                    f"({max_retries}); last raw response: {result_text}"
+                )
 
             current_input = result_text
 
@@ -640,8 +668,9 @@ def claude_code_cli(
     response_style: Optional[str] = None,
     spych_kwargs: Optional[dict[str, Any]] = None,
     spych_wake_kwargs: Optional[dict[str, Any]] = None,
+    start: bool = True,
     **kwargs,
-) -> None:
+) -> Optional[SpychOrchestrator]:
     """
     Usage:
 
@@ -712,7 +741,7 @@ def claude_code_cli(
         **kwargs,
     )
 
-    SpychOrchestrator(
+    orchestrator = SpychOrchestrator(
         entries=[
             {
                 "responder": responder,
@@ -721,4 +750,7 @@ def claude_code_cli(
             }
         ],
         spych_wake_kwargs=spych_wake_kwargs,
-    ).start()
+    )
+    if start:
+        orchestrator.start()
+    return orchestrator

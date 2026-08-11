@@ -51,6 +51,7 @@ class BaseResponder(Notify):
         user: Optional[str] = None,
         allow_intermediate_responses: bool = True,
         display_name: Optional[str] = None,
+        **kwargs,
     ) -> None:
         """
         Usage:
@@ -791,7 +792,7 @@ class BaseResponder(Notify):
         while True:
             duration = (
                 self.follow_up_listen_duration
-                if is_follow_up and self.follow_up_listen_duration != 0
+                if is_follow_up
                 else self.listen_duration
             )
             inactivity_timeout = self.inactivity_timeout
@@ -843,9 +844,17 @@ class BaseResponder(Notify):
                                 <= self.summary_character_limit
                                 else response.summary
                             )
-                            # Capture closure variables to fix race condition in dashboard status updates (Bug 5)
+                            # Capture closure variables to fix race condition in dashboard status updates (Bug 5).
+                            # continuation_in_progress/awaiting_follow_up must also be snapshotted here rather
+                            # than read live: by the time this async callback fires, the *next* turn may already
+                            # have overwritten self._continuation_in_progress/_awaiting_follow_up with its own
+                            # values, even though this callback still belongs to the current turn's speech.
                             tid = self._current_turn_id
                             self._last_speak_turn_id = tid
+                            continuation_in_progress = (
+                                self._continuation_in_progress
+                            )
+                            awaiting_follow_up = self._awaiting_follow_up
 
                             def _on_complete():
                                 if self.dashboard is not None:
@@ -853,11 +862,11 @@ class BaseResponder(Notify):
                                     if self._last_speak_turn_id != tid:
                                         return
 
-                                    if self._continuation_in_progress:
+                                    if continuation_in_progress:
                                         self.dashboard.on_status_change(
                                             "thinking", turn_id=tid
                                         )
-                                    elif self._awaiting_follow_up:
+                                    elif awaiting_follow_up:
                                         self.dashboard.on_status_change(
                                             "listening", turn_id=tid
                                         )

@@ -89,6 +89,12 @@ async def process_messages(
     return False, None
 
 
+# Hard cap on <tool_call> re-query attempts within a single turn. If the SDK
+# keeps emitting a tool call it can't execute (malformed/unsupported), this
+# stops the worker from hanging the voice pipeline forever on that turn.
+MAX_TOOL_CALL_RETRIES = 5
+
+
 async def main() -> None:
     # Ensure stdin and stdout are using utf-8, especially on Windows
     import io
@@ -121,11 +127,25 @@ async def main() -> None:
             # Re-query loop: if the SDK emits a <tool_call> as a text result,
             # feed it back into the same session so the agent loop executes it.
             # A well-behaved turn emits no <tool_call> and exits the loop.
+            retries = 0
             while True:
                 needs_continuation, tool_call_text = await process_messages(
                     client, pending_tools
                 )
                 if not needs_continuation:
+                    break
+                retries += 1
+                if retries > MAX_TOOL_CALL_RETRIES:
+                    emit(
+                        {
+                            "type": "error",
+                            "text": (
+                                "Exceeded max tool-call re-query attempts "
+                                f"({MAX_TOOL_CALL_RETRIES}); last raw "
+                                f"response: {tool_call_text}"
+                            ),
+                        }
+                    )
                     break
                 # Re-submit the raw tool-call text within the same session.
                 # The SDK will parse it, execute the tool, and continue the
