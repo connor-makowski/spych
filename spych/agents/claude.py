@@ -80,6 +80,8 @@ class LocalClaudeCodeSDKResponder(BaseResponder):
         use_speaker: bool = True,
         speaker_voice: str = "af_heart",
         response_style: Optional[str] = None,
+        session_id: Optional[str] = None,
+        new_session: bool = False,
         **kwargs,
     ) -> None:
         """
@@ -158,13 +160,14 @@ class LocalClaudeCodeSDKResponder(BaseResponder):
             use_speaker=use_speaker,
             speaker_voice=speaker_voice,
             response_style=response_style,
+            session_id=session_id,
+            new_session=new_session,
             **kwargs,
         )
         self.continue_conversation = continue_conversation
         self.setting_sources = list(setting_sources) if setting_sources else []
         self.show_tool_events = show_tool_events
         self._first_call = True
-        self._last_session_id: str | None = None
 
     def respond(
         self, user_input: str, is_continuation: bool = False
@@ -207,7 +210,9 @@ class LocalClaudeCodeSDKResponder(BaseResponder):
                 etype = event.get("type")
 
                 if etype == "session":
-                    self._last_session_id = event.get("id")
+                    sid = event.get("id")
+                    if sid:
+                        self._update_session_id(sid)
 
                 elif etype == "system":
                     # print(raw_line)
@@ -275,6 +280,8 @@ def claude_code_sdk(
     spych_kwargs: dict[str, any] | None = None,
     spych_wake_kwargs: dict[str, any] | None = None,
     start: bool = True,
+    session_id: Optional[str] = None,
+    new_session: bool = False,
     **kwargs,
 ) -> Optional[SpychOrchestrator]:
     """
@@ -362,6 +369,8 @@ def claude_code_sdk(
         use_speaker=use_speaker,
         speaker_voice=speaker_voice,
         response_style=response_style,
+        session_id=session_id,
+        new_session=new_session,
         **kwargs,
     )
 
@@ -391,6 +400,8 @@ class LocalClaudeCodeCLIResponder(BaseResponder):
         use_speaker: bool = True,
         speaker_voice: str = "af_heart",
         response_style: Optional[str] = None,
+        session_id: Optional[str] = None,
+        new_session: bool = False,
         **kwargs,
     ) -> None:
         """
@@ -469,12 +480,13 @@ class LocalClaudeCodeCLIResponder(BaseResponder):
             use_speaker=use_speaker,
             speaker_voice=speaker_voice,
             response_style=response_style,
+            session_id=session_id,
+            new_session=new_session,
             **kwargs,
         )
         self.continue_conversation = continue_conversation
         self.show_tool_events = show_tool_events
         self.first_call = True
-        self._last_session_id: Optional[str] = None
 
         # Strips inline tool call XML that the CLI embeds in assistant text blocks:
         # <function=ToolName>\n<parameter=x>val</parameter>\n</function>\n</tool_call>
@@ -533,7 +545,9 @@ class LocalClaudeCodeCLIResponder(BaseResponder):
                 etype = event.get("type")
 
                 if etype == "system" and event.get("subtype") == "init":
-                    self._last_session_id = event.get("session_id")
+                    sid = event.get("session_id")
+                    if sid:
+                        self._update_session_id(sid)
 
                 elif etype == "assistant":
                     content_blocks = event.get("message", {}).get("content", [])
@@ -669,6 +683,8 @@ def claude_code_cli(
     spych_kwargs: Optional[dict[str, Any]] = None,
     spych_wake_kwargs: Optional[dict[str, Any]] = None,
     start: bool = True,
+    session_id: Optional[str] = None,
+    new_session: bool = False,
     **kwargs,
 ) -> Optional[SpychOrchestrator]:
     """
@@ -738,6 +754,8 @@ def claude_code_cli(
         use_speaker=use_speaker,
         speaker_voice=speaker_voice,
         response_style=response_style,
+        session_id=session_id,
+        new_session=new_session,
         **kwargs,
     )
 

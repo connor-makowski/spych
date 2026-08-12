@@ -19,6 +19,8 @@ class LocalOpenCodeCLIResponder(BaseResponder):
         use_speaker: bool = True,
         speaker_voice: str = "af_heart",
         response_style: Optional[str] = None,
+        session_id: Optional[str] = None,
+        new_session: bool = False,
         **kwargs,
     ) -> None:
         """
@@ -109,13 +111,14 @@ class LocalOpenCodeCLIResponder(BaseResponder):
             use_speaker=use_speaker,
             speaker_voice=speaker_voice,
             response_style=response_style,
+            session_id=session_id,
+            new_session=new_session,
             **kwargs,
         )
         self.continue_conversation = continue_conversation
         self.show_tool_events = show_tool_events
         self.model = model
         self.first_call = True
-        self._last_session_id: Optional[str] = None
 
         # Matches inline tool-call XML embedded in text deltas:
         # <function=ToolName>\n<parameter=x>val</parameter>\n</function>\n</tool_call>
@@ -190,9 +193,9 @@ class LocalOpenCodeCLIResponder(BaseResponder):
                 etype = event.get("type")
 
                 # Capture session ID from any event for conversation continuity
-                session_id = event.get("sessionID")
-                if session_id:
-                    self._last_session_id = session_id
+                session_id = event.get("sessionID") or event.get("session_id")
+                if session_id and session_id != self._last_session_id:
+                    self._update_session_id(session_id)
 
                 if etype == "step_start":
                     # New model turn beginning — reset accumulator for this step
@@ -280,6 +283,8 @@ def opencode_cli(
     spych_kwargs: Optional[dict[str, Any]] = None,
     spych_wake_kwargs: Optional[dict[str, Any]] = None,
     start: bool = True,
+    session_id: Optional[str] = None,
+    new_session: bool = False,
     **kwargs,
 ) -> Optional[SpychOrchestrator]:
     """
@@ -364,6 +369,8 @@ def opencode_cli(
         use_speaker=use_speaker,
         speaker_voice=speaker_voice,
         response_style=response_style,
+        session_id=session_id,
+        new_session=new_session,
         **kwargs,
     )
 

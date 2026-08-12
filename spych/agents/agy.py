@@ -4,7 +4,6 @@ from spych.responders import BaseResponder, AgentResponse
 from spych.cli_tools import CliPrinter, theme
 from spych.utils import resolve_cmd, StreamJsonCommand
 from typing import Optional, Any
-import os
 import time
 import shutil
 
@@ -20,6 +19,8 @@ class LocalAntigravityCLIResponder(BaseResponder):
         use_speaker: bool = True,
         speaker_voice: str = "af_heart",
         response_style: Optional[str] = None,
+        session_id: Optional[str] = None,
+        new_session: bool = False,
         **kwargs,
     ) -> None:
         """
@@ -71,6 +72,21 @@ class LocalAntigravityCLIResponder(BaseResponder):
             - Type: str | None
             - What: Style preset or custom instruction for summary output
             - Default: None
+
+        - `session_id`:
+            - Type: str | None
+            - What: Spych session UUID used to persist and resume the agent
+              conversation ID across restarts. If None and ``new_session`` is
+              False, the most recent session for the current workspace is
+              resumed automatically. Pass a prior session UUID to resume that
+              conversation.
+            - Default: None
+
+        - `new_session`:
+            - Type: bool
+            - What: When True, always start a fresh agy conversation even if a
+              prior session exists for this workspace.
+            - Default: False
         """
         name = name or "Antigravity"
         super().__init__(
@@ -80,14 +96,16 @@ class LocalAntigravityCLIResponder(BaseResponder):
             use_speaker=use_speaker,
             speaker_voice=speaker_voice,
             response_style=response_style,
+            session_id=session_id,
+            new_session=new_session,
             **kwargs,
         )
         self.continue_conversation = continue_conversation
         self.show_tool_events = show_tool_events
         self.first_call = True
-        self._last_session_id: Optional[str] = None
+        if self._last_session_id:
+            self.first_call = False
         self._prev_message: str = ""
-        self._workspace_dir: str = os.getcwd()
 
     def _get_binary(self) -> str:
         if shutil.which("agy"):
@@ -260,7 +278,7 @@ class LocalAntigravityCLIResponder(BaseResponder):
                         else None
                     )
                     if conversation_id:
-                        self._last_session_id = conversation_id
+                        self._update_session_id(conversation_id)
 
                 elif etype == "step_update":
                     step = event.get("step_update") or {}
@@ -336,12 +354,18 @@ def antigravity_cli(
     spych_kwargs: Optional[dict[str, Any]] = None,
     spych_wake_kwargs: Optional[dict[str, Any]] = None,
     start: bool = True,
+    session_id: Optional[str] = None,
+    new_session: bool = False,
     **kwargs,
 ) -> Optional[SpychOrchestrator]:
     """
     Usage:
 
-    - Starts a wake word listener that pipes detected speech into the Antigravity CLI (`agy`)
+    - Starts a wake word listener that pipes detected speech into the Antigravity CLI (`agy`).
+    - By default, resumes the most recent spych session for the current workspace so
+      the agy conversation ID is preserved across restarts.
+    - Pass ``new_session=True`` or ``--new-session`` on the CLI to force a fresh conversation.
+    - Pass a specific ``session_id`` UUID to resume a particular prior session.
 
     Optional:
 
@@ -362,7 +386,7 @@ def antigravity_cli(
 
     - `continue_conversation`:
         - Type: bool
-        - What: Whether to reuse the most recent session
+        - What: Whether to reuse the most recent session within the same run
         - Default: True
 
     - `show_tool_events`:
@@ -404,6 +428,19 @@ def antigravity_cli(
         - Type: bool
         - What: Whether to start the orchestrator
         - Default: True
+
+    - `session_id`:
+        - Type: str | None
+        - What: Explicit spych session UUID to resume. If None and
+          ``new_session`` is False, the most recent session for the current
+          workspace is resumed automatically.
+        - Default: None
+
+    - `new_session`:
+        - Type: bool
+        - What: When True, always start a fresh agy conversation even if a
+          prior session exists for this workspace.
+        - Default: False
     """
     spych_kwargs = {"whisper_model": "base.en", **(spych_kwargs or {})}
     spych_object = Spych(**spych_kwargs)
@@ -417,6 +454,8 @@ def antigravity_cli(
         use_speaker=use_speaker,
         speaker_voice=speaker_voice,
         response_style=response_style,
+        session_id=session_id,
+        new_session=new_session,
         **kwargs,
     )
 

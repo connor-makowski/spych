@@ -168,6 +168,18 @@ def _add_agent_args(parser: argparse.ArgumentParser) -> None:
         default=True,
         help="Print live tool start/end events (default: true)",
     )
+    parser.add_argument(
+        "--session",
+        default=None,
+        metavar="UUID",
+        help="Resume a specific prior spych session by its UUID",
+    )
+    parser.add_argument(
+        "--new-session",
+        action="store_true",
+        default=False,
+        help="Force a fresh conversation, ignoring any prior session for this workspace",
+    )
 
 
 def _build_shared_kwargs(args: argparse.Namespace) -> dict:
@@ -177,6 +189,7 @@ def _build_shared_kwargs(args: argparse.Namespace) -> dict:
         from spych.utils import get_personality
 
         kwargs.update(get_personality(args.personality))
+        kwargs["personality"] = args.personality
     if args.name is not None:
         kwargs["name"] = args.name
     if args.wake_words:
@@ -208,6 +221,10 @@ def _build_agent_kwargs(args: argparse.Namespace) -> dict:
     kwargs = _build_shared_kwargs(args)
     kwargs["continue_conversation"] = args.continue_conversation
     kwargs["show_tool_events"] = args.show_tool_events
+    if getattr(args, "session", None):
+        kwargs["session_id"] = args.session
+    if getattr(args, "new_session", False):
+        kwargs["new_session"] = True
     return kwargs
 
 
@@ -252,6 +269,7 @@ def main():
         "agy_cli": "antigravity_cli",
         "antigravity": "antigravity_cli",
         "opencode": "opencode_cli",
+        "clear_all": "clear-all",
     }
 
     # ------------------------------------------------------------------ #
@@ -803,6 +821,74 @@ def main():
     )
 
     # ------------------------------------------------------------------ #
+    # sessions — list or manage sessions                                 #
+    # ------------------------------------------------------------------ #
+    p_sessions = subparsers.add_parser(
+        "sessions",
+        help="List saved sessions for the current project or all projects",
+    )
+    p_sessions.add_argument(
+        "action",
+        nargs="?",
+        default="list",
+        choices=["list", "clear", "clear-all", "clear_all"],
+        help="Action to perform: list (default), clear, or clear-all",
+    )
+    p_sessions.add_argument(
+        "--all",
+        action="store_true",
+        default=False,
+        help="Include sessions across all projects/workspaces",
+    )
+    p_sessions.add_argument(
+        "--workspace",
+        default=None,
+        metavar="PATH",
+        help="Target workspace directory path",
+    )
+    p_sessions.add_argument(
+        "--session",
+        default=None,
+        metavar="UUID",
+        help="Target specific session UUID for clear action",
+    )
+
+    # ------------------------------------------------------------------ #
+    # clear — clear current project sessions                             #
+    # ------------------------------------------------------------------ #
+    p_clear = subparsers.add_parser(
+        "clear",
+        help="Clear saved sessions for the current project",
+    )
+    p_clear.add_argument(
+        "--all",
+        action="store_true",
+        default=False,
+        help="Clear sessions across all projects/workspaces",
+    )
+    p_clear.add_argument(
+        "--workspace",
+        default=None,
+        metavar="PATH",
+        help="Target workspace directory path to clear",
+    )
+    p_clear.add_argument(
+        "--session",
+        default=None,
+        metavar="UUID",
+        help="Clear a specific session by its UUID",
+    )
+
+    # ------------------------------------------------------------------ #
+    # clear-all — clear all sessions across all projects                 #
+    # ------------------------------------------------------------------ #
+    p_clear_all = subparsers.add_parser(
+        "clear-all",
+        aliases=["clear_all"],
+        help="Clear all saved sessions across all projects",
+    )
+
+    # ------------------------------------------------------------------ #
     # Dispatch                                                             #
     # ------------------------------------------------------------------ #
     args = parser.parse_args()
@@ -1144,6 +1230,98 @@ def main():
                     break
 
         users_menu()
+
+    # ------------------------------------------------------------------ #
+    # Sessions management dispatch                                       #
+    # ------------------------------------------------------------------ #
+    elif args.agent in ("sessions", "clear", "clear-all"):
+        from spych.session_store import (
+            list_sessions,
+            clear_workspace_sessions,
+            clear_all_sessions,
+            delete_session,
+        )
+        from spych.cli_tools import CliPrinter, theme
+
+        action = getattr(args, "action", None)
+        if action == "clear_all":
+            action = "clear-all"
+
+        if args.agent == "clear-all" or action == "clear-all":
+            count = clear_all_sessions()
+            CliPrinter.info(
+                f"Cleared {count} total session(s) across all projects.",
+                color=theme.success,
+            )
+        elif args.agent == "clear" or action == "clear":
+            if getattr(args, "all", False):
+                count = clear_all_sessions()
+                CliPrinter.info(
+                    f"Cleared {count} total session(s) across all projects.",
+                    color=theme.success,
+                )
+            elif getattr(args, "session", None):
+                sid = args.session
+                if delete_session(sid):
+                    CliPrinter.info(
+                        f"Cleared session {sid}.", color=theme.success
+                    )
+                else:
+                    CliPrinter.info(
+                        f"Session {sid} not found.", color=theme.error
+                    )
+            else:
+                workspace = getattr(args, "workspace", None) or os.getcwd()
+                count = clear_workspace_sessions(workspace)
+                CliPrinter.info(
+                    f"Cleared {count} session(s) for project ({workspace}).",
+                    color=theme.success,
+                )
+        else:
+            # list sessions
+            target_workspace = (
+                None
+                if getattr(args, "all", False)
+                else (getattr(args, "workspace", None) or os.getcwd())
+            )
+            sessions = list_sessions(workspace=target_workspace)
+
+            if not sessions:
+                if getattr(args, "all", False):
+                    CliPrinter.info(
+                        "No saved sessions found across any project."
+                    )
+                else:
+                    CliPrinter.info(
+                        f"No saved sessions found for current project ({os.getcwd()})."
+                    )
+                return
+
+            scope_msg = (
+                "all projects"
+                if getattr(args, "all", False)
+                else f"project: {target_workspace}"
+            )
+            print(
+                f"\n{theme.bold}{theme.accent}Saved Sessions ({scope_msg}){theme.reset}\n"
+            )
+
+            header = f"{'SESSION ID':<38}  {'AGENT':<12}  {'PERSONALITY':<12}  {'TURNS':<6}  {'CONVERSATION ID':<20}  {'UPDATED'}"
+            print(f"{theme.bold}{header}{theme.reset}")
+            print("-" * len(header))
+
+            for s in sessions:
+                sid = s.get("session_id", "n/a")
+                agent = s.get("agent_name") or "n/a"
+                personality = s.get("personality") or "default"
+                conv_id = (s.get("conversation_id") or "none")[:20]
+                history = s.get("history", [])
+                turns = str(len(history))
+                updated = (s.get("updated_at") or "")[:19].replace("T", " ")
+
+                line = f"{sid:<38}  {agent:<12}  {personality:<12}  {turns:<6}  {conv_id:<20}  {updated}"
+                print(line)
+            print()
 
     # ------------------------------------------------------------------ #
     # Multi-agent dispatch                                                 #

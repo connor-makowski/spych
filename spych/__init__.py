@@ -793,3 +793,9 @@ pip install -r requirements.txt
 from .core import Spych
 from .wake import SpychWake
 from .orchestrator import SpychOrchestrator
+from .session_store import (
+    list_sessions,
+    delete_session,
+    clear_workspace_sessions,
+    clear_all_sessions,
+)

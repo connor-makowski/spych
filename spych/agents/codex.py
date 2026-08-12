@@ -17,6 +17,8 @@ class LocalCodexCLIResponder(BaseResponder):
         use_speaker: bool = True,
         speaker_voice: str = "af_heart",
         response_style: Optional[str] = None,
+        session_id: Optional[str] = None,
+        new_session: bool = False,
         **kwargs,
     ) -> None:
         """
@@ -74,6 +76,16 @@ class LocalCodexCLIResponder(BaseResponder):
               Any other string is used verbatim as a custom instruction.
             - Default: None
 
+        - `session_id`:
+            - Type: str | None
+            - What: Spych session UUID to resume
+            - Default: None
+
+        - `new_session`:
+            - Type: bool
+            - What: Force a new conversation session
+            - Default: False
+
         Notes:
 
         - Uses `--json` to stream newline-delimited JSON events
@@ -92,12 +104,13 @@ class LocalCodexCLIResponder(BaseResponder):
             use_speaker=use_speaker,
             speaker_voice=speaker_voice,
             response_style=response_style,
+            session_id=session_id,
+            new_session=new_session,
             **kwargs,
         )
         self.continue_conversation = continue_conversation
         self.show_tool_events = show_tool_events
         self.first_call = True
-        self._last_session_id: Optional[str] = None
 
     def __run_turn__(
         self,
@@ -128,7 +141,7 @@ class LocalCodexCLIResponder(BaseResponder):
                 codex exec resume --last --json "follow-up"
                 codex exec resume <session_id> --json "follow-up"
         """
-        if self.continue_conversation and not is_first:
+        if self.continue_conversation:
             if self._last_session_id:
                 cmd = [
                     resolve_cmd("codex"),
@@ -137,7 +150,7 @@ class LocalCodexCLIResponder(BaseResponder):
                     self._last_session_id,
                     "--json",
                 ]
-            else:
+            elif not is_first:
                 cmd = [
                     resolve_cmd("codex"),
                     "exec",
@@ -145,6 +158,8 @@ class LocalCodexCLIResponder(BaseResponder):
                     "--last",
                     "--json",
                 ]
+            else:
+                cmd = [resolve_cmd("codex"), "exec", "--json"]
         else:
             cmd = [resolve_cmd("codex"), "exec", "--json"]
 
@@ -156,7 +171,9 @@ class LocalCodexCLIResponder(BaseResponder):
                 etype = event.get("type")
 
                 if etype == "thread.started":
-                    self._last_session_id = event.get("thread_id")
+                    thread_id = event.get("thread_id")
+                    if thread_id and thread_id != self._last_session_id:
+                        self._update_session_id(thread_id)
 
                 elif etype == "item.started":
                     item = event.get("item", {})
@@ -264,6 +281,8 @@ def codex_cli(
     spych_kwargs: Optional[dict[str, Any]] = None,
     spych_wake_kwargs: Optional[dict[str, Any]] = None,
     start: bool = True,
+    session_id: Optional[str] = None,
+    new_session: bool = False,
     **kwargs,
 ) -> Optional[SpychOrchestrator]:
     """
@@ -342,6 +361,8 @@ def codex_cli(
         use_speaker=use_speaker,
         speaker_voice=speaker_voice,
         response_style=response_style,
+        session_id=session_id,
+        new_session=new_session,
         **kwargs,
     )
 

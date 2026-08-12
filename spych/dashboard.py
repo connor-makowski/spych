@@ -1362,6 +1362,49 @@ class AgentDashboard:
             self._current_thoughts = []
             self._current_user_input = ""
 
+    def load_history(self, history: list[dict]) -> None:
+        """
+        Usage:
+
+        - Populate conversation history from loaded session turns.
+
+        Requires:
+
+        - ``history``:
+            - Type: list[dict]
+            - What: List of turn dicts (containing timestamp, user_input, response, summary).
+        """
+        with self._lock:
+            for turn in history:
+                ts = turn.get("timestamp", "")
+                if "T" in ts:
+                    try:
+                        ts = ts.split("T")[1][:8]
+                    except Exception:
+                        pass
+                if not ts:
+                    ts = time.strftime("%H:%M:%S")
+
+                user_input = turn.get("user_input", "")
+                response_text = turn.get("response", "")
+                summary_text = turn.get("summary", response_text)
+
+                self._conversation.append(
+                    ConversationEntry(
+                        user_input=user_input,
+                        agent_name=self._agent_name,
+                        tool_calls=[],
+                        thoughts=[],
+                        response=response_text,
+                        summary=summary_text,
+                        timestamp=ts,
+                        elapsed=0.0,
+                        user_duration=0.0,
+                    )
+                )
+                if len(self._conversation) > self._max_history:
+                    self._conversation.pop(0)
+
     # -- TUI control --------------------------------------------------------
 
     def toggle_show_all(self) -> None:

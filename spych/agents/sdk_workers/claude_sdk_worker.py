@@ -112,9 +112,9 @@ async def main() -> None:
 
     options = ClaudeAgentOptions(
         continue_conversation=(
-            continue_conv and not is_first and last_session_id is None
+            continue_conv if last_session_id is None else False
         ),
-        resume=(None if is_first or not continue_conv else last_session_id),
+        resume=(last_session_id if continue_conv else None),
         setting_sources=setting_sources,
     )
 

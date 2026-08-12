@@ -1,12 +1,11 @@
 from __future__ import annotations
 
-from spych.utils import (
-    Notify,
-    get_response_style,
-    get_setting,
-    get_user,
-    get_default_user,
-)
+import json
+import os
+import time
+from dataclasses import dataclass
+from typing import Optional, Any
+
 from spych.cli_tools import (
     CliSpinner,
     NullSpinner,
@@ -14,13 +13,22 @@ from spych.cli_tools import (
     theme,
     set_theme,
 )
+from spych.dashboard import AgentDashboard
+from spych.session_store import (
+    new_session_id,
+    load_session,
+    save_session,
+    latest_session_for_workspace,
+)
 from spych.spinners import Spinner
 from spych.speaker import Speaker
-from dataclasses import dataclass
-from typing import Optional, Any
-import json
-import time
-from spych.dashboard import AgentDashboard
+from spych.utils import (
+    Notify,
+    get_response_style,
+    get_setting,
+    get_user,
+    get_default_user,
+)
 
 # Set theme from settings
 set_theme(get_setting("theme", "dark"))
@@ -51,6 +59,8 @@ class BaseResponder(Notify):
         user: Optional[str] = None,
         allow_intermediate_responses: bool = True,
         display_name: Optional[str] = None,
+        session_id: Optional[str] = None,
+        new_session: bool = False,
         **kwargs,
     ) -> None:
         """
@@ -165,6 +175,20 @@ class BaseResponder(Notify):
               for display in the dashboard header.
             - Default: None (falls back to class name)
 
+        - `session_id`:
+            - Type: str | None
+            - What: Spych session UUID used to persist and resume the agent
+              conversation ID across restarts. When None and ``new_session`` is
+              False, the most recent session for the current workspace is loaded
+              automatically. Pass a prior session UUID to resume that conversation.
+            - Default: None
+
+        - `new_session`:
+            - Type: bool
+            - What: When True, always start a fresh conversation even if a prior
+              session exists for this workspace. A new session UUID is generated.
+            - Default: False
+
         Notes:
 
         - Subclasses must implement `respond(user_input) -> AgentResponse`.
@@ -213,6 +237,46 @@ class BaseResponder(Notify):
         self._awaiting_follow_up: bool = False
         self._current_turn_id: int = 0
         self._last_speak_turn_id: int = 0
+
+        self.personality: Optional[str] = kwargs.get("personality")
+
+        # Session persistence
+        self._workspace_dir: str = os.getcwd()
+        history_to_load: list[dict] = []
+        if new_session:
+            self._session_id: str = new_session_id()
+            self._last_session_id: Optional[str] = None
+        elif session_id is not None:
+            self._session_id = session_id
+            saved = load_session(session_id)
+            self._last_session_id = saved.get("conversation_id") or None
+            history_to_load = saved.get("history", [])
+        else:
+            # Auto-resolve latest session for this workspace, agent_name, and personality
+            resolved = latest_session_for_workspace(
+                self._workspace_dir,
+                agent_name=self.name,
+                personality=self.personality,
+            )
+            if resolved:
+                self._session_id = resolved
+                saved = load_session(resolved)
+                self._last_session_id = saved.get("conversation_id") or None
+                history_to_load = saved.get("history", [])
+            else:
+                self._session_id = new_session_id()
+                self._last_session_id = None
+
+        save_session(
+            session_id=self._session_id,
+            workspace=self._workspace_dir,
+            conversation_id=self._last_session_id,
+            agent_name=self.name,
+            personality=self.personality,
+        )
+
+        if self.dashboard is not None and history_to_load:
+            self.dashboard.load_history(history_to_load)
 
         if use_speaker:
             self.speaker = Speaker(speaker_voice, backend=speaker_backend)
@@ -590,6 +654,8 @@ class BaseResponder(Notify):
         - Optional lifecycle hook called immediately after `respond()` returns,
           before the response box is printed. Override for logging, analytics,
           caching, or post-processing.
+        - By default, appends completed non-intermediate interaction turns to
+          the persisted session history.
 
         Requires:
 
@@ -601,6 +667,61 @@ class BaseResponder(Notify):
             - Type: AgentResponse
             - What: The structured response returned by `respond()`
         """
+        if not response.is_intermediate_response and (
+            user_input or response.response
+        ):
+            from spych.session_store import append_turn_to_session
+
+            append_turn_to_session(
+                session_id=self._session_id,
+                workspace=self._workspace_dir,
+                conversation_id=self._last_session_id,
+                user_input=user_input,
+                response=response.response,
+                summary=response.summary,
+                agent_name=self.name,
+                personality=self.personality,
+            )
+
+    def _update_session_id(self, conversation_id: str) -> None:
+        """
+        Usage:
+
+        - Record a new agent conversation ID and immediately persist the
+          session to disk. Call this from a subclass's ``respond()`` whenever
+          the underlying agent CLI or SDK returns a fresh conversation/session ID.
+
+        Requires:
+
+        - `conversation_id`:
+            - Type: str
+            - What: The conversation or session ID returned by the underlying agent.
+        """
+        self._last_session_id = conversation_id
+        save_session(
+            session_id=self._session_id,
+            workspace=self._workspace_dir,
+            conversation_id=conversation_id,
+            agent_name=self.name,
+            personality=self.personality,
+        )
+
+    def _persist_session(self) -> None:
+        """
+        Usage:
+
+        - Persist the current ``_last_session_id`` to disk. Use when you need
+          to save state without changing the conversation ID (e.g. as a safety
+          flush). Prefer ``_update_session_id()`` when a new ID is available.
+        """
+        if self._last_session_id:
+            save_session(
+                session_id=self._session_id,
+                workspace=self._workspace_dir,
+                conversation_id=self._last_session_id,
+                agent_name=self.name,
+                personality=self.personality,
+            )
 
     # ------------------------------------------------------------------ #
     #  Orchestration — not intended for override; use the hooks above     #
