@@ -168,7 +168,7 @@
 <footer>
 <select id="version-selector">
     <option value="latest">latest</option>
-        <option value="4.4.1">4.4.1</option>
+        <option value="4.4.2">4.4.2</option>
         <option value="3.6.0">3.6.0</option>
         <option value="2.0.2">2.0.2</option>
         <option value="1.0.0">1.0.0</option>
@@ -1328,7 +1328,7 @@ On Windows, we check for 'utf-8' encoding or typical modern terminal indicators.
 <div class="attr function">
             
         <span class="def">def</span>
-        <span class="name">get_user</span><span class="signature pdoc-code condensed">(<span class="param"><span class="n">name</span><span class="p">:</span> <span class="nb">str</span></span><span class="return-annotation">) -> <span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span>:</span></span>
+        <span class="name">get_user</span><span class="signature pdoc-code condensed">(<span class="param"><span class="n">name</span><span class="p">:</span> <span class="nb">str</span></span><span class="return-annotation">) -> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span>:</span></span>
 
                 <label class="view-source-button" for="get_user-view-source"><span>View Source</span></label>
 
@@ -1405,7 +1405,7 @@ On Windows, we check for 'utf-8' encoding or typical modern terminal indicators.
 <div class="attr function">
             
         <span class="def">def</span>
-        <span class="name">get_default_user</span><span class="signature pdoc-code condensed">(<span class="return-annotation">) -> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span>:</span></span>
+        <span class="name">get_default_user</span><span class="signature pdoc-code condensed">(<span class="return-annotation">) -> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>:</span></span>
 
                 <label class="view-source-button" for="get_default_user-view-source"><span>View Source</span></label>
 
@@ -1427,7 +1427,7 @@ On Windows, we check for 'utf-8' encoding or typical modern terminal indicators.
 <div class="attr function">
             
         <span class="def">def</span>
-        <span class="name">set_default_user</span><span class="signature pdoc-code condensed">(<span class="param"><span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span></span><span class="return-annotation">) -> <span class="kc">None</span>:</span></span>
+        <span class="name">set_default_user</span><span class="signature pdoc-code condensed">(<span class="param"><span class="n">name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span></span><span class="return-annotation">) -> <span class="kc">None</span>:</span></span>
 
                 <label class="view-source-button" for="set_default_user-view-source"><span>View Source</span></label>
 
@@ -2115,7 +2115,7 @@ at first call and reused across all <code><a href="#Recorder.record_vad">record_
 <div class="attr function">
             
         <span class="def">def</span>
-        <span class="name">record</span><span class="signature pdoc-code condensed">(<span class="param"><span class="bp">self</span>, </span><span class="param"><span class="n">device_index</span><span class="p">:</span> <span class="nb">int</span>, </span><span class="param"><span class="n">duration</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span></span><span class="return-annotation">) -> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span>:</span></span>
+        <span class="name">record</span><span class="signature pdoc-code condensed">(<span class="param"><span class="bp">self</span>, </span><span class="param"><span class="n">device_index</span><span class="p">:</span> <span class="nb">int</span>, </span><span class="param"><span class="n">duration</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span></span><span class="return-annotation">) -> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span>:</span></span>
 
                 <label class="view-source-button" for="Recorder.record-view-source"><span>View Source</span></label>
 
@@ -2210,7 +2210,7 @@ PCM buffer.</li>
 <div class="attr function">
             
         <span class="def">def</span>
-        <span class="name">record_vad</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="bp">self</span>,</span><span class="param">	<span class="n">device_index</span><span class="p">:</span> <span class="nb">int</span>,</span><span class="param">	<span class="n">speech_threshold</span><span class="p">:</span> <span class="nb">float</span>,</span><span class="param">	<span class="n">silence_threshold</span><span class="p">:</span> <span class="nb">float</span>,</span><span class="param">	<span class="n">silence_frames_threshold</span><span class="p">:</span> <span class="nb">int</span>,</span><span class="param">	<span class="n">speech_pad_frames</span><span class="p">:</span> <span class="nb">int</span>,</span><span class="param">	<span class="n">max_speech_duration_s</span><span class="p">:</span> <span class="nb">float</span>,</span><span class="param">	<span class="n">inactivity_timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>,</span><span class="param">	<span class="n">stop_event</span><span class="o">=</span><span class="kc">None</span></span><span class="return-annotation">) -> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span>:</span></span>
+        <span class="name">record_vad</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="bp">self</span>,</span><span class="param">	<span class="n">device_index</span><span class="p">:</span> <span class="nb">int</span>,</span><span class="param">	<span class="n">speech_threshold</span><span class="p">:</span> <span class="nb">float</span>,</span><span class="param">	<span class="n">silence_threshold</span><span class="p">:</span> <span class="nb">float</span>,</span><span class="param">	<span class="n">silence_frames_threshold</span><span class="p">:</span> <span class="nb">int</span>,</span><span class="param">	<span class="n">speech_pad_frames</span><span class="p">:</span> <span class="nb">int</span>,</span><span class="param">	<span class="n">max_speech_duration_s</span><span class="p">:</span> <span class="nb">float</span>,</span><span class="param">	<span class="n">inactivity_timeout</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>,</span><span class="param">	<span class="n">stop_event</span><span class="o">=</span><span class="kc">None</span></span><span class="return-annotation">) -> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span>:</span></span>
 
                 <label class="view-source-button" for="Recorder.record_vad-view-source"><span>View Source</span></label>
 
@@ -2661,7 +2661,7 @@ even if the speaker never pauses</li>
 <div class="attr function">
             
         <span class="def">def</span>
-        <span class="name">get_response_style</span><span class="signature pdoc-code condensed">(<span class="param"><span class="n">style</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span></span><span class="return-annotation">) -> <span class="nb">str</span>:</span></span>
+        <span class="name">get_response_style</span><span class="signature pdoc-code condensed">(<span class="param"><span class="n">style</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span></span><span class="return-annotation">) -> <span class="nb">str</span>:</span></span>
 
                 <label class="view-source-button" for="get_response_style-view-source"><span>View Source</span></label>
 
@@ -2963,7 +2963,7 @@ stderr pipe can block the process.</li>
                                         <input id="StreamSubprocess.__init__-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
 <div class="attr function">
             
-        <span class="name">StreamSubprocess</span><span class="signature pdoc-code condensed">(<span class="param"><span class="n">proc</span><span class="p">:</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">Popen</span></span>)</span>
+        <span class="name">StreamSubprocess</span><span class="signature pdoc-code condensed">(<span class="param"><span class="n">proc</span><span class="p">:</span> <span class="n">pdoc</span><span class="o">.</span><span class="n">extract</span><span class="o">.</span><span class="n">_PdocDefusedPopen</span></span>)</span>
 
                 <label class="view-source-button" for="StreamSubprocess.__init__-view-source"><span>View Source</span></label>
 
@@ -3028,7 +3028,7 @@ stderr pipe can block the process.</li>
 <div class="attr function">
             
         <span class="def">def</span>
-        <span class="name">get</span><span class="signature pdoc-code condensed">(<span class="param"><span class="bp">self</span>, </span><span class="param"><span class="n">timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span></span><span class="return-annotation">):</span></span>
+        <span class="name">get</span><span class="signature pdoc-code condensed">(<span class="param"><span class="bp">self</span>, </span><span class="param"><span class="n">timeout</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span></span><span class="return-annotation">):</span></span>
 
                 <label class="view-source-button" for="StreamSubprocess.get-view-source"><span>View Source</span></label>
 
@@ -3253,7 +3253,7 @@ in <code>cmd.exe /c</code> to ensure <code>.cmd</code> wrappers execute correctl
                                         <input id="StreamJsonCommand.__init__-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
 <div class="attr function">
             
-        <span class="name">StreamJsonCommand</span><span class="signature pdoc-code condensed">(<span class="param"><span class="n">cmd</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>, </span><span class="param"><span class="n">input_text</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span></span>)</span>
+        <span class="name">StreamJsonCommand</span><span class="signature pdoc-code condensed">(<span class="param"><span class="n">cmd</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>, </span><span class="param"><span class="n">input_text</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span></span>)</span>
 
                 <label class="view-source-button" for="StreamJsonCommand.__init__-view-source"><span>View Source</span></label>
 
@@ -3361,7 +3361,7 @@ input is coming.</li>
 <div class="attr function">
             
         <span class="def">def</span>
-        <span class="name">get</span><span class="signature pdoc-code condensed">(<span class="param"><span class="bp">self</span>, </span><span class="param"><span class="n">timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span></span><span class="return-annotation">) -> <span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span>:</span></span>
+        <span class="name">get</span><span class="signature pdoc-code condensed">(<span class="param"><span class="bp">self</span>, </span><span class="param"><span class="n">timeout</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span></span><span class="return-annotation">) -> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span>:</span></span>
 
                 <label class="view-source-button" for="StreamJsonCommand.get-view-source"><span>View Source</span></label>
 

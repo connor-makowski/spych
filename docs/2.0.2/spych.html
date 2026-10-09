@@ -18,8 +18,6 @@
         <input id="togglestate" type="checkbox" aria-hidden="true" tabindex="-1">
         <div>
 
-            <input type="search" placeholder="Search..." role="searchbox" aria-label="search"
-                   pattern=".+" required>
 
             <h2>Contents</h2>
             <ul>
@@ -56,18 +54,13 @@
 
             <h2>Submodules</h2>
             <ul>
-                    <li><a href="spych/agents.html">agents</a></li>
-                    <li><a href="spych/core.html">core</a></li>
-                    <li><a href="spych/responders.html">responders</a></li>
-                    <li><a href="spych/utils.html">utils</a></li>
-                    <li><a href="spych/wake.html">wake</a></li>
             </ul>
 
 
 <footer>
 <select id="version-selector">
     <option value="latest">latest</option>
-        <option value="4.4.1">4.4.1</option>
+        <option value="4.4.2">4.4.2</option>
         <option value="3.6.0">3.6.0</option>
         <option value="2.0.2">2.0.2</option>
         <option value="1.0.0">1.0.0</option>
@@ -139,14 +132,14 @@ spych    </h1>
 
 <h2 id="quick-start-voice-agents">Quick Start: Voice Agents</h2>
 
-<p>The fastest way to get started is via <code><a href="spych/agents.html">spych.agents</a></code>. These one-liners handle everything — wake word detection, transcription, and passing your speech to the target agent.</p>
+<p>The fastest way to get started is via <code>spych.agents</code>. These one-liners handle everything — wake word detection, transcription, and passing your speech to the target agent.</p>
 
 <h3 id="ollama">Ollama</h3>
 
 <p>Requires <a href="https://ollama.com">Ollama</a> to be installed and running locally. Pull a model first with <code>ollama pull llama3.2:latest</code>.</p>
 
 <div class="pdoc-code codehilite">
-<pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn"><a href="spych/agents.html">spych.agents</a></span><span class="w"> </span><span class="kn">import</span> <span class="n">ollama</span>
+<pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">spych.agents</span><span class="w"> </span><span class="kn">import</span> <span class="n">ollama</span>
 
 <span class="c1"># Say &quot;llama&quot; or &quot;ollama&quot; to trigger</span>
 <span class="n">ollama</span><span class="p">(</span><span class="n">model</span><span class="o">=</span><span class="s2">&quot;llama3.2:latest&quot;</span><span class="p">)</span>
@@ -158,7 +151,7 @@ spych    </h1>
 <p>Requires <a href="https://docs.anthropic.com/en/docs/claude-code">Claude Code</a> to be installed in your <strong>terminal</strong> and authenticated. Verify with <code>claude --version</code> in your terminal. Fun side hint, you can run claude code with ollama if you want a fully offline experience. </p>
 
 <div class="pdoc-code codehilite">
-<pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn"><a href="spych/agents.html">spych.agents</a></span><span class="w"> </span><span class="kn">import</span> <span class="n">claude_code_cli</span>
+<pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">spych.agents</span><span class="w"> </span><span class="kn">import</span> <span class="n">claude_code_cli</span>
 
 <span class="c1"># Say &quot;claude&quot; to trigger</span>
 <span class="n">claude_code_cli</span><span class="p">()</span>
@@ -288,7 +281,7 @@ spych    </h1>
 
 <div class="pdoc-code codehilite">
 <pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">spych</span><span class="w"> </span><span class="kn">import</span> <span class="n">SpychWake</span><span class="p">,</span> <span class="n">Spych</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn"><a href="spych/responders.html">spych.responders</a></span><span class="w"> </span><span class="kn">import</span> <span class="n">OllamaResponder</span><span class="p">,</span> <span class="n">LocalClaudeCodeCLIResponder</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">spych.responders</span><span class="w"> </span><span class="kn">import</span> <span class="n">OllamaResponder</span><span class="p">,</span> <span class="n">LocalClaudeCodeCLIResponder</span>
 
 <span class="n">spych_object</span> <span class="o">=</span> <span class="n">Spych</span><span class="p">(</span><span class="n">whisper_model</span><span class="o">=</span><span class="s2">&quot;base.en&quot;</span><span class="p">,</span> <span class="n">whisper_device</span><span class="o">=</span><span class="s2">&quot;cpu&quot;</span><span class="p">,</span> <span class="n">whisper_compute_type</span><span class="o">=</span><span class="s2">&quot;int8&quot;</span><span class="p">)</span>
 <span class="n">wake_object</span> <span class="o">=</span> <span class="n">SpychWake</span><span class="p">(</span>
@@ -322,7 +315,7 @@ spych    </h1>
 <p>Subclass this to build a custom integration. Only <code>respond</code> needs to be implemented.</p>
 
 <div class="pdoc-code codehilite">
-<pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn"><a href="spych/responders.html">spych.responders</a></span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseResponder</span>
+<pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">spych.responders</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseResponder</span>
 
 <span class="k">class</span><span class="w"> </span><span class="nc">MyResponder</span><span class="p">(</span><span class="n">BaseResponder</span><span class="p">):</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">respond</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user_input</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
@@ -335,7 +328,7 @@ spych    </h1>
 <p>A full implementation that uses <code>test</code> as a wake word would look like:</p>
 
 <div class="pdoc-code codehilite">
-<pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn"><a href="spych/responders.html">spych.responders</a></span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseResponder</span>
+<pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">spych.responders</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseResponder</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">spych</span><span class="w"> </span><span class="kn">import</span> <span class="n">Spych</span><span class="p">,</span> <span class="n">SpychWake</span>
 
 <span class="k">class</span><span class="w"> </span><span class="nc">MyResponder</span><span class="p">(</span><span class="n">BaseResponder</span><span class="p">):</span>
@@ -624,186 +617,5 @@ spych    </h1>
 
             </section>
     </main>
-<script>
-    function escapeHTML(html) {
-        return document.createElement('div').appendChild(document.createTextNode(html)).parentNode.innerHTML;
-    }
-
-    const originalContent = document.querySelector("main.pdoc");
-    let currentContent = originalContent;
-
-    function setContent(innerHTML) {
-        let elem;
-        if (innerHTML) {
-            elem = document.createElement("main");
-            elem.classList.add("pdoc");
-            elem.innerHTML = innerHTML;
-        } else {
-            elem = originalContent;
-        }
-        if (currentContent !== elem) {
-            currentContent.replaceWith(elem);
-            currentContent = elem;
-        }
-    }
-
-    function getSearchTerm() {
-        return (new URL(window.location)).searchParams.get("search");
-    }
-
-    const searchBox = document.querySelector(".pdoc input[type=search]");
-    searchBox.addEventListener("input", function () {
-        let url = new URL(window.location);
-        if (searchBox.value.trim()) {
-            url.hash = "";
-            url.searchParams.set("search", searchBox.value);
-        } else {
-            url.searchParams.delete("search");
-        }
-        history.replaceState("", "", url.toString());
-        onInput();
-    });
-    window.addEventListener("popstate", onInput);
-
-
-    let search, searchErr;
-
-    async function initialize() {
-        try {
-            search = await new Promise((resolve, reject) => {
-                const script = document.createElement("script");
-                script.type = "text/javascript";
-                script.async = true;
-                script.onload = () => resolve(window.pdocSearch);
-                script.onerror = (e) => reject(e);
-                script.src = "search.js";
-                document.getElementsByTagName("head")[0].appendChild(script);
-            });
-        } catch (e) {
-            console.error("Cannot fetch pdoc search index");
-            searchErr = "Cannot fetch search index.";
-        }
-        onInput();
-
-        document.querySelector("nav.pdoc").addEventListener("click", e => {
-            if (e.target.hash) {
-                searchBox.value = "";
-                searchBox.dispatchEvent(new Event("input"));
-            }
-        });
-    }
-
-    function onInput() {
-        setContent((() => {
-            const term = getSearchTerm();
-            if (!term) {
-                return null
-            }
-            if (searchErr) {
-                return `<h3>Error: ${searchErr}</h3>`
-            }
-            if (!search) {
-                return "<h3>Searching...</h3>"
-            }
-
-            window.scrollTo({top: 0, left: 0, behavior: 'auto'});
-
-            const results = search(term);
-
-            let html;
-            if (results.length === 0) {
-                html = `No search results for '${escapeHTML(term)}'.`
-            } else {
-                html = `<h4>${results.length} search result${results.length > 1 ? "s" : ""} for '${escapeHTML(term)}'.</h4>`;
-            }
-            for (let result of results.slice(0, 10)) {
-                let doc = result.doc;
-                let url = `${doc.modulename.replaceAll(".", "/")}.html`;
-                if (doc.qualname) {
-                    url += `#${doc.qualname}`;
-                }
-
-                let heading;
-                switch (result.doc.kind) {
-                    case "function":
-                        if (doc.fullname.endsWith(".__init__")) {
-                            heading = `<span class="name">${doc.fullname.replace(/\.__init__$/, "")}</span>${doc.signature}`;
-                        } else {
-                            heading = `<span class="def">${doc.funcdef}</span> <span class="name">${doc.fullname}</span>${doc.signature}`;
-                        }
-                        break;
-                    case "class":
-                        heading = `<span class="def">class</span> <span class="name">${doc.fullname}</span>`;
-                        if (doc.bases)
-                            heading += `<wbr>(<span class="base">${doc.bases}</span>)`;
-                        heading += `:`;
-                        break;
-                    case "variable":
-                        heading = `<span class="name">${doc.fullname}</span>`;
-                        if (doc.annotation)
-                            heading += `<span class="annotation">${doc.annotation}</span>`;
-                        if (doc.default_value)
-                            heading += `<span class="default_value"> = ${doc.default_value}</span>`;
-                        break;
-                    default:
-                        heading = `<span class="name">${doc.fullname}</span>`;
-                        break;
-                }
-                html += `
-                        <section class="search-result">
-                        <a href="${url}" class="attr ${doc.kind}">${heading}</a>
-                        <div class="docstring">${doc.doc}</div>
-                        </section>
-                    `;
-
-            }
-            return html;
-        })());
-    }
-
-    if (getSearchTerm()) {
-        initialize();
-        searchBox.value = getSearchTerm();
-        onInput();
-    } else {
-        searchBox.addEventListener("focus", initialize, {once: true});
-    }
-
-    searchBox.addEventListener("keydown", e => {
-        if (["ArrowDown", "ArrowUp", "Enter"].includes(e.key)) {
-            let focused = currentContent.querySelector(".search-result.focused");
-            if (!focused) {
-                currentContent.querySelector(".search-result").classList.add("focused");
-            } else if (
-                e.key === "ArrowDown"
-                && focused.nextElementSibling
-                && focused.nextElementSibling.classList.contains("search-result")
-            ) {
-                focused.classList.remove("focused");
-                focused.nextElementSibling.classList.add("focused");
-                focused.nextElementSibling.scrollIntoView({
-                    behavior: "smooth",
-                    block: "nearest",
-                    inline: "nearest"
-                });
-            } else if (
-                e.key === "ArrowUp"
-                && focused.previousElementSibling
-                && focused.previousElementSibling.classList.contains("search-result")
-            ) {
-                focused.classList.remove("focused");
-                focused.previousElementSibling.classList.add("focused");
-                focused.previousElementSibling.scrollIntoView({
-                    behavior: "smooth",
-                    block: "nearest",
-                    inline: "nearest"
-                });
-            } else if (
-                e.key === "Enter"
-            ) {
-                focused.querySelector("a").click();
-            }
-        }
-    });
-</script></body>
+</body>
 </html>

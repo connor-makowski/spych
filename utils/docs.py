@@ -17,6 +17,7 @@ env = {
 def generate_docs(version: str) -> None:
     out_dir = str(root / "docs" / version)
     template_dir = str(root / "doc_template")
+    pdoc_modules = ["spych", r"!spych\..*"]
 
     if version != "./" and version != VERSION:
         tarball = str(root / "dist" / f"spych-{version}.tar.gz")
@@ -24,6 +25,8 @@ def generate_docs(version: str) -> None:
             [
                 "uv",
                 "run",
+                "--python",
+                "3.13",
                 "--isolated",
                 "--with",
                 tarball,
@@ -34,8 +37,7 @@ def generate_docs(version: str) -> None:
                 out_dir,
                 "-t",
                 template_dir,
-                "spych",
-                "!spych.agents.sdk_workers",
+                *pdoc_modules,
             ],
             check=True,
             env=env,
@@ -51,8 +53,7 @@ def generate_docs(version: str) -> None:
                 out_dir,
                 "-t",
                 template_dir,
-                "spych",
-                "!spych.agents.sdk_workers",
+                *pdoc_modules,
             ],
             check=True,
             env=env,
